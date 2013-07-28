@@ -1,0 +1,94 @@
+;/*++
+;
+;Module Name:
+;    HfpDriver.inx
+;
+;Abstract:
+;    INF file for installing the Bluetooth HFP Profile Driver
+;
+;    devcon.exe HfpDriver.inf BTHENUM\{c07508f2-b970-43ca-b5dd-cc4f2391bef4}
+;--*/
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=Sample
+ClassGuid={e0cbf06c-cd8b-4647-bb8a-263b43f0f974}
+Provider=%MSFT%
+DriverVer=06/21/2006,6.0.5841.
+CatalogFile=KmdfSamples.cat
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksNames]
+1 = %DiskId1%,,,""
+
+[SourceDisksFiles]
+HfpDriver.sys  = 1,,
+
+;*****************************************
+; HfpDriver  Install Section
+;*****************************************
+
+[Manufacturer]
+%MSFT%=Microsoft,NTamd64...1
+%MSFT%=Microsoft,NTx86...1
+
+[Microsoft.NTamd64...1]
+%HfpDriver.DeviceDesc% = HfpDriver_Inst,BTHENUM\{c07508f2-b970-43ca-b5dd-cc4f2391bef4}
+
+[Microsoft.NTx86...1]
+%HfpDriver.DeviceDesc% = HfpDriver_Inst,BTHENUM\{c07508f2-b970-43ca-b5dd-cc4f2391bef4}
+[HfpDriver_Inst.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+HfpDriver.sys
+
+
+;-------------- Service installation
+[HfpDriver_Inst.NT.Services]
+AddService = HfpDriver,%SPSVCINST_ASSOCSERVICE%, HfpDriver_Service_Inst
+
+; -------------- HfpDriver driver install sections
+[HfpDriver_Service_Inst]
+DisplayName    = %HfpDriver.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START 
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\HfpDriver.sys
+LoadOrderGroup = Extended Base
+
+;
+;--- HfpDriver_Inst Coinstaller installation ------
+;
+
+[DestinationDirs]
+HfpDriver_Inst_CoInstaller_CopyFiles = 11
+
+[HfpDriver_Inst.NT.CoInstallers]
+AddReg=HfpDriver_Inst_CoInstaller_AddReg
+CopyFiles=HfpDriver_Inst_CoInstaller_CopyFiles
+
+[HfpDriver_Inst_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[HfpDriver_Inst_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[SourceDisksFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+[HfpDriver_Inst.NT.Wdf]
+KmdfService =  HfpDriver, HfpDriver_Inst_wdfsect
+[HfpDriver_Inst_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+MSFT = "Microsoft"
+StdMfg = "(Standard system devices)"
+DiskId1 = "HfpDriver installation disk"
+HfpDriver.DeviceDesc = "Bluetooth HFP Profile Driver"
+HfpDriver.SVCDESC = "HfpDriver"

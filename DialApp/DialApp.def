@@ -1,0 +1,14 @@
+LIBRARY DialApp
+EXPORTS
+	dialappInit				
+	dialappEnd				
+	dialappUiSelectDevice	
+	dialappForgetDevice		
+	dialappGetSelectedDevice 
+	dialappGetCurrentState	
+	dialappCall				
+	dialappAnswer			
+;	dialappSendDtmf			
+	dialappEndCall			
+	dialappHeadsetSound			
+	dialappSetDebugMode

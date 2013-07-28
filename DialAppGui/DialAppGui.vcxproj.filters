@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="DialForm.cpp" />
+    <ClCompile Include="RegistryOpers.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DialForm.h" />
+    <ClInclude Include="RegistryOpers.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="DialForm.resx" />
+  </ItemGroup>
+</Project>
