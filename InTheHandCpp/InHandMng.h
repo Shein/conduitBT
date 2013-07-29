@@ -50,6 +50,7 @@ public ref class InHandMng
 	static void EndCall ();
 
   protected:
+	static void AddSdp(Guid svc);
 	static void ProcessIoException (IOException ^ex);
 	static void SendAtCommand (String ^at);
 	static void RecvAtCommand (array<Char> ^buf, int len);
@@ -81,6 +82,7 @@ void InHandMng::Init ()
     try {
 		BthCli = gcnew BluetoothClient();
 		ScanDevices();
+		AddSdp(BluetoothService::Headset);
     }
 	catch (Exception^ ex) {
 		LogMsg ("EXCEPTION in InHandMng::Init: " + ex->Message);
@@ -95,6 +97,23 @@ void InHandMng::End()
 	Devices = nullptr;
 }
 	
+
+void InHandMng::AddSdp (Guid svc)
+{
+	BluetoothListener ^serverListener = gcnew BluetoothListener(svc);
+	ServiceRecord ^sdp = serverListener->ServiceRecord;
+	ServiceClass cod = (ServiceClass)0;
+	BluetoothEndPoint ^serverEP = gcnew BluetoothEndPoint(BluetoothAddress::None, svc);
+	Socket ^serverSocket = gcnew Socket(AddressFamily32::Bluetooth, SocketType::Stream, BluetoothProtocolType::RFComm);
+	serverSocket->Bind(serverEP);
+	serverSocket->Listen(int::MaxValue);
+	byte channelNumber = static_cast<byte>((static_cast<BluetoothEndPoint^>(serverSocket->LocalEndPoint))->Port);
+	ServiceRecordHelper::SetRfcommChannelNumber(sdp, channelNumber);
+	cli::array<byte,1> ^ServiceRecordBytes = sdp->ToByteArray();
+	System::IntPtr sdpHandle = Msft::MicrosoftSdpService::SetService(ServiceRecordBytes, cod);
+	serverSocket->Close();
+}
+
 
 void InHandMng::ScanDevices ()
 {
@@ -125,10 +144,10 @@ void InHandMng::ProcessIoException (IOException ^ex)
 	SocketException ^sex = dynamic_cast<SocketException^>(ex->InnerException);
 	if (sex) {
 		SocketError Err = sex->SocketErrorCode;
-		LogMsg("!! Send SocketException: " + Err.ToString() + " (" + Err.ToString("D") + ") " + ex->Message);
+		LogMsg("SocketException: " + Err.ToString() + " (" + Err.ToString("D") + ") " + ex->Message);
 	}
 	else {
-		LogMsg("!! Send IOException: " + ex->Message);
+		LogMsg("IOException: " + ex->Message);
 	}
 }
 
@@ -147,21 +166,9 @@ void InHandMng::FreeDevices (InHandDev* &devices, int n)
 
 void InHandMng::SendAtCommand (String ^at)
 {
-	try
-	{
-		StreamWtr->Write(at + "\r");
-		LogMsg("HF Sent: " + at);
-		StreamWtr->Flush();
-		return;
-	}
-	catch (IOException ^ex) {
-		ProcessIoException (ex);
-	}
-	catch (Exception ^ex) {
-		LogMsg(ex->Message);
-	}
-
-	HfpSm::PutEvent_Failure();
+	StreamWtr->Write(at + "\r");
+	LogMsg("HF Sent: " + at);
+	StreamWtr->Flush();
 }
 
 
@@ -174,7 +181,7 @@ void InHandMng::RecvAtCommand (array<Char> ^buf, int len)
 	FreePchar(strunm);
 
 	if (str->Contains ("ERROR")) {
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_ErrorResponce();
 	} 
 	if (str->Contains ("+CIEV: 3,0")) {
 		HfpSm::PutEvent_CallSetup(SMEV_CallSetup_None);
@@ -210,43 +217,29 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 	ASSERT_ (StreamNet->CanRead);
 
 	StreamReader ^rdr = gcnew StreamReader(StreamNet, Encoding::ASCII);
-	array<Char> ^buf = gcnew array<Char>(250);
+	array<Char>  ^buf = gcnew array<Char>(250);
 
 	try
 	{
 		while (true)
 		{
-			// We don't use ReadLine because we then don't get to see the CR/LF characters. And we often get the series \r\r\n
-			// which should appear as one new line, but would appear as two if we did textBox.Append("\n") each ReadLine.
+			// We don't use ReadLine because we then don't get to see the CR/LF. 
+			// And we often get the series \r\r\n, which should appear as one new line.
 			int nread = rdr->Read(buf, 0, buf->Length);
 			if (nread == 0) {
 				InHandLog.LogMsg ("ReceiveThreadFn read 0 bytes. Finalizing...");
-				//newBluetoothClient();
-				return;
+				break;
 			}
 			RecvAtCommand (buf, nread);
 		}
 	}
-	catch (System::IO::IOException ^ioex)
-	{
-		SocketException ^sex = dynamic_cast<SocketException^>(ioex->InnerException);
-		if (sex) {
-			SocketError Err = sex->SocketErrorCode;
-			LogMsg ("!! SocketException: " + Err.ToString() + " (" + Err.ToString("D") + ") " + ioex->Message);
-		}
-		else {
-			LogMsg ("!! IOException: " + ioex->Message);
-		}
+	catch (IOException ^ex) {
+		ProcessIoException (ex);
 	}
-	catch (ObjectDisposedException ^odex)
-	{
-		LogMsg ("!! ObjectDisposedException: " + odex->Message);
+	catch (Exception ^ex) {
+		LogMsg(ex->Message);
 	}
-	//TODO
-	// 	finally
-	// 	{
-	// 		newBluetoothClient();
-	// 	}
+	HfpSm::PutEvent_Disconnected();
 }
 
 
@@ -276,32 +269,30 @@ void InHandMng::ConnectCallback (IAsyncResult ^ar)
 		StreamWtr = gcnew StreamWriter (StreamNet, Encoding::ASCII);
 		HfpSm::PutEvent_Connected();
 		ThreadPool::QueueUserWorkItem(gcnew WaitCallback(ReceiveThreadFn));
-		return;
 	}
-	catch (NullReferenceException^)	 {
-		LogMsg ("ConnectFailed - NullReferenceException");
+	catch (IOException ^ex) {
+		ProcessIoException (ex);
+		HfpSm::PutEvent_Disconnected();
 	}
-	catch (ObjectDisposedException^) {
-		LogMsg ("ConnectFailed - ObjectDisposedException");
+	catch (Exception ^ex) {
+		LogMsg(ex->Message);
+		HfpSm::PutEvent_Failure();
 	}
-	catch (System::Net::Sockets::SocketException ^sex) {
-		LogMsg ("Connect failed: " + sex->SocketErrorCode.ToString() + " (" + sex->SocketErrorCode.ToString("D") + ") " + sex->Message);
-	}
-
-	HfpSm::PutEvent_Failure();
 }
 
 
 void InHandMng::BeginConnect (BluetoothAddress^ bthaddr)
 {
-	try
-	{
+	try	{
 		AsyncCallback^ cbk = gcnew AsyncCallback (&ConnectCallback);
 		BthCli->BeginConnect(bthaddr, BluetoothService::Handsfree, cbk, nullptr);
 	}
-	catch (SocketException^ sex)
-	{
-		LogMsg ("Connect failed: " + sex->SocketErrorCode.ToString() + " (" + sex->SocketErrorCode.ToString("D") + "); " + sex->Message);
+	catch (IOException ^ex) {
+		ProcessIoException (ex);
+		HfpSm::PutEvent_Disconnected();
+	}
+	catch (Exception ^ex) {
+		LogMsg(ex->Message);
 		HfpSm::PutEvent_Failure();
 	}
 }
@@ -309,44 +300,81 @@ void InHandMng::BeginConnect (BluetoothAddress^ bthaddr)
 
 void InHandMng::BeginHfpConnect (bool establish_hfp_connection)
 {
-	if (establish_hfp_connection) {
+	//TODO
+	//if (establish_hfp_connection)
+	try
+	{
 		SendAtCommand("AT+BRSF=16");
 		SendAtCommand("AT+CIND=?");
 		SendAtCommand("AT+CMER=3,0,0,1");
 		SendAtCommand("AT+CMEE=1");
+		HfpSm::PutEvent_HfpConnected();
 	}
-	HfpSm::PutEvent_HfpConnected();
+	catch (IOException ^ex) {
+		ProcessIoException (ex);
+		HfpSm::PutEvent_Disconnected();
+	}
+	catch (Exception ^ex) {
+		LogMsg(ex->Message);
+		HfpSm::PutEvent_Failure();
+	}
 }
 
 
 void InHandMng::Disconnect ()
 {
-	if (StreamWtr)
-	{
+	if (StreamWtr)	{
 		StreamWtr->Close();
 		ASSERT__(!BthCli->Connected);
 	}
-	//BthCli->Close();
-	//BthCli = gcnew BluetoothClient();
 }
 
 
 void InHandMng::StartCall(String^ number)
 {
-	//SendAtCommand("AT+BLDN"); - redial last
-	SendAtCommand("ATD" + number + ";");
+	try	{
+		//SendAtCommand("AT+BLDN"); - redial last
+		SendAtCommand("ATD" + number + ";");
+	}
+	catch (IOException ^ex) {
+		ProcessIoException (ex);
+		HfpSm::PutEvent_Disconnected();
+	}
+	catch (Exception ^ex) {
+		LogMsg(ex->Message);
+		HfpSm::PutEvent_Failure();
+	}
 }
 
 
 void InHandMng::Answer()
 {
-	SendAtCommand("ATA");
+	try	{
+		SendAtCommand("ATA");
+	}
+	catch (IOException ^ex) {
+		ProcessIoException (ex);
+		HfpSm::PutEvent_Disconnected();
+	}
+	catch (Exception ^ex) {
+		LogMsg(ex->Message);
+		HfpSm::PutEvent_Failure();
+	}
 }
 
 
 void InHandMng::EndCall()
 {
-	SendAtCommand("AT+CHUP");
-	SendAtCommand("ATH");
+	try	{
+		SendAtCommand("AT+CHUP");
+		SendAtCommand("ATH");
+	}
+	catch (IOException ^ex) {
+		ProcessIoException (ex);
+		HfpSm::PutEvent_Disconnected();
+	}
+	catch (Exception ^ex) {
+		LogMsg(ex->Message);
+		HfpSm::PutEvent_Failure();
+	}
 }
-

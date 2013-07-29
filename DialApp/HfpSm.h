@@ -17,7 +17,6 @@
 #define STATE_LIST_HFPSM	\
     STATE (Idle				),		\
     STATE (Disconnected		),		\
-    STATE (Disconnecting	),		\
     STATE (Connecting		),		\
     STATE (Connected		),		\
     STATE (HfpConnecting	),		\
@@ -87,6 +86,12 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
+	static void PutEvent_ErrorResponce ()
+	{
+		SMEVENT Event = {SM_HFP, SMEV_ErrorResponce};
+		SmBase::PutEvent (&Event, SMQ_HIGH);
+	}
+
 	static void PutEvent_Failure2Report ()
 	{
 		SMEVENT Event = {SM_HFP, SMEV_Failure};
@@ -112,6 +117,12 @@ class HfpSm: public SMT<HfpSm>
 		SMEVENT Event = {SM_HFP, SMEV_ConnectStart};
 		Event.Param.BthAddr = addr;
 		SmBase::PutEvent (&Event, SMQ_LOW);
+	}
+
+	static void PutEvent_Disconnected ()
+	{
+		SMEVENT Event = {SM_HFP, SMEV_Disconnected};
+		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
 	static void PutEvent_Connected ()
@@ -188,6 +199,7 @@ class HfpSm: public SMT<HfpSm>
   private:
 	bool ForgetDevice		  (SMEVENT* ev, int param);
 	bool SelectDevice		  (SMEVENT* ev, int param);
+	bool Disconnected		  (SMEVENT* ev, int param);
 	bool Connect			  (SMEVENT* ev, int param);
 	bool Connected			  (SMEVENT* ev, int param);
 	bool HfpConnect			  (SMEVENT* ev, int param);
@@ -234,12 +246,12 @@ inline void HfpSmCb::OutgoingIncorrectState ()
 
 inline void HfpSmCb::InCallHeadsetOn()
 {
-	CbFunc (DialAppState_InCallHeadsetOn, DialAppError_Ok, 0);
+	CbFunc (DialAppState_InCallPcSoundOn, DialAppError_Ok, 0);
 }
 
 inline void HfpSmCb::InCallHeadsetOff()
 {
-	CbFunc (DialAppState_InCallHeadsetOff, DialAppError_Ok, 0);
+	CbFunc (DialAppState_InCallPcSoundOff, DialAppError_Ok, 0);
 }
 
 inline void HfpSmCb::CallEnded()

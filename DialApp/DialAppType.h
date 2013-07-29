@@ -53,6 +53,7 @@ enum DialAppError
 };
 
 
+
 /*
  *************************************************************************************
  DialApp states, passed to a host application via DialAppCb each time the state 
@@ -63,44 +64,43 @@ enum DialAppState
 {
 	DialAppState_IdleNoDevice,
 	DialAppState_DisconnectedDevicePresent,
-	DialAppState_Disconnecting,
 	DialAppState_Connecting,
 	DialAppState_Connected,
 	DialAppState_ServiceConnecting,
 	DialAppState_ServiceConnected,
 	DialAppState_Calling,
 	DialAppState_Ringing,
-	DialAppState_InCallHeadsetOff,
-	DialAppState_InCallHeadsetOn
+	DialAppState_InCallPcSoundOff,
+	DialAppState_InCallPcSoundOn
 };
+
 
 
 /*
  *************************************************************************************
- DialApp debug types.
+ Union which contains different parameters passed to DialAppCb. 
+ The concrete parameter depends on DialAppState.
  *************************************************************************************
  */
-enum DialAppDebug
-{
-	DialAppDebug_HfpAtCommands,
-};
-
-
 union DialAppParam
 {
 	struct {
-		uint64  BthAddr;
-		wchar  *BthName;
+		uint64  BthAddr;	// Device address (set with DialAppState_DisconnectedDevicePresent)
+		wchar  *BthName;	// Device name (set with DialAppState_DisconnectedDevicePresent)
 	};
-	wchar * Abonent;
+	wchar	   *Abonent;	// Outgoing call abonent name (set with DialAppState_Calling)
 };
+
+
 
 /*
  *************************************************************************************
- DialApp callback function prototype. The correspondent function should be passed to 
- dialappInit and will receive notifications about all device state changes and 
- asynchronous errors.
- TBD
+ DialApp asynchronous callback function prototype. The correspondent function should 
+ be passed to dialappInit and will receive notifications about all device state changes 
+ and asynchronous errors. This function is called each time when the internal State 
+ Machine's state was changed. In the case this state change was caused by any 
+ failure, the DialAppError status will be set to correspondent error code (not equal 
+ to DialAppError_Ok).
  *************************************************************************************
  */
 typedef void (*DialAppCb) (DialAppState state, DialAppError status, DialAppParam* param);

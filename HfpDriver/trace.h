@@ -14,10 +14,10 @@ Environment:
 
 #if !defined(EVENT_TRACING)
 
-//
-// TODO: These defines are missing in evntrace.h
-// in some DDK build environments (XP).
-//
+/*
+  These defines are missing in evntrace.h
+  in some DDK build environments (XP).
+*/
 #if !defined(TRACE_LEVEL_NONE)
   #define TRACE_LEVEL_NONE          0
   #define TRACE_LEVEL_CRITICAL      1
@@ -33,9 +33,9 @@ Environment:
 #endif
 
 
-//
-// Define Debug Flags
-//
+/*
+  Define Debug Flags
+*/
 #define DBG_INIT                0x00000001
 #define DBG_PNP                 0x00000002
 #define DBG_POWER               0x00000004

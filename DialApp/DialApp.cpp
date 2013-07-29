@@ -140,16 +140,6 @@ void dialappEnd ()
 }
 
 
-void dialappSetDebugMode (DialAppDebug debugtype, int mode)
-{
-	switch (debugtype)
-	{
-		case DialAppDebug_HfpAtCommands:
-			InHand::EnableHfpAtCommands = (bool) mode;
-			break;
-	}
-}
-
 wchar* dialappGetSelectedDevice ()
 {
 	return (HfpSmObj.CurDevice) ? HfpSmObj.CurDevice->Name : 0;
@@ -182,15 +172,15 @@ void dialappForgetDevice ()
 }
 
 
-void dialappCall (cchar* dialnumber, bool headset)
+void dialappCall (cchar* dialnumber, bool pcsound)
 {
-	HfpSm::PutEvent_StartOutgoingCall(dialnumber, headset);
+	HfpSm::PutEvent_StartOutgoingCall(dialnumber, pcsound);
 }
 
 
-void dialappAnswer (bool headset)
+void dialappAnswer (bool pcsound)
 {
-	HfpSm::PutEvent_Answer(headset);
+	HfpSm::PutEvent_Answer(pcsound);
 }
 
 void dialappEndCall ()
@@ -199,10 +189,31 @@ void dialappEndCall ()
 }
 
 
-void dialappHeadsetSound (bool headset)
+void dialappPcSound (bool pcsound)
 {
-	if (headset)
+	if (pcsound)
 		HfpSm::PutEvent_HeadsetOn();
 	else
 		HfpSm::PutEvent_HeadsetOff();
 }
+
+
+void dialappDebugMode (DialAppDebug debugtype, int mode)
+{
+	switch (debugtype)
+	{
+		case DialAppDebug_HfpAtCommands:
+			InHand::EnableHfpAtCommands = (bool) mode;
+			break;
+
+		case DialAppDebug_ConnectNow:
+			if (HfpSmObj.CurDevice)
+				HfpSm::PutEvent_ConnectStart(HfpSmObj.CurDevice->Address);
+			break;
+
+		case DialAppDebug_DisconnectNow:
+			InHand::Disconnect ();
+			break;
+	}
+}
+

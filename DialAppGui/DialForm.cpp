@@ -41,15 +41,14 @@ cchar* DialAppStateString[] =
 {
 	"IdleNoDevice",
 	"DisconnectedDevicePresent",
-	"Disconnecting",
 	"Connecting",
 	"Connected",
 	"ServiceConnecting",
 	"ServiceConnected",
 	"Calling",
 	"Ringing",
-	"InCallHeadsetOff",
-	"InCallHeadsetOn"
+	"InCallPcSoundOff",
+	"InCallPcSoundOn"
 };
 
 
@@ -69,11 +68,11 @@ void DialAppCbFunc (DialAppState state, DialAppError status, DialAppParam* param
 				DialForm::This->SetDeviceName (%System::String(param->BthName));
 				break;
 
-			case DialAppState_InCallHeadsetOff:
-				DialForm::This->SetHeadsetButtonName("HeadsetOn");
+			case DialAppState_InCallPcSoundOff:
+				DialForm::This->SetHeadsetButtonName("PC Sound On");
 				goto case_abonent;
-			case DialAppState_InCallHeadsetOn:
-				DialForm::This->SetHeadsetButtonName("HeadsetOff");
+			case DialAppState_InCallPcSoundOn:
+				DialForm::This->SetHeadsetButtonName("PC Sound Off");
 				case_abonent:
 				if (param)
 					DialForm::This->AddInfoMessage ("Abonent: '" + %System::String(param->Abonent) + "'");
@@ -93,7 +92,7 @@ void DialForm::DialForm_Load(Object ^sender, EventArgs ^e)
 		dialappInit	(&DialAppCbFunc);
 		wchar *name = dialappGetSelectedDevice();
 		chboxAutoServCon->Checked = Registry->ReadInt (DIALAPP_REGKEY_HFP_AT_COMMANDS);
-		dialappSetDebugMode (DialAppDebug_HfpAtCommands, int(chboxAutoServCon->Checked));
+		dialappDebugMode (DialAppDebug_HfpAtCommands, int(chboxAutoServCon->Checked));
 	}
 	catch (int err)
 	{
@@ -119,7 +118,7 @@ void DialForm::chboxAutoServCon_Click(System::Object^ sender, System::EventArgs^
 {
 	int val = int(chboxAutoServCon->Checked);
 	Registry->WriteInt (DIALAPP_REGKEY_HFP_AT_COMMANDS, val);
-	dialappSetDebugMode (DialAppDebug_HfpAtCommands, val);
+	dialappDebugMode (DialAppDebug_HfpAtCommands, val);
 }
 
 void DialForm::btnClear_Click(Object ^sender, EventArgs ^e)
@@ -151,11 +150,13 @@ void DialForm::btnForgetDevice_Click(Object ^sender, EventArgs ^e)
 
 void DialForm::btnConnect_Click(Object ^sender, EventArgs ^e)
 {
+	dialappDebugMode (DialAppDebug_ConnectNow);
 }
 
 
 void DialForm::btnDisconnect_Click(Object ^sender, EventArgs ^e)
 {
+	dialappDebugMode (DialAppDebug_DisconnectNow);
 }
 
 
@@ -180,7 +181,7 @@ void DialForm::btnAnswer_Click(Object ^sender, EventArgs ^e)
 
 void DialForm::btnHeadset_Click(Object ^sender, EventArgs ^e)
 {
-	dialappHeadsetSound (btnHeadset->Text == "HeadsetOn");
+	dialappPcSound (btnHeadset->Text == "PC Sound On");
 }
 
 

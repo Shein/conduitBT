@@ -22,14 +22,14 @@
  */
 #define SMEV_LIST	\
     ENUM_ENTRY (SMEV, Failure						),	\
+    ENUM_ENTRY (SMEV, ErrorResponce					),	\
     ENUM_ENTRY (SMEV, SelectDevice					),	\
     ENUM_ENTRY (SMEV, ForgetDevice					),	\
+    ENUM_ENTRY (SMEV, Disconnected					),	\
     ENUM_ENTRY (SMEV, ConnectStart					),	\
-    ENUM_ENTRY (SMEV, DisconnectStart				),	\
     ENUM_ENTRY (SMEV, Connected						),	\
     ENUM_ENTRY (SMEV, HfpConnectStart				),	\
     ENUM_ENTRY (SMEV, HfpConnected					),	\
-    ENUM_ENTRY (SMEV, Disconnected					),	\
     ENUM_ENTRY (SMEV, ServiceConnectStart			),	\
     ENUM_ENTRY (SMEV, ServiceConnected				),	\
     ENUM_ENTRY (SMEV, IncomingCall					),	\

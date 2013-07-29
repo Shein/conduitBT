@@ -7,6 +7,5 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InHand.cpp" />
-    <ClCompile Include="InHandMng.cpp" />
   </ItemGroup>
 </Project>

@@ -8,7 +8,7 @@ EXPORTS
 	dialappGetCurrentState	
 	dialappCall				
 	dialappAnswer			
-;	dialappSendDtmf			
 	dialappEndCall			
-	dialappHeadsetSound			
-	dialappSetDebugMode
+	dialappPcSound			
+;	dialappSendDtmf			
+	dialappDebugMode

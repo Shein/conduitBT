@@ -260,7 +260,6 @@ namespace DialAppGui {
 			// 
 			// btnDisconnect
 			// 
-			this->btnDisconnect->Enabled = false;
 			this->btnDisconnect->Location = System::Drawing::Point(181, 37);
 			this->btnDisconnect->Name = L"btnDisconnect";
 			this->btnDisconnect->Size = System::Drawing::Size(105, 24);
@@ -270,7 +269,6 @@ namespace DialAppGui {
 			// 
 			// btnConnect
 			// 
-			this->btnConnect->Enabled = false;
 			this->btnConnect->Location = System::Drawing::Point(70, 37);
 			this->btnConnect->Name = L"btnConnect";
 			this->btnConnect->Size = System::Drawing::Size(105, 24);
@@ -310,7 +308,7 @@ namespace DialAppGui {
 			this->btnHeadset->Name = L"btnHeadset";
 			this->btnHeadset->Size = System::Drawing::Size(83, 24);
 			this->btnHeadset->TabIndex = 3;
-			this->btnHeadset->Text = L"&Headset";
+			this->btnHeadset->Text = L"&PC Sound";
 			this->btnHeadset->Click += gcnew System::EventHandler(this, &DialForm::btnHeadset_Click);
 			// 
 			// chboxAutoServCon
@@ -343,9 +341,9 @@ namespace DialAppGui {
 			this->chboxAutoHeadset->CheckState = System::Windows::Forms::CheckState::Checked;
 			this->chboxAutoHeadset->Location = System::Drawing::Point(396, 124);
 			this->chboxAutoHeadset->Name = L"chboxAutoHeadset";
-			this->chboxAutoHeadset->Size = System::Drawing::Size(131, 17);
+			this->chboxAutoHeadset->Size = System::Drawing::Size(133, 17);
 			this->chboxAutoHeadset->TabIndex = 22;
-			this->chboxAutoHeadset->Text = L"Auto-connect headset";
+			this->chboxAutoHeadset->Text = L"Auto turn on PC sound";
 			this->chboxAutoHeadset->UseVisualStyleBackColor = true;
 			// 
 			// btnSelectDevice
