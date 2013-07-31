@@ -10,5 +10,5 @@ EXPORTS
 	dialappAnswer			
 	dialappEndCall			
 	dialappPcSound			
-;	dialappSendDtmf			
+	dialappSendDtmf			
 	dialappDebugMode

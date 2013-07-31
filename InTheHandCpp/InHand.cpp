@@ -38,7 +38,6 @@ InHandDev* InHand::FindDevice (uint64 address, bool rescan)
 {
 	if (rescan) {
 		InHandMng::FreeDevices(Devices,NumDevices);
-		InHandMng::ScanDevices();
 		NumDevices = InHandMng::GetDevices(Devices);
 	}
 
@@ -62,15 +61,20 @@ void InHand::Disconnect()
 }
 
 
-void InHand::BeginHfpConnect()
+int InHand::BeginHfpConnect()
 {
-	InHandMng::BeginHfpConnect(EnableHfpAtCommands);
+	return InHandMng::BeginHfpConnect(EnableHfpAtCommands);
 }
 
 
 void InHand::StartCall(cchar* dialnumber)
 {
 	InHandMng::StartCall(%System::String(dialnumber));
+}
+
+void InHand::SendDtmf(cchar* dialchar)
+{
+	InHandMng::SendDtmf(%System::String(dialchar));
 }
 
 void InHand::Answer()
@@ -82,4 +86,3 @@ void InHand::EndCall()
 {
 	InHandMng::EndCall();
 }
-

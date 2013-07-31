@@ -9,6 +9,7 @@
 
 #include "DialApp.h"
 #include "deblog.h"
+#include "timer.h"
 #include "InHand.h"
 #include "ScoApp.h"
 #include "smBase.h"
@@ -119,6 +120,7 @@ void dialappInit (DialAppCb cb)
 	dialappUserCb = cb;
 
 	DebLog::Init("DialApp");
+	Timer::Init();
 	InHand::Init();
 	SmBase::Init();
 	ScoApp::Init();
@@ -136,6 +138,7 @@ void dialappEnd ()
 	ScoApp::End();
 	SmBase::End();
 	InHand::End();
+	Timer::End();
 	DebLog::End();
 }
 
@@ -182,6 +185,13 @@ void dialappAnswer (bool pcsound)
 {
 	HfpSm::PutEvent_Answer(pcsound);
 }
+
+
+void dialappSendDtmf(cchar dialchar)
+{
+	HfpSm::PutEvent_SendDtmf(dialchar);
+}
+
 
 void dialappEndCall ()
 {

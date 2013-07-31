@@ -7,17 +7,27 @@
 #ifndef _SMBASE_H_
 #define _SMBASE_H_
 
+#include "def.h"
 #include "smId.h"
 #include "deblog.h"
 #include "fifo_cse.h"
 #include "thread.h"
 
 
-#define SMID_ALL            ((unsigned)(-1))
-#define CHOICE              ((unsigned)(-1))
-#define NULLTRANS           ((void*)1)			// Value for transitions that have not an action
+#define SMID_ALL			((unsigned)(-1))	// Destination SM ID meaning "TO ALL"
+#define NULLTRANS			((void*)1)			// Value for transitions that have not an action
+#define STATE_CHOICE		((unsigned)(-1))	// special STATE value meaning a choice from several states
+
+/*
+   Size of global SM-Base buffer for allocating choices.
+   Comment out this define to disable the choices at all.
+*/
+#define SMBASE_CHOICES		6
 
 
+/* 
+   SM Queues priorities
+*/
 enum SMQ
 {
     SMQ_IMMEDIATE = -1,
@@ -31,36 +41,42 @@ struct SMEVENT;
 
 
 /* 
-    SM transition types
+   SM transition function types
 */
-typedef int  (SM::*FTRANSITION) (SMEVENT* ev, int param);
-
-/*
-    Get the state name for SM function. Only for debug purpose.
-*/
-typedef char* (*FSTATENAME) (int state);
+typedef bool  (SM::*FTRANSITION) (SMEVENT* ev, int param);
 
 
 /* 
-    SM event element for one state:
+   SM choice function types
 */
-struct TEVSTATE
+typedef int  (SM::*FCHOICE) (SMEVENT* ev);
+
+
+
+/* 
+   SM event element for one state:
+*/
+struct SMEVSTATE
 {
     SMEV            Event;
-    int             State_end;      // End state for transition, if it's (-1) than StatParam points to array of TCHOICE and Func returns index in this array
+    int             State_end;      // End state for transition, if it's (-1) than StatParam points to array of SMCHOICE and Func returns index in this array
     union {
-		FTRANSITION     Func;
-		void*			Func_;
+	  FTRANSITION   FuncTran;
+	  FCHOICE		FuncChoice;
+	  void*			FuncVoid;
 	};
-    UINT32          StatParam;
+    int64			StatParam;		// it's int64 because of it contains SMCHOICE* for choices
 };
 
 
-struct TCHOICE
+struct SMCHOICE
 {
     int             State_end;
-    FTRANSITION     Func;
-    UINT32          StatParam;
+    union {
+	  FTRANSITION   FuncTran;
+	  void*			FuncVoid;
+	};
+    int				StatParam;
 };
 
 
@@ -71,19 +87,32 @@ struct SM : public DebLog
 
   public:
     SMID         SmId;
-    TEVSTATE     (*aStates)[SMEV_NUMS];		// States-Events table for SM
+    SMEVSTATE  (*aStates)[SMEV_NUMS];		// States-Events table for SM
     const char **aStateNames;				// States names
     int          naStates;					// Size of aStates array
     int          State;						// Current state
     int          State_prev;				// Previous state
 
 	bool Execute (SMEVENT *pEvent);			// One-cycle SM execute
+
+	#ifdef SMBASE_CHOICES
+	static SMCHOICE	ChoiceBuffer[SMBASE_CHOICES];
+	static int		ChoiceNextIdx;
+	static SMCHOICE* NewChoice(int n)
+	{
+		ASSERT_0 (ChoiceNextIdx + n <= SMBASE_CHOICES);
+		SMCHOICE* ret = &ChoiceBuffer[ChoiceNextIdx];
+		ChoiceNextIdx += n;
+		return ret;
+	}
+	#endif
 };
 
 
 template <class T> struct SMT : public SM
 {
-	typedef bool (T::*FTRANS) (SMEVENT* ev, int param);
+	typedef bool (T::*FTRANS)  (SMEVENT* ev, int param);
+	typedef int  (T::*FCHOICE) (SMEVENT* ev);
 
 	SMT(cchar *name) : SM(name) {};
 
@@ -98,27 +127,59 @@ template <class T> struct SMT : public SM
 		SmBase::SmGlobalArray[SmId] = this;
 	}
 
-	/* Initialization of one TEVSTATE structure */
-	static void InitStateNode (int state, SMEV ev, int state_end, FTRANS func, UINT32 param = 0)
+	/* Initialization of one SMEVSTATE structure */
+	static void InitStateNode (int state, SMEV ev, int state_end, FTRANS func, int64 param = 0)
 	{
 		union {
-			FTRANS  Func;
-			void*   Func_;
+			FTRANS  FuncTran;
+			void*   FuncVoid;
 		} F = { func };
 		T::StateTable[state][ev].Event     = ev;
 		T::StateTable[state][ev].State_end = state_end;
-		T::StateTable[state][ev].Func_     = F.Func_;
+		T::StateTable[state][ev].FuncVoid  = F.FuncVoid;
 		T::StateTable[state][ev].StatParam = param;
 	}
 
 	/* Initialization to support NULLTRANS */
-	static void InitStateNode (int state, SMEV ev, int state_end, void* func, UINT32 param = 0)
+	static void InitStateNode (int state, SMEV ev, int state_end, void* func, int64 param = 0)
 	{
 		union {
-			void*   Func_;
-			FTRANS  Func;
+			void*   FuncVoid;
+			FTRANS  FuncTran;
 		} F = { func };
-		InitStateNode (state, ev, state_end, F.Func, param);
+		InitStateNode (state, ev, state_end, F.FuncTran, param);
+	}
+
+	/* Initialization to support NULLTRANS */
+	static void InitStateNode (int state, SMEV ev, FCHOICE func, int nchoices)
+	{
+		union {
+			FCHOICE  FuncChoice;
+			FTRANS   FuncTran;
+		} F = { func };
+		InitStateNode (state, ev, STATE_CHOICE, F.FuncTran, (int64)NewChoice(nchoices));
+	}
+
+	static void InitChoice (int idx, int state, SMEV ev, int state_end, FTRANS func, int param = 0)
+	{
+		union {
+			FTRANS  FuncTran;
+			void*   FuncVoid;
+		} F = { func };
+		SMCHOICE* choice = ((SMCHOICE*) T::StateTable[state][ev].StatParam) + idx;
+		
+		choice->State_end = state_end;
+		choice->FuncVoid  = F.FuncVoid;
+		choice->StatParam = param;
+	}
+
+	static void InitChoice (int idx, int state, SMEV ev, int state_end, void* func, int param = 0)
+	{
+		union {
+			void*   FuncVoid;
+			FTRANS  FuncTran;
+		} F = { func };
+		InitChoice (idx, state, ev, state_end, F.FuncTran, param);
 	}
 };
 
@@ -142,7 +203,7 @@ template <class T> struct SMT : public SM
             statelist,											\
             NSTATES												\
         };														\
-		static TEVSTATE		StateTable[NSTATES][SMEV_NUMS];		\
+		static SMEVSTATE	StateTable[NSTATES][SMEV_NUMS];		\
         static const char*  StateNames[NSTATES];
 
 
@@ -155,7 +216,7 @@ template <class T> struct SMT : public SM
   Note: Must be present in any SM's cpp file. The cpp file must include at the top the ExecBody.h!
 */
 #define IMPL_STATES(smname,statelist)                       \
-    TEVSTATE      smname::StateTable[NSTATES][SMEV_NUMS];	\
+    SMEVSTATE     smname::StateTable[NSTATES][SMEV_NUMS];	\
     const char*   smname::StateNames[] = { statelist };
 
 
@@ -167,7 +228,7 @@ template <class T> struct SMT : public SM
 
 
 /* 
-    Event element structure (16 bytes).
+   Event element structure (16 bytes).
 */
 struct SMEVENT
 {
@@ -176,18 +237,6 @@ struct SMEVENT
     SMEV_PAR    Param;		    // Event parameters
 };
 
-
-
-/*
-    Initialization the TCHOICE structure macro (TODO - this is old style, to improve):
-    smbInitChoiceElem (TCHOICE[] aDynState, int Num, int StateEnd, FTRANSITION Func, int param);
-*/
-#define smbInitChoiceElem(_aDynState_,_Num_,_StateEnd_,_Func_,_StatParam_)  \
-{                                                                           \
-    _aDynState_[_Num_].State_end = _StateEnd_;                              \
-    _aDynState_[_Num_].Func      = _Func_;                                  \
-    _aDynState_[_Num_].StatParam = (UINT32)_StatParam_;                     \
-}
 
 
 

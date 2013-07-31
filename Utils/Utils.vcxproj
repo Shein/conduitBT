@@ -18,10 +18,12 @@
     <ClInclude Include="mutex.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="deblog.h" />
+    <ClInclude Include="timer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="deblog.cpp" />
+    <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D5D3F54C-C104-4E53-B074-F271A1C521E1}</ProjectGuid>

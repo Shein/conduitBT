@@ -23,6 +23,9 @@
 typedef const char			cchar;
 typedef const wchar_t		wchar;
 typedef unsigned char		byte;
+typedef unsigned long long	int64;
+typedef int					int32;
+typedef short				int16;
 typedef unsigned long long	uint64;
 typedef unsigned			uint32;
 typedef unsigned short		uint16;
@@ -80,7 +83,9 @@ typedef unsigned short		uint16;
 #endif
 
 #define VERIFY_f(x)     VERIFY(x,false)
-#define ASSERT_f(x)     ASSERT(x,false)
+#define VERIFY_0(x)     VERIFY(x,0)
 
+#define ASSERT_f(x)     ASSERT(x,false)
+#define ASSERT_0(x)     ASSERT(x,0)
 
 #endif // _DEF_H

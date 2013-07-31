@@ -9,6 +9,7 @@
 #include "DialAppType.h"
 #include "InHandType.h"
 #include "smBase.h"
+#include "smTimer.h"
 #include "InHand.h"
 #include "ScoApp.h"
 #include "CallInfo.h"
@@ -62,6 +63,13 @@ class HfpSm: public SMT<HfpSm>
     DECL_STATES (STATE_LIST_HFPSM)
 
   public:
+	enum {
+		// Timeouts in milliseconds
+		TIMEOUT_CONNECTION_POLLING	= 5000,
+		TIMEOUT_HFP_NEGOTIATION		=  500,
+	};
+
+  public:
 	static void Init(DialAppCb cb);
 	static void End();
 
@@ -69,26 +77,23 @@ class HfpSm: public SMT<HfpSm>
 	static HfpSmCb   UserCallback;
 
   public:
-	HfpSm() : SMT<HfpSm>("HfpSm  "), ScoAppObj(0), CurDevice(0) {};
+	HfpSm(): SMT<HfpSm>("HfpSm  "), MyTimer(SM_HFP, SMEV_Timeout), ScoAppObj(0), CurDevice(0) {};
 
 	void Construct();
 	void Destruct();
 
   public:
+	SmTimer		MyTimer;
 	ScoApp*		ScoAppObj;
 	InHandDev*	CurDevice;
 	bool		HeadsetOn;
+	int			AtResponsesCnt;
+	int			AtResponsesNum;
 
   public:
 	static void PutEvent_Failure ()
 	{
 		SMEVENT Event = {SM_HFP, SMEV_Failure};
-		SmBase::PutEvent (&Event, SMQ_HIGH);
-	}
-
-	static void PutEvent_ErrorResponce ()
-	{
-		SMEVENT Event = {SM_HFP, SMEV_ErrorResponce};
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
@@ -166,15 +171,23 @@ class HfpSm: public SMT<HfpSm>
 	static void PutEvent_Answer (bool headset = false)
 	{
 		SMEVENT Event = {SM_HFP, SMEV_Answer};
-		Event.Param.HeadsetOn  = headset;
+		Event.Param.HeadsetOn = headset;
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
-	static void PutEvent_CallSetup (SMEV_CALLSETUP stage)
+	static void PutEvent_AtResponse (SMEV_ATRESPONSE resp)
 	{
-		SMEVENT Event = {SM_HFP, SMEV_CallSetup};
-		Event.Param.CallSetupStage = stage;
+		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
+		Event.Param.AtResponse = resp;
 		SmBase::PutEvent (&Event, SMQ_HIGH);
+	}
+
+	static void PutEvent_CallIdentity (wchar* dialinfo)
+	{
+		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
+		Event.Param.AtResponse	= SMEV_AtResponse_CallIdentity;
+		Event.Param.Abonent		= new (dialinfo) CallInfo<wchar>(dialinfo);
+		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
 	static void PutEvent_IncomingCall ()
@@ -189,13 +202,15 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
-	static void PutEvent_AbonentInfo (wchar* dialinfo)
+	static void PutEvent_SendDtmf (cchar dialinfo)
 	{
-		SMEVENT Event = {SM_HFP, SMEV_AbonentInfo};
-		Event.Param.Abonent = new (dialinfo) CallInfo<wchar>(dialinfo);
+		SMEVENT Event = {SM_HFP, SMEV_SendDtmf};
+		Event.Param.dtmf = dialinfo;
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
+	
+  // Transitions
   private:
 	bool ForgetDevice		  (SMEVENT* ev, int param);
 	bool SelectDevice		  (SMEVENT* ev, int param);
@@ -204,6 +219,7 @@ class HfpSm: public SMT<HfpSm>
 	bool Connected			  (SMEVENT* ev, int param);
 	bool HfpConnect			  (SMEVENT* ev, int param);
 	bool HfpConnected		  (SMEVENT* ev, int param);
+	bool AtProcessing		  (SMEVENT* ev, int param);
 	bool IncorrectState4Call  (SMEVENT* ev, int param);
 	bool OutgoingCall		  (SMEVENT* ev, int param);
 	bool StartCall			  (SMEVENT* ev, int param);
@@ -214,9 +230,14 @@ class HfpSm: public SMT<HfpSm>
 	bool ServiceConnectFailure(SMEVENT* ev, int param);
 	bool CallFailure		  (SMEVENT* ev, int param);
 	bool EndCallVoiceFailure  (SMEVENT* ev, int param);
-	bool AbonentInfo		  (SMEVENT* ev, int param);
 	bool Ringing			  (SMEVENT* ev, int param);
 	bool RingingCallSetup	  (SMEVENT* ev, int param);
+	bool SendDtmf			  (SMEVENT* ev, int param);
+
+  // Choices
+  private:
+	int  GetVoiceState1		  (SMEVENT* ev);
+	int  GetVoiceState2		  (SMEVENT* ev);
 };
 
 

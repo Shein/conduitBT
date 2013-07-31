@@ -109,6 +109,18 @@ namespace DialAppGui {
 		void btnConnect_Click(Object ^sender, EventArgs ^e);
 		void btnDisconnect_Click(Object ^sender, EventArgs ^e);
 		void chboxAutoServCon_Click(System::Object^  sender, System::EventArgs^ e);
+		void btn1_Click(Object ^sender, EventArgs ^e);
+		void btn2_Click(Object ^sender, EventArgs ^e);
+		void btn3_Click(Object ^sender, EventArgs ^e);
+		void btn4_Click(Object ^sender, EventArgs ^e);
+		void btn5_Click(Object ^sender, EventArgs ^e);
+		void btn6_Click(Object ^sender, EventArgs ^e);
+		void btn7_Click(Object ^sender, EventArgs ^e);
+		void btn8_Click(Object ^sender, EventArgs ^e);
+		void btn9_Click(Object ^sender, EventArgs ^e);
+		void button_diez_Click(Object ^sender, EventArgs ^e);
+		void button_zero_Click(Object ^sender, EventArgs ^e);
+		void button_star_Click(Object ^sender, EventArgs ^e);
 		
 		// String^ utilities
 		static cchar* String2Pchar (String ^str) { return (cchar*) Marshal::StringToHGlobalAnsi(str).ToPointer(); }
@@ -138,6 +150,18 @@ namespace DialAppGui {
 		private: System::Windows::Forms::CheckBox^ chboxAutoServCon;
 		private: System::Windows::Forms::CheckBox^ chboxAutoHeadset;
 
+		private: System::Windows::Forms::Button^  button1;
+		private: System::Windows::Forms::Button^  button2;
+		private: System::Windows::Forms::Button^  button3;
+		private: System::Windows::Forms::Button^  button4;
+		private: System::Windows::Forms::Button^  button5;
+		private: System::Windows::Forms::Button^  button6;
+		private: System::Windows::Forms::Button^  button7;
+		private: System::Windows::Forms::Button^  button8;
+		private: System::Windows::Forms::Button^  button9;
+		private: System::Windows::Forms::Button^  button_diez;
+		private: System::Windows::Forms::Button^  button_zero;
+		private: System::Windows::Forms::Button^  button_star;
 
 	private:
 		/// <summary>
@@ -172,6 +196,18 @@ namespace DialAppGui {
 			this->eboxDevice = (gcnew System::Windows::Forms::TextBox());
 			this->btnForgetDevice = (gcnew System::Windows::Forms::Button());
 			this->btnAnswer = (gcnew System::Windows::Forms::Button());
+			this->button1 = (gcnew System::Windows::Forms::Button());
+			this->button2 = (gcnew System::Windows::Forms::Button());
+			this->button3 = (gcnew System::Windows::Forms::Button());
+			this->button4 = (gcnew System::Windows::Forms::Button());
+			this->button5 = (gcnew System::Windows::Forms::Button());
+			this->button6 = (gcnew System::Windows::Forms::Button());
+			this->button7 = (gcnew System::Windows::Forms::Button());
+			this->button8 = (gcnew System::Windows::Forms::Button());
+			this->button9 = (gcnew System::Windows::Forms::Button());
+			this->button_diez = (gcnew System::Windows::Forms::Button());
+			this->button_zero = (gcnew System::Windows::Forms::Button());
+			this->button_star = (gcnew System::Windows::Forms::Button());
 			this->SuspendLayout();
 			// 
 			// label1
@@ -202,9 +238,9 @@ namespace DialAppGui {
 			// 
 			this->label3->BackColor = System::Drawing::Color::Transparent;
 			this->label3->ForeColor = System::Drawing::Color::Black;
-			this->label3->Location = System::Drawing::Point(17, 212);
+			this->label3->Location = System::Drawing::Point(17, 249);
 			this->label3->Name = L"label3";
-			this->label3->Size = System::Drawing::Size(104, 18);
+			this->label3->Size = System::Drawing::Size(104, 15);
 			this->label3->TabIndex = 14;
 			this->label3->Text = L"Log";
 			// 
@@ -223,7 +259,7 @@ namespace DialAppGui {
 			// 
 			this->btnClear->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 6.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(204)));
-			this->btnClear->Location = System::Drawing::Point(549, 204);
+			this->btnClear->Location = System::Drawing::Point(539, 241);
 			this->btnClear->Name = L"btnClear";
 			this->btnClear->Size = System::Drawing::Size(44, 23);
 			this->btnClear->TabIndex = 5;
@@ -284,7 +320,7 @@ namespace DialAppGui {
 				static_cast<System::Byte>(204)));
 			this->labelState->Location = System::Drawing::Point(67, 173);
 			this->labelState->Name = L"labelState";
-			this->labelState->Size = System::Drawing::Size(378, 26);
+			this->labelState->Size = System::Drawing::Size(219, 26);
 			this->labelState->TabIndex = 16;
 			this->labelState->Text = L"IdleNoDevice";
 			// 
@@ -295,11 +331,11 @@ namespace DialAppGui {
 				| System::Windows::Forms::AnchorStyles::Right));
 			this->tboxLog->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(204)));
-			this->tboxLog->Location = System::Drawing::Point(12, 233);
+			this->tboxLog->Location = System::Drawing::Point(12, 276);
 			this->tboxLog->Multiline = true;
 			this->tboxLog->Name = L"tboxLog";
 			this->tboxLog->ScrollBars = System::Windows::Forms::ScrollBars::Both;
-			this->tboxLog->Size = System::Drawing::Size(581, 251);
+			this->tboxLog->Size = System::Drawing::Size(581, 306);
 			this->tboxLog->TabIndex = 19;
 			// 
 			// btnHeadset
@@ -322,6 +358,7 @@ namespace DialAppGui {
 			this->chboxAutoServCon->TabIndex = 20;
 			this->chboxAutoServCon->Text = L"Auto Service Level Connection setup";
 			this->chboxAutoServCon->UseVisualStyleBackColor = true;
+			this->chboxAutoServCon->Visible = false;
 			this->chboxAutoServCon->Click += gcnew System::EventHandler(this, &DialForm::chboxAutoServCon_Click);
 			// 
 			// btnServCon
@@ -383,11 +420,143 @@ namespace DialAppGui {
 			this->btnAnswer->Text = L"&Answer";
 			this->btnAnswer->Click += gcnew System::EventHandler(this, &DialForm::btnAnswer_Click);
 			// 
+			// button1
+			// 
+			this->button1->Location = System::Drawing::Point(292, 219);
+			this->button1->Name = L"button1";
+			this->button1->Size = System::Drawing::Size(27, 23);
+			this->button1->TabIndex = 23;
+			this->button1->Text = L"1";
+			this->button1->UseVisualStyleBackColor = true;
+			this->button1->Click += gcnew System::EventHandler(this, &DialForm::btn1_Click);
+			// 
+			// button2
+			// 
+			this->button2->Location = System::Drawing::Point(320, 219);
+			this->button2->Name = L"button2";
+			this->button2->Size = System::Drawing::Size(27, 23);
+			this->button2->TabIndex = 24;
+			this->button2->Text = L"2";
+			this->button2->UseVisualStyleBackColor = true;
+			this->button2->Click += gcnew System::EventHandler(this, &DialForm::btn2_Click);
+			// 
+			// button3
+			// 
+			this->button3->Location = System::Drawing::Point(348, 219);
+			this->button3->Name = L"button3";
+			this->button3->Size = System::Drawing::Size(27, 23);
+			this->button3->TabIndex = 25;
+			this->button3->Text = L"3";
+			this->button3->UseVisualStyleBackColor = true;
+			this->button3->Click += gcnew System::EventHandler(this, &DialForm::btn3_Click);
+			// 
+			// button4
+			// 
+			this->button4->Location = System::Drawing::Point(292, 193);
+			this->button4->Name = L"button4";
+			this->button4->Size = System::Drawing::Size(27, 23);
+			this->button4->TabIndex = 28;
+			this->button4->Text = L"4";
+			this->button4->UseVisualStyleBackColor = true;
+			this->button4->Click += gcnew System::EventHandler(this, &DialForm::btn4_Click);
+			// 
+			// button5
+			// 
+			this->button5->Location = System::Drawing::Point(320, 193);
+			this->button5->Name = L"button5";
+			this->button5->Size = System::Drawing::Size(27, 23);
+			this->button5->TabIndex = 27;
+			this->button5->Text = L"5";
+			this->button5->UseVisualStyleBackColor = true;
+			this->button5->Click += gcnew System::EventHandler(this, &DialForm::btn5_Click);
+			// 
+			// button6
+			// 
+			this->button6->Location = System::Drawing::Point(348, 193);
+			this->button6->Name = L"button6";
+			this->button6->Size = System::Drawing::Size(27, 23);
+			this->button6->TabIndex = 26;
+			this->button6->Text = L"6";
+			this->button6->UseVisualStyleBackColor = true;
+			this->button6->Click += gcnew System::EventHandler(this, &DialForm::btn6_Click);
+			// 
+			// button7
+			// 
+			this->button7->Location = System::Drawing::Point(292, 168);
+			this->button7->Name = L"button7";
+			this->button7->Size = System::Drawing::Size(27, 23);
+			this->button7->TabIndex = 31;
+			this->button7->Text = L"7";
+			this->button7->UseVisualStyleBackColor = true;
+			this->button7->Click += gcnew System::EventHandler(this, &DialForm::btn7_Click);
+			// 
+			// button8
+			// 
+			this->button8->Location = System::Drawing::Point(320, 168);
+			this->button8->Name = L"button8";
+			this->button8->Size = System::Drawing::Size(27, 23);
+			this->button8->TabIndex = 30;
+			this->button8->Text = L"8";
+			this->button8->UseVisualStyleBackColor = true;
+			this->button8->Click += gcnew System::EventHandler(this, &DialForm::btn8_Click);
+			// 
+			// button9
+			// 
+			this->button9->Location = System::Drawing::Point(348, 168);
+			this->button9->Name = L"button9";
+			this->button9->Size = System::Drawing::Size(27, 23);
+			this->button9->TabIndex = 29;
+			this->button9->Text = L"9";
+			this->button9->UseVisualStyleBackColor = true;
+			this->button9->Click += gcnew System::EventHandler(this, &DialForm::btn9_Click);
+			// 
+			// button_diez
+			// 
+			this->button_diez->Location = System::Drawing::Point(348, 244);
+			this->button_diez->Name = L"button_diez";
+			this->button_diez->Size = System::Drawing::Size(27, 23);
+			this->button_diez->TabIndex = 34;
+			this->button_diez->Text = L"#";
+			this->button_diez->UseVisualStyleBackColor = true;
+			this->button_diez->Click += gcnew System::EventHandler(this, &DialForm::button_diez_Click);
+			// 
+			// button_zero
+			// 
+			this->button_zero->Location = System::Drawing::Point(320, 244);
+			this->button_zero->Name = L"button_zero";
+			this->button_zero->Size = System::Drawing::Size(27, 23);
+			this->button_zero->TabIndex = 33;
+			this->button_zero->Text = L"0";
+			this->button_zero->UseVisualStyleBackColor = true;
+			this->button_zero->Click += gcnew System::EventHandler(this, &DialForm::button_zero_Click);
+			// 
+			// button_star
+			// 
+			this->button_star->Location = System::Drawing::Point(292, 244);
+			this->button_star->Name = L"button_star";
+			this->button_star->Size = System::Drawing::Size(27, 23);
+			this->button_star->TabIndex = 32;
+			this->button_star->Text = L"*";
+			this->button_star->UseVisualStyleBackColor = true;
+			this->button_star->Click += gcnew System::EventHandler(this, &DialForm::button_star_Click);
+			// 
 			// DialForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(605, 496);
+			this->ClientSize = System::Drawing::Size(605, 594);
+			this->Controls->Add(this->button_diez);
+			this->Controls->Add(this->button_zero);
+			this->Controls->Add(this->button_star);
+			this->Controls->Add(this->button7);
+			this->Controls->Add(this->button8);
+			this->Controls->Add(this->button9);
+			this->Controls->Add(this->button4);
+			this->Controls->Add(this->button5);
+			this->Controls->Add(this->button6);
+			this->Controls->Add(this->button3);
+			this->Controls->Add(this->button2);
+			this->Controls->Add(this->button1);
 			this->Controls->Add(this->chboxAutoHeadset);
 			this->Controls->Add(this->btnServCon);
 			this->Controls->Add(this->chboxAutoServCon);

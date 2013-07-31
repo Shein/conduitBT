@@ -191,6 +191,64 @@ void DialForm::btnEndCall_Click(Object ^sender, EventArgs ^e)
 }
 
 
+void DialForm::btn1_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('1');
+}
+
+void DialForm::btn2_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('2');
+}
+
+void DialForm::btn3_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('3');
+}
+
+void DialForm::btn4_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('4');
+}
+
+void DialForm::btn5_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('5');
+}
+
+void DialForm::btn6_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('6');
+}
+
+void DialForm::btn7_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('7');
+}
+
+void DialForm::btn8_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('8');
+}
+
+void DialForm::btn9_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('9');
+}
+
+void DialForm::button_diez_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('#');
+}
+
+void DialForm::button_zero_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('0');
+}
+void DialForm::button_star_Click(Object ^sender, EventArgs ^e)
+{
+	dialappSendDtmf('*');
+}
 
 int Main ()
 {

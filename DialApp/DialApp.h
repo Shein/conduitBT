@@ -28,7 +28,6 @@ enum DialAppDebug
 
 
 
-
 /********************************************************************************************\
 		Public Functions (some functions throw exceptions of int type = DialAppError enum)
 \********************************************************************************************/
@@ -63,8 +62,8 @@ void  dialappEnd ();
  Exceptions: 
     throw int exception if an error happened.
  Callback:
-	After the normal completion the DialAppCb will be called with 
-	state = DialAppState_DisconnectedDevicePresent, and correspondent bluetooth 
+	After the normal completion, the DialAppCb will be called with 
+	state = DialAppState_DisconnectedDevicePresent, and the correspondent bluetooth 
 	device parameters set (see DialAppParam).
  *************************************************************************************
  */
@@ -78,7 +77,7 @@ void  dialappUiSelectDevice	();
  Exceptions: 
     No exceptions.
  Callback:
-	After the normal completion the DialAppCb will be called with 
+	After the normal completion, the DialAppCb will be called with 
 	state = DialAppState_IdleNoDevice
  *************************************************************************************
  */

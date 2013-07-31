@@ -26,11 +26,11 @@ class InHand
 	static InHandDev* FindDevice (uint64 address, bool rescan = false);
 
 	static void BeginConnect	(uint64 devaddr);
-	static void BeginHfpConnect	();
+	static int  BeginHfpConnect	();
 	static void Disconnect		();
 	static void StartCall		(cchar* dialnumber);
+	static void SendDtmf		(cchar* dialchar);
 	static void Answer			();
-	static void SendDtmf		(cchar dialchar);
 	static void EndCall			();
 
   public:

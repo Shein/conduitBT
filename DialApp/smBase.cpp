@@ -23,6 +23,11 @@ SM*		SmBase::SmGlobalArray [SMID_NUMS];
 FIFO_ALLOC <SMEVENT,SmBase::SM_HQUEUE_SIZE>  SmBase::QueueHigh;
 FIFO_ALLOC <SMEVENT,SmBase::SM_LQUEUE_SIZE>  SmBase::QueueLow;
 
+#ifdef SMBASE_CHOICES
+SMCHOICE  SM::ChoiceBuffer[SMBASE_CHOICES];
+int		  SM::ChoiceNextIdx;
+#endif
+
 
 /***********************************************************************************************\
 										SM functions
@@ -30,12 +35,13 @@ FIFO_ALLOC <SMEVENT,SmBase::SM_LQUEUE_SIZE>  SmBase::QueueLow;
 
 bool SM::Execute (SMEVENT *pEv)
 {
-    TEVSTATE    *pEvState;
-    UINT32       StatParam;
+    SMEVSTATE   *pEvState;
+    int			 StatParam;
     int          iStateEnd;
 	// Workaround for C2440 error:
 	union {
-		FTRANSITION  Func;
+		FTRANSITION  FuncTran;
+		FCHOICE		 FuncChoice;
 		void*		 NullTrans;
 	} F;
 
@@ -45,26 +51,27 @@ bool SM::Execute (SMEVENT *pEv)
     //prnEventPrint (pEv);
 
     pEvState = & aStates[State][pEv->Ev];
-    F.Func   = pEvState->Func;
+    F.FuncTran   = pEvState->FuncTran;
 
-    if (F.Func) 
+    if (F.FuncTran) 
     {
-        if (pEvState->State_end == CHOICE)
+        if (pEvState->State_end == STATE_CHOICE)
         {
-            TCHOICE *aChoice = (TCHOICE*) pEvState->StatParam;
-            int ind = (this->*F.Func)(pEv,(int)aChoice);
+            int ind = (this->*F.FuncChoice)(pEv);
 
-            F.Func = aChoice[ind].Func;
-            iStateEnd = aChoice[ind].State_end;
-            StatParam = aChoice[ind].StatParam;
+            SMCHOICE *aChoice = (SMCHOICE*) pEvState->StatParam;
+
+            F.FuncTran = aChoice[ind].FuncTran;
+            iStateEnd  = aChoice[ind].State_end;
+            StatParam  = aChoice[ind].StatParam;
         }
         else {
-            iStateEnd = pEvState->State_end;
-            StatParam = pEvState->StatParam;
+            iStateEnd  = pEvState->State_end;
+            StatParam  = (int) pEvState->StatParam;
         }
 
         if (F.NullTrans != NULLTRANS) {
-            if (!(this->*F.Func)(pEv,StatParam))
+            if (!(this->*F.FuncTran)(pEv,StatParam))
                 LogMsg ("ERROR: SM::Execute: pSm = %X, TRANSITION FAILED\n", this);
         }
         State_prev = State;
