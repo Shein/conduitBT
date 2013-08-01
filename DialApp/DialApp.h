@@ -207,6 +207,38 @@ void  dialappPcSound (bool pcsound) throw();
  */
 void dialappSendDtmf (cchar dialchar) throw();
 
+/*
+ *************************************************************************************
+ Put current call on hold, to answer another.
+ Note: 
+	This function may be called when the State Machine is in 
+	DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn states only.
+ Parameters:
+	TBD
+ Exceptions: 
+    TBD
+ Callback:
+	TBD
+ *************************************************************************************
+ */
+void dialappPutOnHold() throw();
+
+
+/*
+ *************************************************************************************
+ Activate held call.
+ Note: 
+	This function may be called when the State Machine is in 
+	DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn states only.
+ Parameters:
+	int callid - to be received from the AG:   AT+CIEV:< CallHeld Indicator >,2
+ Exceptions: 
+    TBD
+ Callback:
+	TBD
+ *************************************************************************************
+ */
+void dialappActivateHeldCall(int callid) throw();
 
 /*
  *************************************************************************************
