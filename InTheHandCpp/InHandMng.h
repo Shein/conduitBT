@@ -47,11 +47,14 @@ public ref class InHandMng
 	static void SendDtmf (String^ dialchar);
 	static void Answer ();
 	static void EndCall ();
+	static void PutOnHold();
+	static void ActivateHeldCall(int callID);
+	static void SendAtCommand (String ^at);
 
   protected:
 	static void AddSdp(Guid svc);
 	static void ProcessIoException (IOException ^ex);
-	static void SendAtCommand (String ^at);
+	
 	static void RecvAtCommand (array<Char> ^buf, int len);
 	static void ConnectCallback (IAsyncResult ^ar);
 	static void ReceiveThreadFn (Object ^state);
@@ -370,6 +373,7 @@ void InHandMng::SendDtmf(String^ dialchar)
 }
 
 
+
 void InHandMng::Answer()
 {
 	try	{
@@ -389,8 +393,8 @@ void InHandMng::Answer()
 void InHandMng::EndCall()
 {
 	try	{
-		SendAtCommand("AT+CHUP");
-		SendAtCommand("ATH");
+		SendAtCommand("AT+CHUP"); // terminating a ongoing single call or a held call.
+		//SendAtCommand("ATH");
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
@@ -400,4 +404,33 @@ void InHandMng::EndCall()
 		LogMsg(ex->Message);
 		HfpSm::PutEvent_Failure();
 	}
+}
+
+/*
+AT+CHLD=? +CHLD: (list of supported <n>s)
+AT+CHLD=[<n>]
+<n>: (integer type)
+0 releases all held calls or sets User Determined User Busy (UDUB) for a
+waiting call
+1 releases all active calls (if any exist) and accepts the other (held or waiting)
+call
+1x releases a specific active call X
+2 places all active calls (if any exist) on hold and accepts the other (held or
+waiting) call
+2x places all active calls on hold except call X with which communication shall
+be supported
+3 adds a held call to the conversation
+4 connects the two calls and disconnects the subscriber from both calls
+(ECT)
+*/
+void InHandMng::PutOnHold()
+{	
+	SendAtCommand("AT+CHLD=2;");
+	SendAtCommand("AT+CLCC");
+}
+
+void InHandMng::ActivateHeldCall(int callID)
+{
+	// Oleg TODO
+	LogMsg("Not Yet Implemented");
 }

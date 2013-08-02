@@ -183,19 +183,33 @@ void dialappCall (cchar* dialnumber, bool pcsound)
 
 void dialappAnswer (bool pcsound)
 {
-	HfpSm::PutEvent_Answer(pcsound);
+		HfpSm::PutEvent_Answer(pcsound);		
 }
-
 
 void dialappSendDtmf(cchar dialchar)
 {
 	HfpSm::PutEvent_SendDtmf(dialchar);
 }
 
+void dialappPutOnHold()
+{
+	HfpSm::PutEvent_PutOnHold();
+}
 
-void dialappEndCall ()
+
+void dialappActivateHeldCall(int callid)
+{
+
+}
+
+void dialappEndCall (int callID)
 {
 	HfpSm::PutEvent_EndCall();
+}
+
+void dialappSendAT(char* at)
+{
+	InHand::SendAtCommand(at);
 }
 
 

@@ -28,6 +28,7 @@ enum DialAppDebug
 
 
 
+
 /********************************************************************************************\
 		Public Functions (some functions throw exceptions of int type = DialAppError enum)
 \********************************************************************************************/
@@ -181,7 +182,7 @@ void  dialappAnswer () throw();
 	otherwise the callback will report about errors.
  *************************************************************************************
  */
-void  dialappEndCall () throw();
+void  dialappEndCall (int callID = 0) throw();
 
 
 /*
@@ -243,7 +244,7 @@ void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
  Exceptions: 
     TBD
  Callback:
-	TBD
+	Returns CallID, in DialAppParam (3rd param). The field param - TBD
  *************************************************************************************
  */
 void dialappPutOnHold() throw();
@@ -264,5 +265,9 @@ void dialappPutOnHold() throw();
  *************************************************************************************
  */
 void dialappActivateHeldCall(int callid) throw();
+
+
+void dialappSendAT(char *at);
+
 
 #endif // _DIALAPP_H

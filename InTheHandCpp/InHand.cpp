@@ -86,3 +86,21 @@ void InHand::EndCall()
 {
 	InHandMng::EndCall();
 }
+
+
+
+void InHand::PutOnHold()
+{
+	InHandMng::PutOnHold();
+}
+
+void InHand::ActivateOnHoldCall(int callID)
+{
+	InHandMng::ActivateHeldCall(callID);
+}
+
+void InHand::SendAtCommand( char* at )
+{
+	String^ clistr = gcnew String(at);
+	InHandMng::SendAtCommand(clistr);
+}

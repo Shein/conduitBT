@@ -20,6 +20,8 @@ namespace DialAppGui {
 	{
 	public:
 		static RegistryOpers^	Registry = gcnew RegistryOpers("Conduit\\HfpDialApp");
+	private: System::Windows::Forms::Button^  button_Hold;
+	public: 
 		static DialForm^		This;
 
 	public:
@@ -121,7 +123,8 @@ namespace DialAppGui {
 		void button_diez_Click(Object ^sender, EventArgs ^e);
 		void button_zero_Click(Object ^sender, EventArgs ^e);
 		void button_star_Click(Object ^sender, EventArgs ^e);
-		
+		void button_SendAT_Click(Object ^sender, EventArgs ^e);
+		void button_Hold_Click(Object ^sender, EventArgs ^e);
 		// String^ utilities
 		static cchar* String2Pchar (String ^str) { return (cchar*) Marshal::StringToHGlobalAnsi(str).ToPointer(); }
 		static void   FreePchar	(cchar *str)	 { Marshal::FreeHGlobal((IntPtr)((void*)str)); }
@@ -162,6 +165,8 @@ namespace DialAppGui {
 		private: System::Windows::Forms::Button^  button_diez;
 		private: System::Windows::Forms::Button^  button_zero;
 		private: System::Windows::Forms::Button^  button_star;
+		private: System::Windows::Forms::TextBox^  textBox_AT_command;
+		private: System::Windows::Forms::Button^  button_SendAT;
 
 	private:
 		/// <summary>
@@ -208,6 +213,9 @@ namespace DialAppGui {
 			this->button_diez = (gcnew System::Windows::Forms::Button());
 			this->button_zero = (gcnew System::Windows::Forms::Button());
 			this->button_star = (gcnew System::Windows::Forms::Button());
+			this->textBox_AT_command = (gcnew System::Windows::Forms::TextBox());
+			this->button_SendAT = (gcnew System::Windows::Forms::Button());
+			this->button_Hold = (gcnew System::Windows::Forms::Button());
 			this->SuspendLayout();
 			// 
 			// label1
@@ -292,7 +300,7 @@ namespace DialAppGui {
 			this->eboxDialNumber->Name = L"eboxDialNumber";
 			this->eboxDialNumber->Size = System::Drawing::Size(216, 24);
 			this->eboxDialNumber->TabIndex = 2;
-			this->eboxDialNumber->Text = L"036598218";
+			this->eboxDialNumber->Text = L"1-800-335-166";
 			// 
 			// btnDisconnect
 			// 
@@ -540,11 +548,43 @@ namespace DialAppGui {
 			this->button_star->UseVisualStyleBackColor = true;
 			this->button_star->Click += gcnew System::EventHandler(this, &DialForm::button_star_Click);
 			// 
+			// textBox_AT_command
+			// 
+			this->textBox_AT_command->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 11.25F, System::Drawing::FontStyle::Regular, 
+				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(204)));
+			this->textBox_AT_command->Location = System::Drawing::Point(396, 156);
+			this->textBox_AT_command->Name = L"textBox_AT_command";
+			this->textBox_AT_command->Size = System::Drawing::Size(187, 24);
+			this->textBox_AT_command->TabIndex = 38;
+			// 
+			// button_SendAT
+			// 
+			this->button_SendAT->Location = System::Drawing::Point(508, 186);
+			this->button_SendAT->Name = L"button_SendAT";
+			this->button_SendAT->Size = System::Drawing::Size(75, 23);
+			this->button_SendAT->TabIndex = 39;
+			this->button_SendAT->Text = L"Send AT";
+			this->button_SendAT->UseVisualStyleBackColor = true;
+			this->button_SendAT->Click += gcnew System::EventHandler(this, &DialForm::button_SendAT_Click);
+			// 
+			// button_Hold
+			// 
+			this->button_Hold->Location = System::Drawing::Point(471, 94);
+			this->button_Hold->Name = L"button_Hold";
+			this->button_Hold->Size = System::Drawing::Size(75, 23);
+			this->button_Hold->TabIndex = 40;
+			this->button_Hold->Text = L"Hold/Switch";
+			this->button_Hold->UseVisualStyleBackColor = true;
+			this->button_Hold->Click += gcnew System::EventHandler(this, &DialForm::button_Hold_Click);
+			// 
 			// DialForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(605, 594);
+			this->Controls->Add(this->button_Hold);
+			this->Controls->Add(this->button_SendAT);
+			this->Controls->Add(this->textBox_AT_command);
 			this->Controls->Add(this->button_diez);
 			this->Controls->Add(this->button_zero);
 			this->Controls->Add(this->button_star);
@@ -586,5 +626,5 @@ namespace DialAppGui {
 
 		}
 #pragma endregion
-	};
+};
 }

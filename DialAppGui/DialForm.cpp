@@ -250,6 +250,18 @@ void DialForm::button_star_Click(Object ^sender, EventArgs ^e)
 	dialappSendDtmf('*');
 }
 
+void DialForm::button_SendAT_Click(Object ^sender, EventArgs ^e)
+{
+	char* str = (char*)(void*)Marshal::StringToHGlobalAnsi(textBox_AT_command->Text);
+	dialappSendAT(str);
+}
+
+void DialForm::button_Hold_Click(Object ^sender, EventArgs ^e)
+{
+	dialappPutOnHold();
+}
+
+
 int Main ()
 {
 	// Enable visual styles and run the form

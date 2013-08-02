@@ -114,6 +114,9 @@ void HfpSm::Init (DialAppCb cb)
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_HeadsetOff,				STATE_InCallHeadsetOff,	&ToHeadsetOff);
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_AtResponse,				STATE_InCallHeadsetOn,	&AtProcessing);
 	InitStateNode (STATE_InCallHeadsetOn,	SMEV_SendDtmf,					STATE_InCallHeadsetOn,	&SendDtmf);
+	InitStateNode (STATE_InCallHeadsetOn,	SMEV_PutOnHold,					STATE_InCallHeadsetOn,	&PutOnHold);
+	InitStateNode (STATE_InCallHeadsetOn,	SMEV_IncomingCall,				STATE_InCallHeadsetOn,	&PutOnHold);
+	
     /*--------------------------------------------------------------------------------------------------*/
 
     /*---------------------------------- STATE: InCallHeadsetOff  --------------------------------------*/
@@ -122,6 +125,8 @@ void HfpSm::Init (DialAppCb cb)
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_HeadsetOn,					STATE_InCallHeadsetOn,	&ToHeadsetOn);
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_AtResponse,				STATE_InCallHeadsetOff,	&AtProcessing);
 	InitStateNode (STATE_InCallHeadsetOff,	SMEV_SendDtmf,					STATE_InCallHeadsetOff,	&SendDtmf);
+	InitStateNode (STATE_InCallHeadsetOff,	SMEV_PutOnHold,					STATE_InCallHeadsetOff,	&PutOnHold);
+	InitStateNode (STATE_InCallHeadsetOff,	SMEV_IncomingCall,				STATE_InCallHeadsetOff,	&PutOnHold);
     /*--------------------------------------------------------------------------------------------------*/
 
 	UserCallback.Construct (cb);
@@ -403,6 +408,17 @@ bool HfpSm::SendDtmf(SMEVENT* ev, int param)
 	return true;
 }
 
+bool HfpSm::PutOnHold(SMEVENT* ev, int param)
+{
+	InHand::PutOnHold();
+	return true;
+}
+
+bool HfpSm::ActivateOnHoldCall(SMEVENT* ev, int param)
+{
+	InHand::ActivateOnHoldCall(param);
+	return true;
+}
 
 /********************************************************************************\
 								SM CHOICES

@@ -14,7 +14,6 @@
     <ClInclude Include="smBase.h" />
     <ClInclude Include="smBody.h" />
     <ClInclude Include="smId.h" />
-    <ClInclude Include="smTimer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="DialApp.def" />
