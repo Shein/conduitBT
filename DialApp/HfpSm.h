@@ -209,7 +209,12 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
-	
+
+  // Help functions
+  private:
+	void StartVoice	();
+	void StopVoice	();
+
   // Transitions
   private:
 	bool ForgetDevice		  (SMEVENT* ev, int param);
@@ -224,8 +229,8 @@ class HfpSm: public SMT<HfpSm>
 	bool OutgoingCall		  (SMEVENT* ev, int param);
 	bool StartCall			  (SMEVENT* ev, int param);
 	bool EndCall			  (SMEVENT* ev, int param);
-	bool StartConversation	  (SMEVENT* ev, int param);
-	bool StopConversation	  (SMEVENT* ev, int param);
+	bool ToHeadsetOn		  (SMEVENT* ev, int param);
+	bool ToHeadsetOff		  (SMEVENT* ev, int param);
 	bool ConnectFailure		  (SMEVENT* ev, int param);
 	bool ServiceConnectFailure(SMEVENT* ev, int param);
 	bool CallFailure		  (SMEVENT* ev, int param);

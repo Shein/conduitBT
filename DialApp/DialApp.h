@@ -37,12 +37,14 @@ enum DialAppDebug
  *************************************************************************************
  Initializes the DialApp application and Bluetooth HFP driver.
  Parameters:
-	cb - callback function pointer (see DialAppCb description)
+	cb		- Callback function pointer (see DialAppCb description).
+	pcsound - boolean flag for PC sound. This is initial state for the desired sound 
+			  device. Further switch is performed via dialappPcSound func.
  Exceptions: 
     throw int exception if an error happened.
  *************************************************************************************
  */
-void  dialappInit (DialAppCb cb);
+void  dialappInit (DialAppCb cb, bool pcsound = true);
 
 
 /*
@@ -68,6 +70,22 @@ void  dialappEnd ();
  *************************************************************************************
  */
 void  dialappUiSelectDevice	();
+
+
+/*
+ *************************************************************************************
+ Get list of paired devices. Caller should copy the devices strings in order to use 
+ in other contexts.
+ Exceptions: 
+    throw int exception if an error happened.
+ Callback:
+	No.
+ Returns:
+	Number of wide-char strings in the 'wchar* devices[]' array
+ *************************************************************************************
+ */
+int dialappGetPairedDevices(wchar** (&devices));
+
 
 
 /*
@@ -119,8 +137,6 @@ int	 dialappGetCurrentState () throw();
  Parameters:
 	dialnumber - pointer to ANSI string dialing number (the string buffer may be 
 				 temporal, the string content will be copied)
-	pcsound    - PC sound = true/false - boolean flag indicating which sound device 
-				 will be activated: PC or Phone sound.
  Exceptions: 
     No exceptions.
  Callback:
@@ -129,7 +145,7 @@ int	 dialappGetCurrentState () throw();
 	DialAppState_InCallPcSoundOn; otherwise the callback will report about errors.
  *************************************************************************************
  */
-void  dialappCall (cchar* dialnumber, bool pcsound = true) throw();
+void  dialappCall (cchar* dialnumber) throw();
 
 
 
@@ -139,9 +155,6 @@ void  dialappCall (cchar* dialnumber, bool pcsound = true) throw();
  Note: 
 	This function may be called when the State Machine is in DialAppState_Ringing
 	state only.
- Parameters:
-	pcsound - PC sound = true/false - boolean flag indicating which sound device 
-			  will be activated: PC or Phone sound.
  Exceptions: 
     No exceptions.
  Callback:
@@ -150,7 +163,7 @@ void  dialappCall (cchar* dialnumber, bool pcsound = true) throw();
 	otherwise the callback will report about errors.
  *************************************************************************************
  */
-void  dialappAnswer (bool pcsound = true) throw();
+void  dialappAnswer () throw();
 
 
 /*
@@ -173,19 +186,15 @@ void  dialappEndCall () throw();
 
 /*
  *************************************************************************************
- Switch sound of the current call to PC or Phone.
- Note: 
-	This function may be called when the State Machine is in 
-	DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn states only.
+ Switch sound of the current or next call(s) to PC or Phone.
  Parameters:
-	pcsound - PC sound = true/false - boolean flag indicating which sound device 
-			  will be activated: PC or Phone sound.
+	pcsound - boolean flag for PC sound. May be chosen when needed .
  Exceptions: 
     No exceptions.
  Callback:
-	If the call will successfully start, the DialAppCb will be called with 
+	If a call exists, the DialAppCb will be called with 
 	state = DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn; 
-	otherwise the callback will report about errors.
+	otherwise this callback will bring a new value in 3d DialAppParam param.
  *************************************************************************************
  */
 void  dialappPcSound (bool pcsound) throw();
@@ -222,5 +231,38 @@ void dialappSendDtmf (cchar dialchar) throw();
  */
 void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
 
+
+/*
+ *************************************************************************************
+ Put current call on hold, to answer another.
+ Note: 
+	This function may be called when the State Machine is in 
+	DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn states only.
+ Parameters:
+	TBD
+ Exceptions: 
+    TBD
+ Callback:
+	TBD
+ *************************************************************************************
+ */
+void dialappPutOnHold() throw();
+
+
+/*
+ *************************************************************************************
+ Activate held call.
+ Note: 
+	This function may be called when the State Machine is in 
+	DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn states only.
+ Parameters:
+	int callid - to be received from the AG:   AT+CIEV:< CallHeld Indicator >,2
+ Exceptions: 
+    TBD
+ Callback:
+	TBD
+ *************************************************************************************
+ */
+void dialappActivateHeldCall(int callid) throw();
 
 #endif // _DIALAPP_H

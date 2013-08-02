@@ -111,7 +111,7 @@ void HfpSm::Init (DialAppCb cb)
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_Failure,					STATE_HfpConnected,		&EndCallVoiceFailure);
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_EndCall,					STATE_HfpConnected,		&EndCall);
-    InitStateNode (STATE_InCallHeadsetOn,	SMEV_HeadsetOff,				STATE_InCallHeadsetOff,	&StopConversation);
+    InitStateNode (STATE_InCallHeadsetOn,	SMEV_HeadsetOff,				STATE_InCallHeadsetOff,	&ToHeadsetOff);
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_AtResponse,				STATE_InCallHeadsetOn,	&AtProcessing);
 	InitStateNode (STATE_InCallHeadsetOn,	SMEV_SendDtmf,					STATE_InCallHeadsetOn,	&SendDtmf);
     /*--------------------------------------------------------------------------------------------------*/
@@ -119,7 +119,7 @@ void HfpSm::Init (DialAppCb cb)
     /*---------------------------------- STATE: InCallHeadsetOff  --------------------------------------*/
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_EndCall,					STATE_HfpConnected,		&EndCall);
-    InitStateNode (STATE_InCallHeadsetOff,	SMEV_HeadsetOn,					STATE_InCallHeadsetOn,	&StartConversation);
+    InitStateNode (STATE_InCallHeadsetOff,	SMEV_HeadsetOn,					STATE_InCallHeadsetOn,	&ToHeadsetOn);
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_AtResponse,				STATE_InCallHeadsetOff,	&AtProcessing);
 	InitStateNode (STATE_InCallHeadsetOff,	SMEV_SendDtmf,					STATE_InCallHeadsetOff,	&SendDtmf);
     /*--------------------------------------------------------------------------------------------------*/
@@ -134,6 +134,41 @@ void HfpSm::End ()
     HfpSmObj.Destruct();
 }
 
+
+/********************************************************************************\
+								SM Help functions
+\********************************************************************************/
+void HfpSm::StartVoice ()
+{
+	LogMsg ("Starting voice...");
+	try
+	{
+		ScoAppObj->OpenSco (CurDevice->Address);
+		ScoAppObj->VoiceStart();
+		HeadsetOn = true;
+	}
+	catch (int err)
+	{
+		LogMsg("EXCEPTION %d", err);
+		HfpSm::PutEvent_Failure2Report();	// if we have an error when starting voice, we should to notice
+	}
+}
+
+
+void HfpSm::StopVoice ()
+{
+	LogMsg ("Stopping voice...");
+	try
+	{
+		ScoAppObj->CloseSco();
+		HeadsetOn = false;
+	}
+	catch (int err)
+	{
+		LogMsg("EXCEPTION %d", err);
+		HfpSm::PutEvent_Failure();	// if we have an error when stopping voice, we should not to notice, it may be the normal case
+	}
+}
 
 	
 /********************************************************************************\
@@ -267,22 +302,25 @@ bool HfpSm::StartCall (SMEVENT* ev, int param)
 	if (ev->Ev == SMEV_Answer)
 		InHand::Answer();
 
-	if (HeadsetOn)
-		StartConversation(ev, param);
-	else
+	if (HeadsetOn) {
+		StartVoice();
+		UserCallback.InCallHeadsetOn();
+	}
+	else {
 		UserCallback.InCallHeadsetOff();
+	}
     return true;
 }
 
 
 bool HfpSm::EndCall (SMEVENT* ev, int param)
 {
-	bool res;
 	LogMsg ("Ending call...");
 	InHand::EndCall();
-	res = (HeadsetOn) ? StopConversation (ev, param) : true;
+	if (HeadsetOn)
+		StopVoice ();
 	UserCallback.CallEnded();
-	return res;
+	return true;
 }
 
 
@@ -297,47 +335,25 @@ bool HfpSm::EndCallVoiceFailure (SMEVENT* ev, int param)
 }
 
 
-bool HfpSm::StartConversation (SMEVENT* ev, int param)
+bool HfpSm::ToHeadsetOn (SMEVENT* ev, int param)
 {
-	LogMsg ("Starting conversation...");
-	try
-	{
-		ScoAppObj->OpenSco (CurDevice->Address);
-		ScoAppObj->VoiceStart();
-		HeadsetOn = true;
-		/*!*/ //UserCallback.InCallHeadsetOn();
-	}
-	catch (int err)
-	{
-		LogMsg("EXCEPTION %d", err);
-		HfpSm::PutEvent_Failure2Report();
-	}
+	StartVoice();
+	UserCallback.InCallHeadsetOn();
     return true;
 }
 
 
-bool HfpSm::StopConversation (SMEVENT* ev, int param)
+bool HfpSm::ToHeadsetOff (SMEVENT* ev, int param)
 {
-	LogMsg ("Stopping conversation...");
-	try
-	{
-		ScoAppObj->CloseSco();
-		HeadsetOn = false;
-		if (ev->Ev == SMEV_HeadsetOff)
-			UserCallback.InCallHeadsetOff();
-	}
-	catch (int err)
-	{
-		LogMsg("EXCEPTION %d", err);
-		HfpSm::PutEvent_Failure();
-	}
+	StopVoice();
+	UserCallback.InCallHeadsetOff();
     return true;
 }
 
 
 bool HfpSm::Ringing (SMEVENT* ev, int param)
 {
-	//StartConversation(ev, param);
+	//StartVoice(ev, param);
 	UserCallback.Ring ();
     return true;
 }
