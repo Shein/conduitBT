@@ -39,7 +39,8 @@
     ENUM_ENTRY (SMEV, EndCall				),	\
     ENUM_ENTRY (SMEV, HeadsetOn				),	\
     ENUM_ENTRY (SMEV, HeadsetOff			),	\
-    ENUM_ENTRY (SMEV, AtResponse			)
+    ENUM_ENTRY (SMEV, AtResponse			),	\
+	ENUM_ENTRY (SMEV, PutOnHold				)
 
 
 

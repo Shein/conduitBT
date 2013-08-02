@@ -102,7 +102,6 @@
     <ClInclude Include="smBase.h" />
     <ClInclude Include="smBody.h" />
     <ClInclude Include="smId.h" />
-    <ClInclude Include="smTimer.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InTheHandCpp\InTheHandCpp.vcxproj">

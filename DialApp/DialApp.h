@@ -28,6 +28,7 @@ enum DialAppDebug
 
 
 
+
 /********************************************************************************************\
 		Public Functions (some functions throw exceptions of int type = DialAppError enum)
 \********************************************************************************************/
@@ -168,7 +169,7 @@ void  dialappAnswer (bool pcsound = true) throw();
 	otherwise the callback will report about errors.
  *************************************************************************************
  */
-void  dialappEndCall () throw();
+void  dialappEndCall (int callID = 0) throw();
 
 
 /*
@@ -207,6 +208,22 @@ void  dialappPcSound (bool pcsound) throw();
  */
 void dialappSendDtmf (cchar dialchar) throw();
 
+
+/*
+ *************************************************************************************
+ Special function used for debug purpose.
+ Parameters:
+	debugtype - debug parameter type (see DialAppDebug).
+	mode	  - new mode or value
+ Exceptions: 
+    No exceptions.
+ Callback:
+	No callback.
+ *************************************************************************************
+ */
+void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
+
+
 /*
  *************************************************************************************
  Put current call on hold, to answer another.
@@ -218,7 +235,7 @@ void dialappSendDtmf (cchar dialchar) throw();
  Exceptions: 
     TBD
  Callback:
-	TBD
+	Returns CallID, in DialAppParam (3rd param). The field param - TBD
  *************************************************************************************
  */
 void dialappPutOnHold() throw();
@@ -240,19 +257,8 @@ void dialappPutOnHold() throw();
  */
 void dialappActivateHeldCall(int callid) throw();
 
-/*
- *************************************************************************************
- Special function used for debug purpose.
- Parameters:
-	debugtype - debug parameter type (see DialAppDebug).
-	mode	  - new mode or value
- Exceptions: 
-    No exceptions.
- Callback:
-	No callback.
- *************************************************************************************
- */
-void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
+
+void dialappSendAT(char *at);
 
 
 #endif // _DIALAPP_H

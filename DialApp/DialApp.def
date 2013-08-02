@@ -12,3 +12,6 @@ EXPORTS
 	dialappPcSound			
 	dialappSendDtmf			
 	dialappDebugMode
+	dialappPutOnHold
+	dialappActivateHeldCall
+	dialappSendAT

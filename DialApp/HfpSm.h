@@ -25,8 +25,7 @@
     STATE (Calling			),		\
     STATE (Ringing			),		\
     STATE (InCallHeadsetOff	),		\
-    STATE (InCallHeadsetOn	)
-
+	STATE (InCallHeadsetOn	)
 
 class HfpSmCb
 {
@@ -209,8 +208,12 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
-	
-  // Transitions
+	static void PutEvent_PutOnHold ()
+	{
+		SMEVENT Event = {SM_HFP, SMEV_PutOnHold};
+		SmBase::PutEvent (&Event, SMQ_LOW);
+	}
+
   private:
 	bool ForgetDevice		  (SMEVENT* ev, int param);
 	bool SelectDevice		  (SMEVENT* ev, int param);
@@ -233,7 +236,9 @@ class HfpSm: public SMT<HfpSm>
 	bool Ringing			  (SMEVENT* ev, int param);
 	bool RingingCallSetup	  (SMEVENT* ev, int param);
 	bool SendDtmf			  (SMEVENT* ev, int param);
-
+	bool PutOnHold			  (SMEVENT* ev, int param);
+	bool ActivateOnHoldCall	  (SMEVENT* ev, int param);
+		
   // Choices
   private:
 	int  GetVoiceState1		  (SMEVENT* ev);

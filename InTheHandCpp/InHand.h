@@ -32,8 +32,11 @@ class InHand
 	static void SendDtmf		(cchar* dialchar);
 	static void Answer			();
 	static void EndCall			();
+	static void ActivateOnHoldCall(int callID);
+	static void SendAtCommand( char* at );
+	static void PutOnHold		();
 
-  public:
+public:
 	static InHandDev  *Devices;
 	static int		   NumDevices;
 	static bool		   EnableHfpAtCommands;
