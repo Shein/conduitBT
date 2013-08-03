@@ -1,3 +1,4 @@
+#include <string.h>
 #include "DialApp.h"
 #include "DialForm.h"
 
@@ -7,7 +8,13 @@ using namespace Microsoft::Win32;
 using namespace DialAppGui;
 
 
-#define DIALAPP_REGKEY_HFP_AT_COMMANDS	"HfpAtCommands"
+//#define DIALAPP_REGKEY_HFP_AT_COMMANDS		"HfpAtCommands"
+#define DIALAPP_REGKEY_LAST_DIAL_NUM			"LastDialNumber"
+#define DIALAPP_REGKEY_LAST_PC_SOUND_FLAG		"LastPcSoundFlag"
+
+char	 dialappLastDialNumber[50];
+bool	 dialappLastPcSoundFlag;
+uint64 * dialappDevicesAddresses;
 
 
 // Error names (should be identical to enum DialAppError)
@@ -53,35 +60,45 @@ cchar* DialAppStateString[] =
 
 
 //C-style callback for DialApp.dll
-void DialAppCbFunc (DialAppState state, DialAppError status, DialAppParam* param)
+void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialAppParam* param)
 {
-	if (status == DialAppError_Ok)
-	{
-		DialForm::This->SetStateName (%System::String(DialAppStateString[state]));
-		switch (state)
-		{
-			case DialAppState_IdleNoDevice:
-				DialForm::This->SetDeviceName ("");
-				break;
-
-			case DialAppState_DisconnectedDevicePresent:
-				DialForm::This->SetDeviceName (%System::String(param->BthName));
-				break;
-
-			case DialAppState_InCallPcSoundOff:
-				DialForm::This->SetHeadsetButtonName("PC Sound On");
-				goto case_abonent;
-			case DialAppState_InCallPcSoundOn:
-				DialForm::This->SetHeadsetButtonName("PC Sound Off");
-				case_abonent:
-				if (param)
-					DialForm::This->AddInfoMessage ("Abonent: '" + %System::String(param->Abonent) + "'");
-				break;
-		}
+	// Show States and Errors
+	if (flags & DIALAPP_FLAG_NEWSTATE) {
+		if (status == DialAppError_Ok)
+			DialForm::This->SetStateName (%System::String(DialAppStateString[state]));
+		else
+			DialForm::This->SetError (%System::String(DialAppStateString[state]), %System::String(DialAppErrorString[status]));
 	}
-	else {
-		DialForm::This->SetError (%System::String(DialAppStateString[state]), %System::String(DialAppErrorString[status]));
+
+	// Show Parameters
+	if (flags & DIALAPP_FLAG_PCSOUND) {
+		DialForm::This->SetHeadsetButtonName ((param->PcSound) ? "PC Sound Off":"PC Sound On");
 	}
+	if (flags & DIALAPP_FLAG_CURDEV) {
+		array<String^>^ items = DialForm::This->InitDevicesCombo();
+		DialForm::This->SetDeviceName ((param->CurDevice) ? %System::String(param->CurDevice->Name):"", items);
+	}
+	if (flags & DIALAPP_FLAG_ABONENT) {
+		DialForm::This->AddInfoMessage ("Abonent: '" + %System::String(param->Abonent) + "'");
+	}
+}
+
+
+array<String^>^  DialForm::InitDevicesCombo()
+{
+	if (dialappDevicesAddresses)
+		delete[] dialappDevicesAddresses;
+
+	DialAppBthDev* devices;
+	int n = dialappGetPairedDevices(devices);
+	dialappDevicesAddresses = new uint64[n];
+	array<String^>^ items = gcnew array<String^>(n+1);
+	for (int i=0; i<n; i++)	{
+		items[i] = gcnew String(devices[i].Name);
+		dialappDevicesAddresses[i] = devices[i].Address;
+	}
+	items[n] = "";
+	return items;
 }
 
 
@@ -89,10 +106,18 @@ void DialForm::DialForm_Load(Object ^sender, EventArgs ^e)
 {
 	try
 	{
-		dialappInit	(&DialAppCbFunc);
-		wchar *name = dialappGetSelectedDevice();
-		chboxAutoServCon->Checked = Registry->ReadInt (DIALAPP_REGKEY_HFP_AT_COMMANDS);
-		dialappDebugMode (DialAppDebug_HfpAtCommands, int(chboxAutoServCon->Checked));
+		eboxDialNumber->Text = Registry->Read(DIALAPP_REGKEY_LAST_DIAL_NUM);
+		cchar * dialnum = String2Pchar(eboxDialNumber->Text);
+		strncpy (dialappLastDialNumber,dialnum,sizeof(dialappLastDialNumber)-1);
+		FreePchar(dialnum);
+
+		dialappLastPcSoundFlag = (bool) Registry->ReadInt(DIALAPP_REGKEY_LAST_PC_SOUND_FLAG);
+		btnHeadset->Text = (dialappLastPcSoundFlag) ? "PC Sound Off":"PC Sound On";
+
+		//chboxAutoServCon->Checked = Registry->ReadInt (DIALAPP_REGKEY_HFP_AT_COMMANDS);
+		//dialappDebugMode (DialAppDebug_HfpAtCommands, int(chboxAutoServCon->Checked));
+
+		dialappInit	(&DialAppCbFunc, dialappLastPcSoundFlag);
 	}
 	catch (int err)
 	{
@@ -105,6 +130,16 @@ void DialForm::DialForm_FormClosing(Object ^sender, FormClosingEventArgs ^e)
 {
 	try
 	{
+		cchar * dialnum = String2Pchar(eboxDialNumber->Text);
+		if (strcmp(dialappLastDialNumber, dialnum)!=0) {
+			strncpy (dialappLastDialNumber,dialnum,sizeof(dialappLastDialNumber)-1);
+			Registry->Write (DIALAPP_REGKEY_LAST_DIAL_NUM, eboxDialNumber->Text);
+		}
+
+		bool soundflag = (btnHeadset->Text == "PC Sound Off");
+		if (dialappLastPcSoundFlag != soundflag)
+			Registry->WriteInt(DIALAPP_REGKEY_LAST_PC_SOUND_FLAG, int(soundflag));
+
 		dialappEnd();
 	}
 	catch (int err)
@@ -116,9 +151,9 @@ void DialForm::DialForm_FormClosing(Object ^sender, FormClosingEventArgs ^e)
 
 void DialForm::chboxAutoServCon_Click(System::Object^ sender, System::EventArgs^ e)
 {
-	int val = int(chboxAutoServCon->Checked);
-	Registry->WriteInt (DIALAPP_REGKEY_HFP_AT_COMMANDS, val);
-	dialappDebugMode (DialAppDebug_HfpAtCommands, val);
+// 	int val = int(chboxAutoServCon->Checked);
+// 	Registry->WriteInt (DIALAPP_REGKEY_HFP_AT_COMMANDS, val);
+// 	dialappDebugMode (DialAppDebug_HfpAtCommands, val);
 }
 
 void DialForm::btnClear_Click(Object ^sender, EventArgs ^e)
@@ -133,7 +168,7 @@ void DialForm::btnSelectDevice_Click(Object ^sender, EventArgs ^e)
 	{
 		// The DialForm HWND may be taken from (int*)(this->Handle.ToPointer(), 
 		// if needed to be passed to dialappUiSelectDevice
-		dialappUiSelectDevice();
+		dialappSelectDevice();
 	}
 	catch (int err)
 	{
@@ -145,6 +180,28 @@ void DialForm::btnSelectDevice_Click(Object ^sender, EventArgs ^e)
 void DialForm::btnForgetDevice_Click(Object ^sender, EventArgs ^e)
 {
 	dialappForgetDevice();
+}
+
+
+void DialForm::eboxDevice_Click(Object ^sender, EventArgs ^e)
+{
+	if (eboxDevice->Text == eboxDeviceText)
+		return;
+
+	if (eboxDevice->Text == "") {
+		eboxDevice->Text = eboxDeviceText;	// ForgetDevice must be used instead
+		return;
+	}
+
+	for (int i=0; i<eboxDevice->Items->Count; i++) {
+		if (eboxDevice->Text->Equals(eboxDevice->Items[i]->ToString())) {
+			dialappSelectDevice (dialappDevicesAddresses[i]);
+			return;
+		}
+	}
+
+	// Strange error happened
+	eboxDevice->Text = eboxDeviceText;
 }
 
 
@@ -168,18 +225,18 @@ void DialForm::btnServCon_Click(Object ^sender, EventArgs ^e)
 void DialForm::btnCall_Click(Object ^sender, EventArgs ^e)
 {
 	cchar * dialnum = String2Pchar(eboxDialNumber->Text);
-	dialappCall(dialnum, chboxAutoHeadset->Checked);
+	dialappCall(dialnum);
 	FreePchar(dialnum);
 }
 
 
 void DialForm::btnAnswer_Click(Object ^sender, EventArgs ^e)
 {
-	dialappAnswer(chboxAutoHeadset->Checked);
+	dialappAnswer();
 }
 
 
-void DialForm::btnHeadset_Click(Object ^sender, EventArgs ^e)
+void DialForm::btnPcSound_Click(Object ^sender, EventArgs ^e)
 {
 	dialappPcSound (btnHeadset->Text == "PC Sound On");
 }

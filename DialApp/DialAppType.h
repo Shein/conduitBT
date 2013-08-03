@@ -14,6 +14,7 @@
 
 typedef const char			cchar;
 typedef const wchar_t		wchar;
+typedef unsigned			uint32;
 typedef unsigned long long	uint64;
 
 
@@ -75,6 +76,34 @@ enum DialAppState
 };
 
 
+/*
+ *************************************************************************************
+ Bluetooth device information type.
+ *************************************************************************************
+ */
+struct DialAppBthDev
+{
+	uint64	 Address;
+	wchar  	*Name;
+};
+
+
+
+/*
+ *************************************************************************************
+ DIALAPP_FLAG_... bits correspondent to DialAppParam fields and passed as one 32-bit 
+ bitmask flag to DialAppCb. Each bit corresponds to one of the fields and means that 
+ this field was changed before current callback call.
+ The only DIALAPP_FLAG_NEWSTATE bit is not related to param and is set when the 
+ current state was changed.
+ *************************************************************************************
+ */
+#define DIALAPP_FLAG_PCSOUND			0x01
+#define DIALAPP_FLAG_CURDEV				0x02
+#define DIALAPP_FLAG_ABONENT			0x04
+#define DIALAPP_FLAG_NEWSTATE	  0x80000000
+
+
 
 /*
  *************************************************************************************
@@ -82,13 +111,11 @@ enum DialAppState
  The concrete parameter depends on DialAppState.
  *************************************************************************************
  */
-union DialAppParam
+struct DialAppParam
 {
-	struct {
-		uint64  BthAddr;	// Device address (set with DialAppState_DisconnectedDevicePresent)
-		wchar  *BthName;	// Device name (set with DialAppState_DisconnectedDevicePresent)
-	};
-	wchar	   *Abonent;	// Outgoing call abonent name (set with DialAppState_Calling)
+	bool			PcSound;		// PcSound = On/Off: all messages may contain this field
+	DialAppBthDev  *CurDevice;		// Device address 
+	wchar		   *Abonent;		// Outgoing call abonent name (set with DialAppState_Calling)
 };
 
 
@@ -101,9 +128,13 @@ union DialAppParam
  Machine's state was changed. In the case this state change was caused by any 
  failure, the DialAppError status will be set to correspondent error code (not equal 
  to DialAppError_Ok).
+ The flag parameter is a bitmask with bits set which correspond to param fields 
+ changed just before this callback call (see DIALAPP_FLAG_... description).
+ The only DIALAPP_FLAG_NEWSTATE flag's bit is not related to param and is set when 
+ the current state was changed.
  *************************************************************************************
  */
-typedef void (*DialAppCb) (DialAppState state, DialAppError status, DialAppParam* param);
+typedef void (*DialAppCb) (DialAppState state, DialAppError status, uint32 flags, DialAppParam* param);
 
 
 

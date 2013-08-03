@@ -5,7 +5,6 @@
 #include "def.h"
 #include "deblog.h"
 #include "DialAppType.h"
-#include "InHandType.h"
 
 
 extern DebLog InHandLog;
@@ -23,7 +22,8 @@ class InHand
 	static void Init ();
 	static void End  ();
 
-	static InHandDev* FindDevice (uint64 address, bool rescan = false);
+	static int	GetDevices (DialAppBthDev* &devices);
+	static DialAppBthDev* FindDevice (uint64 address, bool rescan = false);
 
 	static void BeginConnect	(uint64 devaddr);
 	static int  BeginHfpConnect	();
@@ -32,12 +32,12 @@ class InHand
 	static void SendDtmf		(cchar* dialchar);
 	static void Answer			();
 	static void EndCall			();
-	static void ActivateOnHoldCall(int callID);
+	static void ActivateOnHoldCall(int callid);
 	static void SendAtCommand( char* at );
 	static void PutOnHold		();
 
 public:
-	static InHandDev  *Devices;
+	static DialAppBthDev  *Devices;
 	static int		   NumDevices;
 	static bool		   EnableHfpAtCommands;
 };

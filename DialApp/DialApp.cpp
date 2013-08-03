@@ -84,20 +84,22 @@ static uint64 dialappBluetoothSelectDevice (HWND hwnd)
 	return 0;
 }
 
+
 /***********************************************************************************************\
 										Callback function
 \***********************************************************************************************/
 
 static DialAppCb dialappUserCb;
 
-static void dialappCb (DialAppState state, DialAppError status, DialAppParam* param)
+static void dialappCb (DialAppState state, DialAppError status, uint32 flags, DialAppParam* param)
 {
 	if (status == DialAppError_Ok)
 	{
 		switch (state)
 		{
 			case DialAppState_DisconnectedDevicePresent:
-				dialappStoreDevAddr (param->BthAddr);
+				if (flags & DIALAPP_FLAG_CURDEV)
+					dialappStoreDevAddr (param->CurDevice->Address);
 				break;
 
 			case DialAppState_IdleNoDevice:
@@ -106,7 +108,7 @@ static void dialappCb (DialAppState state, DialAppError status, DialAppParam* pa
 		}
 	}
 
-	dialappUserCb(state, status, param);
+	dialappUserCb(state, status, flags, param);
 }
 
 
@@ -115,7 +117,7 @@ static void dialappCb (DialAppState state, DialAppError status, DialAppParam* pa
 										Public functions
 \***********************************************************************************************/
 
-void dialappInit (DialAppCb cb)
+void dialappInit (DialAppCb cb, bool pcsound)
 {
 	dialappUserCb = cb;
 
@@ -125,6 +127,9 @@ void dialappInit (DialAppCb cb)
 	SmBase::Init();
 	ScoApp::Init();
 	HfpSm::Init(dialappCb);
+
+	// At init phase we can directly access SM's parameters
+	HfpSmObj.PublicParams.PcSound = pcsound;
 
 	uint64 addr = dialappRestoreDevAddr();
 	if (InHand::FindDevice(addr))
@@ -143,9 +148,16 @@ void dialappEnd ()
 }
 
 
-wchar* dialappGetSelectedDevice ()
+int dialappGetPairedDevices (DialAppBthDev* &devices)
 {
-	return (HfpSmObj.CurDevice) ? HfpSmObj.CurDevice->Name : 0;
+	return InHand::GetDevices(devices);
+}
+
+
+DialAppBthDev* dialappGetSelectedDevice ()
+
+{
+	return HfpSmObj.PublicParams.CurDevice;
 }
 
 
@@ -155,10 +167,11 @@ int	dialappGetCurrentState ()
 }
 
 
-void dialappUiSelectDevice ()
+void dialappSelectDevice (uint64 devaddr)
 {
-	uint64 devaddr = dialappBluetoothSelectDevice ((HWND)0);
-
+	if (!devaddr) {
+		devaddr = dialappBluetoothSelectDevice ((HWND)0);
+	}
 	if (devaddr) {
 		// The second parameter to FindDeviceIndex rescan=true in order to update Devices array;
 		// the new selected by user device should be found in this updated list
@@ -175,21 +188,23 @@ void dialappForgetDevice ()
 }
 
 
-void dialappCall (cchar* dialnumber, bool pcsound)
+void dialappCall (cchar* dialnumber)
 {
-	HfpSm::PutEvent_StartOutgoingCall(dialnumber, pcsound);
+	HfpSm::PutEvent_StartOutgoingCall(dialnumber);
 }
 
 
-void dialappAnswer (bool pcsound)
+void dialappAnswer ()
 {
-		HfpSm::PutEvent_Answer(pcsound);		
+	HfpSm::PutEvent_Answer();
 }
 
-void dialappSendDtmf(cchar dialchar)
+
+void dialappSendDtmf (cchar dialchar)
 {
 	HfpSm::PutEvent_SendDtmf(dialchar);
 }
+
 
 void dialappPutOnHold()
 {
@@ -197,15 +212,17 @@ void dialappPutOnHold()
 }
 
 
-void dialappActivateHeldCall(int callid)
+void dialappActivateHeldCall (int callid)
 {
 
 }
 
-void dialappEndCall (int callID)
+
+void dialappEndCall (int callid)
 {
 	HfpSm::PutEvent_EndCall();
 }
+
 
 void dialappSendAT(char* at)
 {
@@ -215,10 +232,7 @@ void dialappSendAT(char* at)
 
 void dialappPcSound (bool pcsound)
 {
-	if (pcsound)
-		HfpSm::PutEvent_HeadsetOn();
-	else
-		HfpSm::PutEvent_HeadsetOff();
+	HfpSm::PutEvent_Headset(pcsound);
 }
 
 
@@ -231,8 +245,8 @@ void dialappDebugMode (DialAppDebug debugtype, int mode)
 			break;
 
 		case DialAppDebug_ConnectNow:
-			if (HfpSmObj.CurDevice)
-				HfpSm::PutEvent_ConnectStart(HfpSmObj.CurDevice->Address);
+			if (HfpSmObj.PublicParams.CurDevice)
+				HfpSm::PutEvent_ConnectStart(HfpSmObj.PublicParams.CurDevice->Address);
 			break;
 
 		case DialAppDebug_DisconnectNow:

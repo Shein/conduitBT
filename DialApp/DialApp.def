@@ -2,7 +2,8 @@ LIBRARY DialApp
 EXPORTS
 	dialappInit				
 	dialappEnd				
-	dialappUiSelectDevice	
+	dialappGetPairedDevices
+	dialappSelectDevice
 	dialappForgetDevice		
 	dialappGetSelectedDevice 
 	dialappGetCurrentState	

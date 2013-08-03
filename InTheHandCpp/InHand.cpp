@@ -9,9 +9,9 @@ DebLog InHandLog("InHand ");
 										Static data
 \***********************************************************************************************/
 
-InHandDev	*InHand::Devices;
-int			 InHand::NumDevices;
-bool		 InHand::EnableHfpAtCommands;
+DialAppBthDev  *InHand::Devices;
+int				InHand::NumDevices;
+bool			InHand::EnableHfpAtCommands;
 
 
 
@@ -34,7 +34,12 @@ void InHand::End ()
 }
 
 
-InHandDev* InHand::FindDevice (uint64 address, bool rescan)
+int	InHand::GetDevices (DialAppBthDev* &devices)
+{
+	return InHandMng::GetDevices(devices);
+}
+
+DialAppBthDev* InHand::FindDevice (uint64 address, bool rescan)
 {
 	if (rescan) {
 		InHandMng::FreeDevices(Devices,NumDevices);
@@ -72,15 +77,18 @@ void InHand::StartCall(cchar* dialnumber)
 	InHandMng::StartCall(%System::String(dialnumber));
 }
 
+
 void InHand::SendDtmf(cchar* dialchar)
 {
 	InHandMng::SendDtmf(%System::String(dialchar));
 }
 
+
 void InHand::Answer()
 {
 	InHandMng::Answer();
 }
+
 
 void InHand::EndCall()
 {
@@ -88,16 +96,17 @@ void InHand::EndCall()
 }
 
 
-
 void InHand::PutOnHold()
 {
 	InHandMng::PutOnHold();
 }
 
-void InHand::ActivateOnHoldCall(int callID)
+
+void InHand::ActivateOnHoldCall(int callid)
 {
-	InHandMng::ActivateHeldCall(callID);
+	InHandMng::ActivateHeldCall(callid);
 }
+
 
 void InHand::SendAtCommand( char* at )
 {

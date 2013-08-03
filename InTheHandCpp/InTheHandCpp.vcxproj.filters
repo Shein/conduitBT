@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClInclude Include="InHand.h" />
     <ClInclude Include="InHandMng.h" />
-    <ClInclude Include="InHandType.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="InHand.cpp" />

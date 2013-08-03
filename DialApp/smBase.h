@@ -22,7 +22,7 @@
    Size of global SM-Base buffer for allocating choices.
    Comment out this define to disable the choices at all.
 */
-#define SMBASE_CHOICES		6
+#define SMBASE_CHOICES		10
 
 
 /* 
@@ -91,7 +91,8 @@ struct SM : public DebLog
     const char **aStateNames;				// States names
     int          naStates;					// Size of aStates array
     int          State;						// Current state
-    int          State_prev;				// Previous state
+    int          State_prev;				// Previous state (for debug purpose only)
+    int          State_next;				// Set when SM::Execute runs and may be used in the trunsactions (note: choice functions are run BEFORE this field is updated)
 
 	bool Execute (SMEVENT *pEvent);			// One-cycle SM execute
 

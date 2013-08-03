@@ -2,7 +2,7 @@
 
 #include "def.h"
 #include "deblog.h"
-#include "InHandType.h"
+#include "DialAppType.h"
 #include "HfpSm.h"
 
 
@@ -37,8 +37,8 @@ public ref class InHandMng
 	static void Init();
 	static void End();
 
-	static int	GetDevices (InHandDev* &devices);
-	static void	FreeDevices(InHandDev* &devices, int n);
+	static int	GetDevices (DialAppBthDev* &devices);
+	static void	FreeDevices(DialAppBthDev* &devices, int n);
 
 	static void BeginConnect (BluetoothAddress^ bthaddr);
 	static int  BeginHfpConnect (bool establish_hfp_connection);
@@ -48,7 +48,7 @@ public ref class InHandMng
 	static void Answer ();
 	static void EndCall ();
 	static void PutOnHold();
-	static void ActivateHeldCall(int callID);
+	static void ActivateHeldCall(int callid);
 	static void SendAtCommand (String ^at);
 
   protected:
@@ -115,7 +115,7 @@ void InHandMng::AddSdp (Guid svc)
 }
 
 
-int InHandMng::GetDevices (InHandDev* &devices)
+int InHandMng::GetDevices (DialAppBthDev* &devices)
 {
 	array<BluetoothDeviceInfo^>^	Devices;	// Paired devices list 
 
@@ -125,7 +125,7 @@ int InHandMng::GetDevices (InHandDev* &devices)
 	if (len <= 0)
 		return 0;
 
-	devices = new InHandDev[len];
+	devices = new DialAppBthDev[len];
 
 	int	i = 0;
 	for each (BluetoothDeviceInfo^ item in Devices) {
@@ -137,7 +137,7 @@ int InHandMng::GetDevices (InHandDev* &devices)
 }
 
 
-void InHandMng::FreeDevices (InHandDev* &devices, int n)
+void InHandMng::FreeDevices (DialAppBthDev* &devices, int n)
 {
 	if (devices) {
 		for (int i=0; i<n; i++)
@@ -429,7 +429,7 @@ void InHandMng::PutOnHold()
 	SendAtCommand("AT+CLCC");
 }
 
-void InHandMng::ActivateHeldCall(int callID)
+void InHandMng::ActivateHeldCall(int callid)
 {
 	// Oleg TODO
 	LogMsg("Not Yet Implemented");

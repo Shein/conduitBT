@@ -20,9 +20,12 @@ namespace DialAppGui {
 	{
 	public:
 		static RegistryOpers^	Registry = gcnew RegistryOpers("Conduit\\HfpDialApp");
-	private: System::Windows::Forms::Button^  button_Hold;
-	public: 
 		static DialForm^		This;
+
+	public:
+		delegate void SetLabelDelegate	(String^ text);
+		delegate void SetErrorDelegate	(String^ text1, String^ text2);
+		delegate void SetDeviceDelegate	(String^ text1, array<String^>^ items);
 
 	public:
 		DialForm()
@@ -31,19 +34,8 @@ namespace DialAppGui {
 			InitializeComponent();
 		}
 
-		delegate void SetLabelDelegate	(String^ text);
-		delegate void SetErrorDelegate	(String^ text1, String^ text2);
-
-		void SetDeviceName(String^ device)
-		{
-		   if (eboxDevice->InvokeRequired) {
-			  SetLabelDelegate^ action = gcnew SetLabelDelegate (this, &DialForm::SetDeviceName);
-			  eboxDevice->Invoke(action, device);
-			  return;
-		   }
-		   eboxDevice->Text = device;
-		   tboxLog->AppendText("Device selected: " + device + "\n");
-		}
+	public:
+		array<String^>^  InitDevicesCombo();
 
 		void SetStateName(String^ state)
 		{
@@ -56,6 +48,20 @@ namespace DialAppGui {
 		   tboxLog->AppendText("State changed: " + state + "\n");
 		}
 
+		void SetDeviceName(String^ device, array<String^>^ items)
+		{
+		   if (eboxDevice->InvokeRequired) {
+			  SetDeviceDelegate^ action = gcnew SetDeviceDelegate (this, &DialForm::SetDeviceName);
+			  eboxDevice->Invoke(action, device, items);
+			  return;
+		   }
+		   eboxDevice->Items->Clear ();
+		   eboxDevice->Items->AddRange (items);
+		   eboxDeviceText   = device;
+		   eboxDevice->Text = device;
+		   tboxLog->AppendText("Device selected: " + device + "\n");
+		}
+
 		void SetHeadsetButtonName(String^ text)
 		{
 		   if (labelState->InvokeRequired) {
@@ -64,6 +70,7 @@ namespace DialAppGui {
 			  return;
 		   }
 		   btnHeadset->Text = text;
+		   tboxLog->AppendText(text + "\n");
 		}
 
 		void SetError(String^ state, String^ error)
@@ -103,11 +110,12 @@ namespace DialAppGui {
 		void btnClear_Click(Object ^sender, EventArgs ^e);
 		void btnSelectDevice_Click(Object ^sender, EventArgs ^e);
 		void btnForgetDevice_Click(Object ^sender, EventArgs ^e);
+		void eboxDevice_Click(System::Object^ sender, System::EventArgs^ e);
 		void btnCall_Click(Object ^sender, EventArgs ^e);
 		void btnAnswer_Click(Object ^sender, EventArgs ^e);
 		void btnEndCall_Click(Object ^sender, EventArgs ^e);
 		void btnServCon_Click(Object ^sender, EventArgs ^e);
-		void btnHeadset_Click(Object ^sender, EventArgs ^e);
+		void btnPcSound_Click(Object ^sender, EventArgs ^e);
 		void btnConnect_Click(Object ^sender, EventArgs ^e);
 		void btnDisconnect_Click(Object ^sender, EventArgs ^e);
 		void chboxAutoServCon_Click(System::Object^  sender, System::EventArgs^ e);
@@ -129,6 +137,8 @@ namespace DialAppGui {
 		static cchar* String2Pchar (String ^str) { return (cchar*) Marshal::StringToHGlobalAnsi(str).ToPointer(); }
 		static void   FreePchar	(cchar *str)	 { Marshal::FreeHGlobal((IntPtr)((void*)str)); }
 
+		private: String^ eboxDeviceText;
+
 		private: System::Windows::Forms::Label^ label1;
 		private: System::Windows::Forms::Label^ label2;
 		private: System::Windows::Forms::Label^ label3;
@@ -147,11 +157,10 @@ namespace DialAppGui {
 		private: System::Windows::Forms::Button^ btnSelectDevice;
 		private: System::Windows::Forms::Button^ btnForgetDevice;
 
-		private: System::Windows::Forms::TextBox^  eboxDevice;
+		private: System::Windows::Forms::ComboBox^ eboxDevice;
 		private: System::Windows::Forms::TextBox^  eboxDialNumber;
 		private: System::Windows::Forms::TextBox^  tboxLog;
 		private: System::Windows::Forms::CheckBox^ chboxAutoServCon;
-		private: System::Windows::Forms::CheckBox^ chboxAutoHeadset;
 
 		private: System::Windows::Forms::Button^  button1;
 		private: System::Windows::Forms::Button^  button2;
@@ -167,6 +176,7 @@ namespace DialAppGui {
 		private: System::Windows::Forms::Button^  button_star;
 		private: System::Windows::Forms::TextBox^  textBox_AT_command;
 		private: System::Windows::Forms::Button^  button_SendAT;
+		private: System::Windows::Forms::Button^  button_Hold;
 
 	private:
 		/// <summary>
@@ -196,9 +206,8 @@ namespace DialAppGui {
 			this->btnHeadset = (gcnew System::Windows::Forms::Button());
 			this->chboxAutoServCon = (gcnew System::Windows::Forms::CheckBox());
 			this->btnServCon = (gcnew System::Windows::Forms::Button());
-			this->chboxAutoHeadset = (gcnew System::Windows::Forms::CheckBox());
 			this->btnSelectDevice = (gcnew System::Windows::Forms::Button());
-			this->eboxDevice = (gcnew System::Windows::Forms::TextBox());
+			this->eboxDevice = (gcnew System::Windows::Forms::ComboBox());
 			this->btnForgetDevice = (gcnew System::Windows::Forms::Button());
 			this->btnAnswer = (gcnew System::Windows::Forms::Button());
 			this->button1 = (gcnew System::Windows::Forms::Button());
@@ -246,11 +255,11 @@ namespace DialAppGui {
 			// 
 			this->label3->BackColor = System::Drawing::Color::Transparent;
 			this->label3->ForeColor = System::Drawing::Color::Black;
-			this->label3->Location = System::Drawing::Point(17, 249);
+			this->label3->Location = System::Drawing::Point(17, 255);
 			this->label3->Name = L"label3";
-			this->label3->Size = System::Drawing::Size(104, 15);
+			this->label3->Size = System::Drawing::Size(52, 18);
 			this->label3->TabIndex = 14;
-			this->label3->Text = L"Log";
+			this->label3->Text = L"Log:";
 			// 
 			// label4
 			// 
@@ -267,7 +276,7 @@ namespace DialAppGui {
 			// 
 			this->btnClear->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 6.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(204)));
-			this->btnClear->Location = System::Drawing::Point(539, 241);
+			this->btnClear->Location = System::Drawing::Point(539, 247);
 			this->btnClear->Name = L"btnClear";
 			this->btnClear->Size = System::Drawing::Size(44, 23);
 			this->btnClear->TabIndex = 5;
@@ -297,6 +306,7 @@ namespace DialAppGui {
 			this->eboxDialNumber->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 11.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(204)));
 			this->eboxDialNumber->Location = System::Drawing::Point(70, 94);
+			this->eboxDialNumber->MaxLength = 40;
 			this->eboxDialNumber->Name = L"eboxDialNumber";
 			this->eboxDialNumber->Size = System::Drawing::Size(216, 24);
 			this->eboxDialNumber->TabIndex = 2;
@@ -304,7 +314,7 @@ namespace DialAppGui {
 			// 
 			// btnDisconnect
 			// 
-			this->btnDisconnect->Location = System::Drawing::Point(181, 37);
+			this->btnDisconnect->Location = System::Drawing::Point(181, 40);
 			this->btnDisconnect->Name = L"btnDisconnect";
 			this->btnDisconnect->Size = System::Drawing::Size(105, 24);
 			this->btnDisconnect->TabIndex = 4;
@@ -313,7 +323,7 @@ namespace DialAppGui {
 			// 
 			// btnConnect
 			// 
-			this->btnConnect->Location = System::Drawing::Point(70, 37);
+			this->btnConnect->Location = System::Drawing::Point(70, 40);
 			this->btnConnect->Name = L"btnConnect";
 			this->btnConnect->Size = System::Drawing::Size(105, 24);
 			this->btnConnect->TabIndex = 3;
@@ -352,15 +362,15 @@ namespace DialAppGui {
 			this->btnHeadset->Name = L"btnHeadset";
 			this->btnHeadset->Size = System::Drawing::Size(83, 24);
 			this->btnHeadset->TabIndex = 3;
-			this->btnHeadset->Text = L"&PC Sound";
-			this->btnHeadset->Click += gcnew System::EventHandler(this, &DialForm::btnHeadset_Click);
+			this->btnHeadset->Text = L"PC Sound Off";
+			this->btnHeadset->Click += gcnew System::EventHandler(this, &DialForm::btnPcSound_Click);
 			// 
 			// chboxAutoServCon
 			// 
 			this->chboxAutoServCon->AutoSize = true;
 			this->chboxAutoServCon->Checked = true;
 			this->chboxAutoServCon->CheckState = System::Windows::Forms::CheckState::Checked;
-			this->chboxAutoServCon->Location = System::Drawing::Point(396, 42);
+			this->chboxAutoServCon->Location = System::Drawing::Point(381, 40);
 			this->chboxAutoServCon->Name = L"chboxAutoServCon";
 			this->chboxAutoServCon->Size = System::Drawing::Size(202, 17);
 			this->chboxAutoServCon->TabIndex = 20;
@@ -372,24 +382,12 @@ namespace DialAppGui {
 			// btnServCon
 			// 
 			this->btnServCon->Enabled = false;
-			this->btnServCon->Location = System::Drawing::Point(292, 37);
+			this->btnServCon->Location = System::Drawing::Point(292, 40);
 			this->btnServCon->Name = L"btnServCon";
 			this->btnServCon->Size = System::Drawing::Size(83, 24);
 			this->btnServCon->TabIndex = 21;
 			this->btnServCon->Text = L"Service Con";
 			this->btnServCon->Click += gcnew System::EventHandler(this, &DialForm::btnServCon_Click);
-			// 
-			// chboxAutoHeadset
-			// 
-			this->chboxAutoHeadset->AutoSize = true;
-			this->chboxAutoHeadset->Checked = true;
-			this->chboxAutoHeadset->CheckState = System::Windows::Forms::CheckState::Checked;
-			this->chboxAutoHeadset->Location = System::Drawing::Point(396, 124);
-			this->chboxAutoHeadset->Name = L"chboxAutoHeadset";
-			this->chboxAutoHeadset->Size = System::Drawing::Size(133, 17);
-			this->chboxAutoHeadset->TabIndex = 22;
-			this->chboxAutoHeadset->Text = L"Auto turn on PC sound";
-			this->chboxAutoHeadset->UseVisualStyleBackColor = true;
 			// 
 			// btnSelectDevice
 			// 
@@ -402,13 +400,14 @@ namespace DialAppGui {
 			// 
 			// eboxDevice
 			// 
-			this->eboxDevice->Enabled = false;
+			this->eboxDevice->DropDownStyle = System::Windows::Forms::ComboBoxStyle::DropDownList;
 			this->eboxDevice->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 11.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(204)));
 			this->eboxDevice->Location = System::Drawing::Point(70, 12);
 			this->eboxDevice->Name = L"eboxDevice";
-			this->eboxDevice->Size = System::Drawing::Size(216, 24);
+			this->eboxDevice->Size = System::Drawing::Size(216, 26);
 			this->eboxDevice->TabIndex = 2;
+			this->eboxDevice->SelectionChangeCommitted += gcnew System::EventHandler(this, &DialForm::eboxDevice_Click);
 			// 
 			// btnForgetDevice
 			// 
@@ -552,16 +551,16 @@ namespace DialAppGui {
 			// 
 			this->textBox_AT_command->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 11.25F, System::Drawing::FontStyle::Regular, 
 				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(204)));
-			this->textBox_AT_command->Location = System::Drawing::Point(396, 156);
+			this->textBox_AT_command->Location = System::Drawing::Point(477, 94);
 			this->textBox_AT_command->Name = L"textBox_AT_command";
-			this->textBox_AT_command->Size = System::Drawing::Size(187, 24);
+			this->textBox_AT_command->Size = System::Drawing::Size(116, 24);
 			this->textBox_AT_command->TabIndex = 38;
 			// 
 			// button_SendAT
 			// 
-			this->button_SendAT->Location = System::Drawing::Point(508, 186);
+			this->button_SendAT->Location = System::Drawing::Point(527, 124);
 			this->button_SendAT->Name = L"button_SendAT";
-			this->button_SendAT->Size = System::Drawing::Size(75, 23);
+			this->button_SendAT->Size = System::Drawing::Size(66, 23);
 			this->button_SendAT->TabIndex = 39;
 			this->button_SendAT->Text = L"Send AT";
 			this->button_SendAT->UseVisualStyleBackColor = true;
@@ -569,9 +568,9 @@ namespace DialAppGui {
 			// 
 			// button_Hold
 			// 
-			this->button_Hold->Location = System::Drawing::Point(471, 94);
+			this->button_Hold->Location = System::Drawing::Point(381, 121);
 			this->button_Hold->Name = L"button_Hold";
-			this->button_Hold->Size = System::Drawing::Size(75, 23);
+			this->button_Hold->Size = System::Drawing::Size(83, 23);
 			this->button_Hold->TabIndex = 40;
 			this->button_Hold->Text = L"Hold/Switch";
 			this->button_Hold->UseVisualStyleBackColor = true;
@@ -597,7 +596,6 @@ namespace DialAppGui {
 			this->Controls->Add(this->button3);
 			this->Controls->Add(this->button2);
 			this->Controls->Add(this->button1);
-			this->Controls->Add(this->chboxAutoHeadset);
 			this->Controls->Add(this->btnServCon);
 			this->Controls->Add(this->chboxAutoServCon);
 			this->Controls->Add(this->tboxLog);
@@ -626,5 +624,5 @@ namespace DialAppGui {
 
 		}
 #pragma endregion
-};
+	};
 }

@@ -37,8 +37,7 @@
     ENUM_ENTRY (SMEV, Answer				),	\
     ENUM_ENTRY (SMEV, SendDtmf				),	\
     ENUM_ENTRY (SMEV, EndCall				),	\
-    ENUM_ENTRY (SMEV, HeadsetOn				),	\
-    ENUM_ENTRY (SMEV, HeadsetOff			),	\
+    ENUM_ENTRY (SMEV, Headset				),	\
     ENUM_ENTRY (SMEV, AtResponse			),	\
 	ENUM_ENTRY (SMEV, PutOnHold				)
 
@@ -76,14 +75,12 @@ union SMEV_PAR
 {
     uint64					BthAddr;
     bool					ReportFailure;
-	char					dtmf;
+    bool					HeadsetOn;
+	char					Dtmf;
+	CallInfo<cchar>		   *CallNumber;
 	struct {
 		SMEV_ATRESPONSE		AtResponse;
 		CallInfo<wchar>	   *Abonent;
-	};
-	struct {
-		CallInfo<cchar>	   *CallNumber;
-		bool				HeadsetOn;
 	};
 };
 

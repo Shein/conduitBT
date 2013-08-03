@@ -60,33 +60,41 @@ void  dialappEnd ();
 
 /*
  *************************************************************************************
- Opens standard Windows Bluetooth device select and pair dialog. If a user choses 
- correct device and pairs with it, this device will be set as current.
+ Get list of paired devices. Caller should copy the devices strings in order to use 
+ in other context.
  Exceptions: 
     throw int exception if an error happened.
  Callback:
-	After the normal completion, the DialAppCb will be called with 
-	state = DialAppState_DisconnectedDevicePresent, and the correspondent bluetooth 
-	device parameters set (see DialAppParam).
+	No callbacks.
+ Returns:
+	Number of elements in the 'DialAppBthDev* devices[]' array
  *************************************************************************************
  */
-void  dialappUiSelectDevice	();
+int dialappGetPairedDevices (DialAppBthDev* &devices);
+
 
 
 /*
  *************************************************************************************
- Get list of paired devices. Caller should copy the devices strings in order to use 
- in other contexts.
+ Selects new bluetooth device to be a current. The supplied devaddr must be an address 
+ of one previously paired devices (may be requested by dialappGetPairedDevices). If the 
+ devaddr = 0 then the standard Windows Bluetooth device select and pair dialog will be 
+ shown. Then if a user successfully completes pairing with new device, this device will 
+ be set as a current. Then it should be connected and ready for usage.
  Exceptions: 
     throw int exception if an error happened.
+ Parameters:
+	devaddr - device MAC address; if 0 then new pairing dailog will be shown.
  Callback:
-	No.
- Returns:
-	Number of wide-char strings in the 'wchar* devices[]' array
+	After the normal completion, the DialAppCb will be called with 
+	state = DialAppState_DisconnectedDevicePresent, and the correspondent bluetooth 
+	device parameters set (see DialAppParam). Then, after successful connection the 
+	subsequent callback should bring state = DialAppState_ServiceConnected.
+	In the case of error the callback with correspondent state and error code 
+	DialAppError will be called.
  *************************************************************************************
  */
-int dialappGetPairedDevices(wchar** (&devices));
-
+void  dialappSelectDevice (uint64 devaddr = 0);
 
 
 /*
@@ -105,15 +113,16 @@ void  dialappForgetDevice () throw();
 
 /*
  *************************************************************************************
- Gets current device name (may be useful when the correspondent callback 
- (DialAppState_DisconnectedDevicePresent) was not received by host application.
+ Gets current device information structure (may be useful when the correspondent 
+ callback (flags contains DIALAPP_FLAG_CURDEV) was not received by host application.
+ If no current device, the return value is 0.
  Exceptions: 
     No exceptions.
  Callback:
-	No callback.
+	No callbacks.
  *************************************************************************************
  */
-wchar* dialappGetSelectedDevice () throw();
+DialAppBthDev* dialappGetSelectedDevice () throw();
 
 
 /*
@@ -123,7 +132,7 @@ wchar* dialappGetSelectedDevice () throw();
  Exceptions: 
     No exceptions.
  Callback:
-	No callback.
+	No callbacks.
  *************************************************************************************
  */
 int	 dialappGetCurrentState () throw();
@@ -144,6 +153,8 @@ int	 dialappGetCurrentState () throw();
 	If the call will successfully start, the DialAppCb will be called sequentially 
 	with state = DialAppState_Calling, DialAppState_InCallPcSoundOff or 
 	DialAppState_InCallPcSoundOn; otherwise the callback will report about errors.
+	In the case of error the callback with correspondent state and error code 
+	DialAppError will be called.
  *************************************************************************************
  */
 void  dialappCall (cchar* dialnumber) throw();
@@ -162,6 +173,8 @@ void  dialappCall (cchar* dialnumber) throw();
 	If the call will successfully start, the DialAppCb will be called with 
 	state = DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn; 
 	otherwise the callback will report about errors.
+	In the case of error the callback with correspondent state and error code 
+	DialAppError will be called.
  *************************************************************************************
  */
 void  dialappAnswer () throw();
@@ -182,20 +195,21 @@ void  dialappAnswer () throw();
 	otherwise the callback will report about errors.
  *************************************************************************************
  */
-void  dialappEndCall (int callID = 0) throw();
+void  dialappEndCall (int callid = 0) throw();
 
 
 /*
  *************************************************************************************
  Switch sound of the current or next call(s) to PC or Phone.
  Parameters:
-	pcsound - boolean flag for PC sound. May be chosen when needed .
+	pcsound - boolean flag for PC sound. May be chosen when needed.
  Exceptions: 
     No exceptions.
  Callback:
-	If a call exists, the DialAppCb will be called with 
-	state = DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn; 
-	otherwise this callback will bring a new value in 3d DialAppParam param.
+	After switching to the desired mode the DialAppCb will be called with 
+	current state and DialAppParam param->PcSound value set.
+	In the case of error the callback with correspondent state and error code 
+	DialAppError will be called.
  *************************************************************************************
  */
 void  dialappPcSound (bool pcsound) throw();
@@ -212,7 +226,9 @@ void  dialappPcSound (bool pcsound) throw();
  Exceptions: 
     No exceptions.
  Callback:
-	No callback.
+	No special callback reporting about completion of this routine.
+	In the case of error the callback with correspondent state and error code 
+	DialAppError will be called.
  *************************************************************************************
  */
 void dialappSendDtmf (cchar dialchar) throw();
@@ -227,7 +243,7 @@ void dialappSendDtmf (cchar dialchar) throw();
  Exceptions: 
     No exceptions.
  Callback:
-	No callback.
+	No callbacks.
  *************************************************************************************
  */
 void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
@@ -245,6 +261,8 @@ void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
     TBD
  Callback:
 	Returns CallID, in DialAppParam (3rd param). The field param - TBD
+	In the case of error the callback with correspondent state and error code 
+	DialAppError will be called.
  *************************************************************************************
  */
 void dialappPutOnHold() throw();
@@ -262,6 +280,8 @@ void dialappPutOnHold() throw();
     TBD
  Callback:
 	TBD
+	In the case of error the callback with correspondent state and error code 
+	DialAppError will be called.
  *************************************************************************************
  */
 void dialappActivateHeldCall(int callid) throw();

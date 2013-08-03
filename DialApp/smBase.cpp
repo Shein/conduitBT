@@ -36,7 +36,6 @@ bool SM::Execute (SMEVENT *pEv)
 {
     SMEVSTATE   *pEvState;
     int			 StatParam;
-    int          iStateEnd;
 	// Workaround for C2440 error:
 	union {
 		FTRANSITION  FuncTran;
@@ -61,11 +60,11 @@ bool SM::Execute (SMEVENT *pEv)
             SMCHOICE *aChoice = (SMCHOICE*) pEvState->StatParam;
 
             F.FuncTran = aChoice[ind].FuncTran;
-            iStateEnd  = aChoice[ind].State_end;
+            State_next = aChoice[ind].State_end;
             StatParam  = aChoice[ind].StatParam;
         }
         else {
-            iStateEnd  = pEvState->State_end;
+            State_next = pEvState->State_end;
             StatParam  = (int) pEvState->StatParam;
         }
 
@@ -74,7 +73,7 @@ bool SM::Execute (SMEVENT *pEv)
                 LogMsg ("ERROR: SM::Execute: pSm = %X, TRANSITION FAILED\n", this);
         }
         State_prev = State;
-        State = iStateEnd;
+        State = State_next;
         LogMsg ("[ %6s:%-14s ]\n\n", enumTable_SMID[SmId],  aStateNames[State]);
         return true;
     }        
