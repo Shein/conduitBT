@@ -93,6 +93,7 @@ class HfpSm: public SMT<HfpSm>
 	ScoApp*		ScoAppObj;
 	int			AtResponsesCnt;
 	int			AtResponsesNum;
+	bool		HfpIndicators;
 
   public:
 	static void PutEvent_Failure ()
@@ -162,7 +163,7 @@ class HfpSm: public SMT<HfpSm>
 	static void PutEvent_StartOutgoingCall (cchar* dialnumber)
 	{
 		SMEVENT Event = {SM_HFP, SMEV_StartOutgoingCall};
-		Event.Param.CallNumber = new (dialnumber) CallInfo<cchar>(dialnumber);
+		Event.Param.CallNumber = new ((char*)dialnumber) CallInfo<char>((char*)dialnumber);
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
@@ -179,12 +180,20 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
-	static void PutEvent_CallIdentity (wchar* dialinfo)
+	static void PutEvent_AtResponse (SMEV_ATRESPONSE resp, char* info)
 	{
 		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
-		Event.Param.AtResponse	= SMEV_AtResponse_CallIdentity;
-		Event.Param.Abonent		= new (dialinfo) CallInfo<wchar>(dialinfo);
-		SmBase::PutEvent (&Event, SMQ_LOW);
+		Event.Param.AtResponse = resp;
+		Event.Param.InfoCh	   = new (info) CallInfo<char>(info);
+		SmBase::PutEvent (&Event, SMQ_HIGH);
+	}
+
+	static void PutEvent_AtResponse (SMEV_ATRESPONSE resp, wchar* info)
+	{
+		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
+		Event.Param.AtResponse = resp;
+		Event.Param.InfoWch	   = new (info) CallInfo<wchar>(info);
+		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
 	static void PutEvent_IncomingCall ()
@@ -215,6 +224,7 @@ class HfpSm: public SMT<HfpSm>
 	
   // Help functions
   private:
+	bool ParseAndSetAtIndicators (char* services);
 	bool WasPcsoundChanged (SMEVENT* ev);
 	void StartVoice	();
 	void StopVoice	();
@@ -248,9 +258,10 @@ class HfpSm: public SMT<HfpSm>
 		
   // Choices
   private:
-	int  GetVoiceState1		  (SMEVENT* ev);
-	int  GetVoiceState2		  (SMEVENT* ev);
-	int  GetVoiceState3		  (SMEVENT* ev);
+	int  IsHfpConnected	(SMEVENT* ev);
+	int  GetVoiceState1	(SMEVENT* ev);
+	int  GetVoiceState2	(SMEVENT* ev);
+	int  GetVoiceState3	(SMEVENT* ev);
 };
 
 

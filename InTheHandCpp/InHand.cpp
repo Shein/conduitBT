@@ -53,6 +53,19 @@ DialAppBthDev* InHand::FindDevice (uint64 address, bool rescan)
 }
 
 
+void InHand::ClearIndicatorsNumbers ()
+{
+	InHandMng::ClearIndicatorsNumbers ();
+}
+
+
+void InHand::SetIndicatorsNumbers (int call, int callsetup, int callheld)
+{
+	LogMsg("SetIndicatorsNumbers: call=%d, callsetup=%d, callheld=%d", call, callsetup, callheld);
+	InHandMng::SetIndicatorsNumbers (call, callsetup, callheld);
+}
+
+
 void InHand::BeginConnect (uint64 devaddr)
 {
 	InHandMng::BeginConnect(gcnew BluetoothAddress(devaddr));
@@ -67,7 +80,7 @@ void InHand::Disconnect()
 
 int InHand::BeginHfpConnect()
 {
-	return InHandMng::BeginHfpConnect(true);
+	return InHandMng::BeginHfpConnect();
 }
 
 

@@ -4,18 +4,19 @@
 
 
 /*
- * CallInfo template: supported T type = cchar & wchar
+ * CallInfo template: supported T type = char & wchar
+ * Class object and its dynamic info string are allocated from one memory block.
  */
 template<class T> class CallInfo
 {
   public:
-	CallInfo (T * number) throw();
+	CallInfo (T * info) throw();
 
   public:
-	T * Number;
+	T * Info;
 
   public:
-    void* operator new (size_t nSize, T * number);
+    void* operator new (size_t nSize, T * info);
     void  operator delete (void* p);
 
   protected:
@@ -25,27 +26,27 @@ template<class T> class CallInfo
 
 
 template<>
-inline CallInfo<cchar>::CallInfo (cchar * number) : Number((char*)this + sizeof(CallInfo<cchar>))
+inline CallInfo<char>::CallInfo (char * info) : Info((char*)this + sizeof(CallInfo<char>))
 {
-	strcpy ((char*)Number, number);
+	strcpy ((char*)Info, info);
 }
 
 template<>
-inline CallInfo<wchar>::CallInfo (wchar * number) : Number((wchar*)((char*)this + sizeof(CallInfo<wchar>)))
+inline CallInfo<wchar>::CallInfo (wchar * info) : Info((wchar*)((char*)this + sizeof(CallInfo<wchar>)))
 {
-	wcscpy ((wchar_t*)Number, number);
+	wcscpy ((wchar_t*)Info, info);
 }
 
 template<> 
-inline void * CallInfo<cchar>::operator new (size_t size, cchar * number)
+inline void * CallInfo<char>::operator new (size_t size, char * info)
 {
-	return malloc (sizeof(CallInfo<cchar>) + strlen(number) + 1);
+	return malloc (sizeof(CallInfo<char>) + strlen(info) + 1);
 }
 
 template<> 
-inline void * CallInfo<wchar>::operator new (size_t size, wchar * number)
+inline void * CallInfo<wchar>::operator new (size_t size, wchar * info)
 {
-	return malloc (sizeof(CallInfo<wchar>) + (wcslen(number)+2) * sizeof(wchar));
+	return malloc (sizeof(CallInfo<wchar>) + (wcslen(info)+2) * sizeof(wchar));
 }
 
 

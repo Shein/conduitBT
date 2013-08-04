@@ -26,9 +26,11 @@ typedef unsigned char		byte;
 typedef unsigned long long	int64;
 typedef int					int32;
 typedef short				int16;
+typedef signed char			int8;
 typedef unsigned long long	uint64;
 typedef unsigned			uint32;
 typedef unsigned short		uint16;
+typedef unsigned char		uint8;
 
 
 
@@ -68,14 +70,14 @@ typedef unsigned short		uint16;
 							 ASSERT & VERIFY
 \***********************************************************************/
 
-#define VERIFY(x,retval)	{ if (!(x)) { OutputDebugString("Verify failure :"#x); return retval; } }
-#define VERIFY_(x)			{ if (!(x)) { OutputDebugString("Verify failure :"#x); return;		  } }
-#define VERIFY__(x)			{ if (!(x)) { OutputDebugString("Verify failure :"#x);				  } }
+#define VERIFY(x,retval)		{ if (!(x)) { ::LogMsg("Verify failure :"#x); return retval; } }
+#define VERIFY_(x)				{ if (!(x)) { ::LogMsg("Verify failure :"#x); return;		 } }
+#define VERIFY__(x)				{ if (!(x)) { ::LogMsg("Verify failure :"#x);				 } }
 
 #ifdef _DEBUG
-    #define ASSERT(x,retval)	{ if (!(x)) { OutputDebugString("Assert failure :"#x); return retval; } }
-	#define ASSERT_(x)			{ if (!(x)) { OutputDebugString("Assert failure :"#x); return;		  } }
-	#define ASSERT__(x)			{ if (!(x)) { OutputDebugString("Assert failure :"#x);				  } }
+    #define ASSERT(x,retval)	{ if (!(x)) { ::LogMsg("Assert failure :"#x); return retval; } }
+	#define ASSERT_(x)			{ if (!(x)) { ::LogMsg("Assert failure :"#x); return;		 } }
+	#define ASSERT__(x)			{ if (!(x)) { ::LogMsg("Assert failure :"#x);				 } }
 #else
     #define ASSERT(x,retval)
 	#define ASSERT_(x)	

@@ -1,6 +1,8 @@
 /****************************************************************************************\
+ Library     :  Utils
  Filename    :  fifo_cse.h
  Purpose     :  FIFO manager for Constant Size Elements
+ Author      :  Sergey Krasnitsky
 \****************************************************************************************/
 
 #ifndef _FIFO_CSE_H

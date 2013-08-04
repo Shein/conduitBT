@@ -1,4 +1,5 @@
 /**********************************************************************\
+ Library     :  Utils
  Filename    :  enums.h
  Purpose     :  Application's enumerators.
  Author      :  Krasnitsky Sergey

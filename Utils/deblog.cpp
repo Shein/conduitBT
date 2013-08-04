@@ -1,3 +1,10 @@
+/**********************************************************************\
+ Library     :  Utils
+ Filename    :  deblog.cpp
+ Purpose     :  Simple Debug logger
+ Author      :  Krasnitsky Sergey
+\**********************************************************************/
+
 #pragma managed(push, off)
 
 #include "def.h"

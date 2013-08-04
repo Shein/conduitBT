@@ -1,3 +1,10 @@
+/**********************************************************************\
+ Library     :  Utils
+ Filename    :  deblog.h
+ Purpose     :  Simple Debug logger
+ Author      :  Krasnitsky Sergey
+\**********************************************************************/
+
 #pragma once
 #pragma managed(push, off)
 

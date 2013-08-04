@@ -1,4 +1,5 @@
 /**********************************************************************\
+ Library     :  Utils
  Filename    :  enums_impl.h
  Purpose     :  Application's enumerators implementation macros.
  Author      :  Krasnitsky Sergey

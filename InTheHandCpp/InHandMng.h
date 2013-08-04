@@ -40,8 +40,11 @@ public ref class InHandMng
 	static int	GetDevices (DialAppBthDev* &devices);
 	static void	FreeDevices(DialAppBthDev* &devices, int n);
 
+	static void ClearIndicatorsNumbers();
+	static void SetIndicatorsNumbers(int call, int callsetup, int callheld);
+
 	static void BeginConnect (BluetoothAddress^ bthaddr);
-	static int  BeginHfpConnect (bool establish_hfp_connection);
+	static int  BeginHfpConnect ();
 	static void Disconnect ();
 	static void StartCall (String ^number);
 	static void SendDtmf (String^ dialchar);
@@ -61,14 +64,14 @@ public ref class InHandMng
 
   protected: 
 	// String^ utilities
-	static cchar* String2Pchar (String ^str) { return (cchar*) Marshal::StringToHGlobalAnsi(str).ToPointer(); }
+	static char*  String2Pchar (String ^str) { return (char*) Marshal::StringToHGlobalAnsi(str).ToPointer(); }
 	static void   FreePchar	(cchar *str)	 { Marshal::FreeHGlobal((IntPtr)((void*)str)); }
 	static wchar* String2Wchar (String ^str) { return (wchar*) Marshal::StringToHGlobalUni(str).ToPointer(); }
 	static void   FreeWchar	(wchar *str)	 { Marshal::FreeHGlobal((IntPtr)((void*)str)); }
 
 	static void LogMsg (String ^str)
 	{
-		cchar * chstr = String2Pchar(str);
+		char * chstr = String2Pchar(str);
 		InHandLog.LogMsg (chstr);
 		FreePchar(chstr);
 	}
@@ -76,6 +79,18 @@ public ref class InHandMng
   protected:
 	static NetworkStream^	StreamNet;
 	static StreamWriter^	StreamWtr;
+
+  protected:
+	// "+CIEV: x,y"	AT strings
+	static String^	CievCall_0;
+	static String^	CievCall_1;
+	static String^	CievCallsetup_0;
+	static String^	CievCallsetup_1;
+	static String^	CievCallsetup_2;
+	static String^	CievCallsetup_3;
+	static String^	CievCallHeld_0;
+	static String^	CievCallHeld_1;
+	static String^	CievCallHeld_2;
 };
 
 
@@ -170,13 +185,41 @@ void InHandMng::SendAtCommand (String ^at)
 }
 
 
+void InHandMng::ClearIndicatorsNumbers ()
+{
+	CievCall_0		= "";
+	CievCall_1		= "";
+	CievCallsetup_0	= "";
+	CievCallsetup_1	= "";
+	CievCallsetup_2	= "";
+	CievCallsetup_3	= "";
+	CievCallHeld_0	= "";
+	CievCallHeld_1	= "";
+	CievCallHeld_2	= "";
+}
+
+
+void InHandMng::SetIndicatorsNumbers (int call, int callsetup, int callheld)
+{
+	CievCall_0		= "+CIEV: " + call + ",0";
+	CievCall_1		= "+CIEV: " + call + ",1";
+	CievCallsetup_0	= "+CIEV: " + callsetup + ",0";
+	CievCallsetup_1	= "+CIEV: " + callsetup + ",1";
+	CievCallsetup_2	= "+CIEV: " + callsetup + ",2";
+	CievCallsetup_3	= "+CIEV: " + callsetup + ",3";
+	CievCallHeld_0	= "+CIEV: " + callheld + ",0";
+	CievCallHeld_1	= "+CIEV: " + callheld + ",1";
+	CievCallHeld_2	= "+CIEV: " + callheld + ",2";
+}
+
+
 void InHandMng::RecvAtCommand (array<Char> ^buf, int len)
 {
 	String ^str = gcnew String (buf, 0, len);
 
-	cchar* strunm = String2Pchar(str);
-	InHandLog.LogMsg (strunm + 2);	// skip leading <cr><lf>
-	FreePchar(strunm);
+	char* sinfo = String2Pchar(str);
+
+	InHandLog.LogMsg (sinfo + 2);	// skip leading <cr><lf>
 
 	if (str->IndexOf ("OK") == 2) {
 		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_Ok);
@@ -184,19 +227,22 @@ void InHandMng::RecvAtCommand (array<Char> ^buf, int len)
 	else if (str->IndexOf ("ERROR") == 2) {
 		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_Error);
 	} 
-	else if (str->Contains ("+CIEV: 3,0")) {
+	else if (str->IndexOf ("+CIND: ") == 2) {
+		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_CurrentPhoneIndicators, sinfo + 9);
+	} 
+	else if (str->Contains (CievCallsetup_0)) {
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_None);
 	} 
-	else if (str->Contains ("+CIEV: 3,1")) {
+	else if (str->Contains (CievCallsetup_1)) {
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Incoming);
 	} 
-	else if (str->Contains ("+CIEV: 3,2")) {
+	else if (str->Contains (CievCallsetup_2)) {
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Outgoing);
 	}
-	else if (str->Contains ("+CIEV: 2,0")) {
+	else if (str->Contains (CievCall_0)) {
 		HfpSm::PutEvent_EndCall();
 	}
-	else if (str->Contains ("+CIEV: 2,1")) {
+	else if (str->Contains (CievCall_1)) {
 		HfpSm::PutEvent_Answer ();
 	}
 	else if (str->Contains ("+COLP")) {
@@ -204,11 +250,12 @@ void InHandMng::RecvAtCommand (array<Char> ^buf, int len)
 		int i2 = str->LastIndexOf('"');
 		if (i1 > 0  &&  i2 > i1) {
 			String ^s = str->Substring (i1+1, i2-i1-1);
-			wchar* strunm = String2Wchar(s);
-			HfpSm::PutEvent_CallIdentity (strunm);
-			FreeWchar(strunm);
+			wchar* swinfo = String2Wchar(s);
+			HfpSm::PutEvent_AtResponse (SMEV_AtResponse_CallIdentity, swinfo);
+			FreeWchar(swinfo);
 		}
 	}
+	FreePchar(sinfo);
 }
 
 
@@ -297,10 +344,8 @@ void InHandMng::ConnectCallback (IAsyncResult ^ar)
 }
 
 
-int InHandMng::BeginHfpConnect (bool establish_hfp_connection)
+int InHandMng::BeginHfpConnect ()
 {
-	//TODO
-	//if (establish_hfp_connection)
 	try
 	{
 		SendAtCommand("AT+BRSF=16");
@@ -311,7 +356,7 @@ int InHandMng::BeginHfpConnect (bool establish_hfp_connection)
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
-		HfpSm::PutEvent_Disconnected();
+		HfpSm::PutEvent_Failure();
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
@@ -324,14 +369,25 @@ int InHandMng::BeginHfpConnect (bool establish_hfp_connection)
 void InHandMng::Disconnect ()
 {
 	try	{
-		if (StreamNet) {
+		if (StreamWtr) {
 			StreamWtr->Close();
-			StreamNet->Close();
 			StreamWtr = nullptr;
+		}
+		if (StreamNet) {
+			StreamNet->Close();
 			StreamNet = nullptr;
 		}
 		BthCli->Close();
-		BthCli = gcnew BluetoothClient();	// Recreate BthCli because of there is no Open method
+	}
+	catch (Exception ^ex) {
+		LogMsg(ex->Message);
+		//Do not generate Failure event when disconnecting - the client can be already disconnected
+		//HfpSm::PutEvent_Failure();
+	}
+
+	try	{
+		// Recreate BthCli because of there is no Open method
+		BthCli = gcnew BluetoothClient();
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);

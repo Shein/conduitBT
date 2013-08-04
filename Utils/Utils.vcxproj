@@ -16,6 +16,7 @@
     <ClInclude Include="enums_impl.h" />
     <ClInclude Include="fifo_cse.h" />
     <ClInclude Include="mutex.h" />
+    <ClInclude Include="str.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="deblog.h" />
     <ClInclude Include="timer.h" />

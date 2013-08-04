@@ -51,6 +51,7 @@ enum SMEV_ATRESPONSE
 {
 	SMEV_AtResponse_Ok						,
 	SMEV_AtResponse_Error					,
+	SMEV_AtResponse_CurrentPhoneIndicators	,
 	SMEV_AtResponse_CallSetup_None			,
 	SMEV_AtResponse_CallSetup_Incoming		,
 	SMEV_AtResponse_CallSetup_Outgoing		,
@@ -77,10 +78,13 @@ union SMEV_PAR
     bool					ReportFailure;
     bool					HeadsetOn;
 	char					Dtmf;
-	CallInfo<cchar>		   *CallNumber;
+	CallInfo<char>		   *CallNumber;
 	struct {
 		SMEV_ATRESPONSE		AtResponse;
-		CallInfo<wchar>	   *Abonent;
+		union {
+		  CallInfo<wchar>  *InfoWch;
+		  CallInfo<char>   *InfoCh;
+		};
 	};
 };
 

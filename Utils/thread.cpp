@@ -1,4 +1,5 @@
 /**********************************************************************\
+ Library     :  Utils
  Filename    :  thread.cpp
  Purpose     :  Class THREAD
  Platform    :  Windows.
@@ -7,6 +8,7 @@
 #pragma managed(push, off)
 
 #include "def.h"
+#include "deblog.h"
 #include "thread.h"
 
 

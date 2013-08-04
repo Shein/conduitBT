@@ -25,6 +25,9 @@ class InHand
 	static int	GetDevices (DialAppBthDev* &devices);
 	static DialAppBthDev* FindDevice (uint64 address, bool rescan = false);
 
+	static void ClearIndicatorsNumbers();
+	static void SetIndicatorsNumbers(int call, int callsetup, int callheld);
+
 	static void BeginConnect	(uint64 devaddr);
 	static int  BeginHfpConnect	();
 	static void Disconnect		();
