@@ -94,14 +94,15 @@ struct DialAppBthDev
  DIALAPP_FLAG_... bits correspondent to DialAppParam fields and passed as one 32-bit 
  bitmask flag to DialAppCb. Each bit corresponds to one of the fields and means that 
  this field was changed before current callback call.
- The only DIALAPP_FLAG_NEWSTATE bit is not related to param and is set when the 
- current state was changed.
+ The only DIALAPP_FLAG_INITSTATE and DIALAPP_FLAG_NEWSTATE bits is not related to param,
+ but to the SM's states changes.
  *************************************************************************************
  */
-#define DIALAPP_FLAG_PCSOUND			0x01
-#define DIALAPP_FLAG_CURDEV				0x02
-#define DIALAPP_FLAG_ABONENT			0x04
-#define DIALAPP_FLAG_NEWSTATE	  0x80000000
+#define DIALAPP_FLAG_PCSOUND			0x01	// DialAppParam.PcSound was changed
+#define DIALAPP_FLAG_CURDEV				0x02	// DialAppParam.CurDevice was changed
+#define DIALAPP_FLAG_ABONENT			0x04	// DialAppParam.Abonent was set
+#define DIALAPP_FLAG_NEWSTATE	  0x40000000	// Set when current state was changed
+#define DIALAPP_FLAG_INITSTATE	  0x80000000	// Set one-time when the SM started, in 1st callback only, before entering to the idle state (when SM's data, e.g. paired device list, are already initialized)
 
 
 

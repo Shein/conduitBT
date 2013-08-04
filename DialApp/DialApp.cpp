@@ -26,21 +26,30 @@
 										Static functions
 \***********************************************************************************************/
 
+static uint64 dialappCurStroredAddr;
+
 static uint64 dialappRestoreDevAddr()
 {
 	uint64 val;
 	DWORD  size = sizeof(val);
 	int ret = RegGetValue(HKEY_LOCAL_MACHINE, DIALAPP_REGPATH, DIALAPP_REGKEY_BTHDEV, RRF_RT_ANY, 0, (void*)&val, &size);
-	return (ret == ERROR_SUCCESS) ? val : 0;
+	if (ret != ERROR_SUCCESS)
+		return 0;
+	return (dialappCurStroredAddr = val);
 }
+
 
 static bool dialappStoreDevAddr (uint64 val)
 {
+	if (dialappCurStroredAddr == val)
+		return true;
+
 	HKEY hkey;
 	int ret = RegCreateKey(HKEY_LOCAL_MACHINE, DIALAPP_REGPATH, &hkey);
 	if (ret == ERROR_SUCCESS) {
 		ret = RegSetValueEx(hkey, DIALAPP_REGKEY_BTHDEV, 0, RRF_RT_REG_QWORD, (BYTE*)&val, sizeof(val));
 		RegCloseKey(hkey);
+		dialappCurStroredAddr = val;
 	}
 	return (ret == ERROR_SUCCESS);
 }
@@ -95,16 +104,8 @@ static void dialappCb (DialAppState state, DialAppError status, uint32 flags, Di
 {
 	if (status == DialAppError_Ok)
 	{
-		switch (state)
-		{
-			case DialAppState_DisconnectedDevicePresent:
-				if (flags & DIALAPP_FLAG_CURDEV)
-					dialappStoreDevAddr (param->CurDevice->Address);
-				break;
-
-			case DialAppState_IdleNoDevice:
-				dialappStoreDevAddr (0);
-				break;
+		if (((flags & DIALAPP_FLAG_INITSTATE) == 0) && (flags & DIALAPP_FLAG_CURDEV)) {
+			dialappStoreDevAddr ((param->CurDevice) ? param->CurDevice->Address : 0);
 		}
 	}
 

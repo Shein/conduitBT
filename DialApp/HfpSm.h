@@ -259,7 +259,7 @@ extern HfpSm HfpSmObj;
 
 inline void HfpSmCb::InitialCallback ()
 {
-	CbFunc (DialAppState_IdleNoDevice, DialAppError_Ok, DIALAPP_FLAG_NEWSTATE|DIALAPP_FLAG_CURDEV, &HfpSmObj.PublicParams);
+	CbFunc (DialAppState_IdleNoDevice, DialAppError_Ok, DIALAPP_FLAG_INITSTATE|DIALAPP_FLAG_CURDEV, &HfpSmObj.PublicParams);
 }
 
 

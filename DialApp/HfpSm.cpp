@@ -224,7 +224,7 @@ bool HfpSm::SelectDevice (SMEVENT* ev, int param)
 	if (!dev) {
 		LogMsg ("Failure to select device: %llX", addr);
 		if (State == STATE_Idle)
-			PutEvent_Failure();	// In order to jump back then to STATE_Idle
+			PutEvent_Failure();	// In order to jump back then to STATE_Idle (may be changed to Choice)
 		goto end_func;
 	}
 
