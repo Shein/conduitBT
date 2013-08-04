@@ -19,7 +19,6 @@
  */
 enum DialAppDebug
 {
-	DialAppDebug_HfpAtCommands,			// Disable HFP negotiation (for some phones)
 	DialAppDebug_DisablePnonePolling,	// Disable phone polling for automatic connection
 	DialAppDebug_DisconnectNow,			// Disconnect phone (to test the polling)
 	DialAppDebug_ConnectNow				// Connect phone (when disconnected)

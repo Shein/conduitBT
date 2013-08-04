@@ -59,7 +59,8 @@ namespace DialAppGui {
 		   eboxDevice->Items->AddRange (items);
 		   eboxDeviceText   = device;
 		   eboxDevice->Text = device;
-		   tboxLog->AppendText("Device selected: " + device + "\n");
+		   if (device != "")
+				tboxLog->AppendText("Device selected: " + device + "\n");
 		}
 
 		void SetHeadsetButtonName(String^ text)

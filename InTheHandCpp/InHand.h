@@ -38,8 +38,7 @@ class InHand
 
 public:
 	static DialAppBthDev  *Devices;
-	static int		   NumDevices;
-	static bool		   EnableHfpAtCommands;
+	static int			   NumDevices;
 };
 
 

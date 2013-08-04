@@ -11,7 +11,6 @@ DebLog InHandLog("InHand ");
 
 DialAppBthDev  *InHand::Devices;
 int				InHand::NumDevices;
-bool			InHand::EnableHfpAtCommands;
 
 
 
@@ -21,9 +20,8 @@ bool			InHand::EnableHfpAtCommands;
 
 void InHand::Init ()
 {
-	EnableHfpAtCommands = true;
 	InHandMng::Init();
-	NumDevices = InHandMng::GetDevices(Devices);
+	NumDevices = GetDevices(Devices);
 }
 
 
@@ -38,6 +36,7 @@ int	InHand::GetDevices (DialAppBthDev* &devices)
 {
 	return InHandMng::GetDevices(devices);
 }
+
 
 DialAppBthDev* InHand::FindDevice (uint64 address, bool rescan)
 {
@@ -68,7 +67,7 @@ void InHand::Disconnect()
 
 int InHand::BeginHfpConnect()
 {
-	return InHandMng::BeginHfpConnect(EnableHfpAtCommands);
+	return InHandMng::BeginHfpConnect(true);
 }
 
 

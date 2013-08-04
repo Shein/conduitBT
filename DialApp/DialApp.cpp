@@ -240,10 +240,6 @@ void dialappDebugMode (DialAppDebug debugtype, int mode)
 {
 	switch (debugtype)
 	{
-		case DialAppDebug_HfpAtCommands:
-			InHand::EnableHfpAtCommands = (bool) mode;
-			break;
-
 		case DialAppDebug_ConnectNow:
 			if (HfpSmObj.PublicParams.CurDevice)
 				HfpSm::PutEvent_ConnectStart(HfpSmObj.PublicParams.CurDevice->Address);

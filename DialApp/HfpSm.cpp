@@ -143,6 +143,7 @@ void HfpSm::Init (DialAppCb cb)
 
 	UserCallback.Construct (cb);
     HfpSmObj.Construct();
+	UserCallback.InitialCallback();
 }
 
 

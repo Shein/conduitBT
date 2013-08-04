@@ -36,6 +36,7 @@ class HfpSmCb
 	void Construct (DialAppCb cb) { CbFunc = cb; }
 
   public:
+	void InitialCallback		();
 	void HedasetOnOff			();
 	void DevicePresent			();
 	void DeviceForgot			();
@@ -254,6 +255,12 @@ class HfpSm: public SMT<HfpSm>
 
 
 extern HfpSm HfpSmObj;
+
+
+inline void HfpSmCb::InitialCallback ()
+{
+	CbFunc (DialAppState_IdleNoDevice, DialAppError_Ok, DIALAPP_FLAG_NEWSTATE|DIALAPP_FLAG_CURDEV, &HfpSmObj.PublicParams);
+}
 
 
 inline void HfpSmCb::HedasetOnOff ()
