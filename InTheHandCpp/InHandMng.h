@@ -352,7 +352,8 @@ int InHandMng::BeginHfpConnect ()
 		SendAtCommand("AT+CIND=?");
 		SendAtCommand("AT+CMER=3,0,0,1");
 		SendAtCommand("AT+CMEE=1");
-		return 4; // number of sent AT commands
+		SendAtCommand("AT+CCWA=1");
+		return 5; // number of sent AT commands
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);

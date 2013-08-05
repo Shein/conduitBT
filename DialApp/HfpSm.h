@@ -38,7 +38,7 @@ class HfpSmCb
   public:
 	void InitialCallback		();
 	void HedasetOnOff			();
-	void DevicePresent			();
+	void DevicePresent			(uint32 addflag = DIALAPP_FLAG_CURDEV);
 	void DeviceUnknown			();
 	void DeviceForgot			();
 	void HfpConnected			();
@@ -281,10 +281,10 @@ inline void HfpSmCb::HedasetOnOff ()
 	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, DIALAPP_FLAG_PCSOUND|stflag, &HfpSmObj.PublicParams);
 }
 
-inline void HfpSmCb::DevicePresent ()
+inline void HfpSmCb::DevicePresent (uint32 addflag)
 {
 	uint32 stflag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
-	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, DIALAPP_FLAG_CURDEV|stflag, &HfpSmObj.PublicParams);
+	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, addflag|stflag, &HfpSmObj.PublicParams);
 }
 
 inline void HfpSmCb::DeviceUnknown ()

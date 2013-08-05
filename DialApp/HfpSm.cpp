@@ -309,7 +309,7 @@ bool HfpSm::Disconnect (SMEVENT* ev, int param)
 	if (State > STATE_Disconnected)
 		InHand::Disconnect ();
 	MyTimer.Start(TIMEOUT_CONNECTION_POLLING,true);
-	UserCallback.DevicePresent ();
+	UserCallback.DevicePresent (0);
     return true;
 }
 
