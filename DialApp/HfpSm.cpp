@@ -36,16 +36,14 @@ void HfpSm::Init (DialAppCb cb)
 {
     /*---------------------------------- STATE: Idle ---------------------------------------------------*/
     InitStateNode (STATE_Idle,				SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
-    InitStateNode (STATE_Idle,				SMEV_ForgetDevice,				STATE_Idle,				NULLTRANS);
     InitStateNode (STATE_Idle,				SMEV_StartOutgoingCall,			STATE_Idle,				&IncorrectState4Call);
 	InitStateNode (STATE_Idle,				SMEV_Headset,					STATE_Idle,				&SetHeadsetFlag);
     /*-------------------------------------------------------------------------------------------------*/
 
     /*---------------------------------- STATE: Disconnected ------------------------------------------*/
-    InitStateNode (STATE_Disconnected,		SMEV_Failure,					STATE_Idle,				NULLTRANS);
     InitStateNode (STATE_Disconnected,		SMEV_ForgetDevice,				STATE_Idle,				&ForgetDevice);
     InitStateNode (STATE_Disconnected,		SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
-    InitStateNode (STATE_Disconnected,		SMEV_Disconnected,				STATE_Disconnected,		NULLTRANS);
+    InitStateNode (STATE_Disconnected,		SMEV_Disconnect,				STATE_Disconnected,		NULLTRANS);
     InitStateNode (STATE_Disconnected,		SMEV_ConnectStart,				STATE_Connecting,		&Connect);
     InitStateNode (STATE_Disconnected,		SMEV_Timeout,					STATE_Connecting,		&Connect);
     InitStateNode (STATE_Disconnected,		SMEV_StartOutgoingCall,			STATE_Disconnected,		&IncorrectState4Call);
@@ -55,7 +53,7 @@ void HfpSm::Init (DialAppCb cb)
     /*---------------------------------- STATE: Connecting   ------------------------------------------*/
     InitStateNode (STATE_Connecting,		SMEV_ForgetDevice,				STATE_Idle,				&ForgetDevice);
     InitStateNode (STATE_Connecting,		SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
-    InitStateNode (STATE_Connecting,		SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
+    InitStateNode (STATE_Connecting,		SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
     InitStateNode (STATE_Connecting,		SMEV_Failure,					STATE_Disconnected,		&ConnectFailure);
     InitStateNode (STATE_Connecting,		SMEV_Connected,					STATE_Connected,		&Connected);
     InitStateNode (STATE_Connecting,		SMEV_StartOutgoingCall,			STATE_Connecting,		&IncorrectState4Call);
@@ -65,7 +63,7 @@ void HfpSm::Init (DialAppCb cb)
     /*---------------------------------- STATE: Connected   -------------------------------------------*/
     InitStateNode (STATE_Connected,			SMEV_ForgetDevice,				STATE_Idle,				&ForgetDevice);
     InitStateNode (STATE_Connected,			SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
-    InitStateNode (STATE_Connected,			SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
+    InitStateNode (STATE_Connected,			SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
     InitStateNode (STATE_Connected,			SMEV_HfpConnectStart,			STATE_HfpConnecting,	&HfpConnect);
     InitStateNode (STATE_Connected,			SMEV_StartOutgoingCall,			STATE_Connected,		&IncorrectState4Call);
 	InitStateNode (STATE_Connected,			SMEV_Headset,					STATE_Connected,		&SetHeadsetFlag);
@@ -74,7 +72,7 @@ void HfpSm::Init (DialAppCb cb)
     /*---------------------------------- STATE: HfpConnecting   ---------------------------------------*/
     InitStateNode (STATE_HfpConnecting,		SMEV_ForgetDevice,				STATE_Idle,				&ForgetDevice);
     InitStateNode (STATE_HfpConnecting,		SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
-    InitStateNode (STATE_HfpConnecting,		SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
+    InitStateNode (STATE_HfpConnecting,		SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
     InitStateNode (STATE_HfpConnecting,		SMEV_Failure,					STATE_Disconnected,		&ServiceConnectFailure);
     InitStateNode (STATE_HfpConnecting,		SMEV_HfpConnected,				STATE_HfpConnected,		&HfpConnected);
     InitStateNode (STATE_HfpConnecting,		SMEV_Timeout,					&IsHfpConnected,		2);
@@ -88,7 +86,7 @@ void HfpSm::Init (DialAppCb cb)
     /*---------------------------------- STATE: HfpConnected   ----------------------------------------*/
     InitStateNode (STATE_HfpConnected,		SMEV_ForgetDevice,				STATE_Idle,				&ForgetDevice);
     InitStateNode (STATE_HfpConnected,		SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
-    InitStateNode (STATE_HfpConnected,		SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
+    InitStateNode (STATE_HfpConnected,		SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
     InitStateNode (STATE_HfpConnected,		SMEV_EndCall,					STATE_HfpConnected,		NULLTRANS);
 	InitStateNode (STATE_HfpConnected,		SMEV_IncomingCall,				STATE_Ringing,			&Ringing);
     InitStateNode (STATE_HfpConnected,		SMEV_StartOutgoingCall,			STATE_Calling,			&OutgoingCall);
@@ -97,7 +95,7 @@ void HfpSm::Init (DialAppCb cb)
     /*-------------------------------------------------------------------------------------------------*/
 
     /*---------------------------------- STATE: Calling   ---------------------------------------------*/
-    InitStateNode (STATE_Calling,			SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
+    InitStateNode (STATE_Calling,			SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
     InitStateNode (STATE_Calling,			SMEV_Failure,					STATE_HfpConnected,		&CallFailure);
     InitStateNode (STATE_Calling,			SMEV_EndCall,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_Calling,			SMEV_Headset,					STATE_Calling,			&SetHeadsetFlag);
@@ -109,7 +107,7 @@ void HfpSm::Init (DialAppCb cb)
     /*-------------------------------------------------------------------------------------------------*/
 
     /*---------------------------------- STATE: Ringing   ---------------------------------------------*/
-    InitStateNode (STATE_Ringing,			SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
+    InitStateNode (STATE_Ringing,			SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
     InitStateNode (STATE_Ringing,			SMEV_Failure,					STATE_HfpConnected,		&EndCall);
     InitStateNode (STATE_Ringing,			SMEV_EndCall,					STATE_HfpConnected,		&EndCall);
     InitStateNode (STATE_Ringing,			SMEV_Answer,					&GetVoiceState2,		2);
@@ -120,7 +118,7 @@ void HfpSm::Init (DialAppCb cb)
     /*-------------------------------------------------------------------------------------------------*/
 
     /*---------------------------------- STATE: InCallHeadsetOn   --------------------------------------*/
-    InitStateNode (STATE_InCallHeadsetOn,	SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
+    InitStateNode (STATE_InCallHeadsetOn,	SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_Failure,					STATE_HfpConnected,		&EndCallVoiceFailure);
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_EndCall,					STATE_HfpConnected,		&EndCall);
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_AtResponse,				STATE_InCallHeadsetOn,	&AtProcessing);
@@ -134,7 +132,7 @@ void HfpSm::Init (DialAppCb cb)
     /*--------------------------------------------------------------------------------------------------*/
 
     /*---------------------------------- STATE: InCallHeadsetOff  --------------------------------------*/
-    InitStateNode (STATE_InCallHeadsetOff,	SMEV_Disconnected,				STATE_Disconnected,		&Disconnected);
+    InitStateNode (STATE_InCallHeadsetOff,	SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_EndCall,					STATE_HfpConnected,		&EndCall);
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_AtResponse,				STATE_InCallHeadsetOff,	&AtProcessing);
 	InitStateNode (STATE_InCallHeadsetOff,	SMEV_SendDtmf,					STATE_InCallHeadsetOff,	&SendDtmf);
@@ -272,7 +270,8 @@ bool HfpSm::SelectDevice (SMEVENT* ev, int param)
 	if (!dev) {
 		LogMsg ("Failure to select device: %llX", addr);
 		if (State == STATE_Idle)
-			PutEvent_Failure();	// In order to jump back then to STATE_Idle (may be changed to Choice)
+			PutEvent_ForgetDevice();	// In order to jump back then to STATE_Idle (may be changed to Choice)
+		UserCallback.DeviceUnknown ();
 		goto end_func;
 	}
 
@@ -282,6 +281,7 @@ bool HfpSm::SelectDevice (SMEVENT* ev, int param)
 	LogMsg ("Selected device: %llX, %s", addr, dev->Name);
 	PublicParams.CurDevice = dev;
 	UserCallback.DevicePresent ();
+	MyTimer.Start(TIMEOUT_CONNECTION_POLLING,true);
 	PutEvent_ConnectStart(addr);
 
 	end_func:
@@ -292,14 +292,22 @@ bool HfpSm::SelectDevice (SMEVENT* ev, int param)
 bool HfpSm::ForgetDevice (SMEVENT* ev, int param)
 {
 	MyTimer.Stop();	
+	if (State > STATE_Disconnected)
+		InHand::Disconnect ();
+	void * prevdev = PublicParams.CurDevice;
 	PublicParams.CurDevice = 0;
-	UserCallback.DeviceForgot();
+	// Report about forgot device in the case it was present before, 
+	// otherwise it may be the case of failure in HfpSm::SelectDevice in Idle state
+	if (prevdev)
+		UserCallback.DeviceForgot();
     return true;
 }
 
 
-bool HfpSm::Disconnected (SMEVENT* ev, int param)
+bool HfpSm::Disconnect (SMEVENT* ev, int param)
 {
+	if (State > STATE_Disconnected)
+		InHand::Disconnect ();
 	MyTimer.Start(TIMEOUT_CONNECTION_POLLING,true);
 	UserCallback.DevicePresent ();
     return true;

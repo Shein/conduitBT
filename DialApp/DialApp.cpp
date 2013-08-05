@@ -140,6 +140,8 @@ void dialappInit (DialAppCb cb, bool pcsound)
 
 void dialappEnd ()
 {
+	// TODO gracefully finalize the SM
+	// HfpSm::PutEvent_Disconnect();
 	HfpSm::End();
 	ScoApp::End();
 	SmBase::End();
@@ -247,7 +249,7 @@ void dialappDebugMode (DialAppDebug debugtype, int mode)
 			break;
 
 		case DialAppDebug_DisconnectNow:
-			InHand::Disconnect ();
+			HfpSm::PutEvent_Disconnect();
 			break;
 	}
 }

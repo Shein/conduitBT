@@ -39,6 +39,7 @@ class HfpSmCb
 	void InitialCallback		();
 	void HedasetOnOff			();
 	void DevicePresent			();
+	void DeviceUnknown			();
 	void DeviceForgot			();
 	void HfpConnected			();
 	void OutgoingIncorrectState	();
@@ -129,9 +130,9 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
-	static void PutEvent_Disconnected ()
+	static void PutEvent_Disconnect ()
 	{
-		SMEVENT Event = {SM_HFP, SMEV_Disconnected};
+		SMEVENT Event = {SM_HFP, SMEV_Disconnect};
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
@@ -234,7 +235,7 @@ class HfpSm: public SMT<HfpSm>
 	bool SetHeadsetFlag		  (SMEVENT* ev, int param);
 	bool ForgetDevice		  (SMEVENT* ev, int param);
 	bool SelectDevice		  (SMEVENT* ev, int param);
-	bool Disconnected		  (SMEVENT* ev, int param);
+	bool Disconnect			  (SMEVENT* ev, int param);
 	bool Connect			  (SMEVENT* ev, int param);
 	bool Connected			  (SMEVENT* ev, int param);
 	bool HfpConnect			  (SMEVENT* ev, int param);
@@ -284,6 +285,12 @@ inline void HfpSmCb::DevicePresent ()
 {
 	uint32 stflag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
 	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, DIALAPP_FLAG_CURDEV|stflag, &HfpSmObj.PublicParams);
+}
+
+inline void HfpSmCb::DeviceUnknown ()
+{
+	uint32 stflag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
+	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_UnknownDevice, DIALAPP_FLAG_CURDEV|stflag, &HfpSmObj.PublicParams);
 }
 
 inline void HfpSmCb::DeviceForgot ()

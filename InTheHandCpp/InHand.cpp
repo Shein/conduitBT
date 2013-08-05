@@ -55,37 +55,42 @@ DialAppBthDev* InHand::FindDevice (uint64 address, bool rescan)
 
 void InHand::ClearIndicatorsNumbers ()
 {
+	InHandLog.LogMsg("ClearIndicatorsNumbers");
 	InHandMng::ClearIndicatorsNumbers ();
 }
 
 
 void InHand::SetIndicatorsNumbers (int call, int callsetup, int callheld)
 {
-	LogMsg("SetIndicatorsNumbers: call=%d, callsetup=%d, callheld=%d", call, callsetup, callheld);
+	InHandLog.LogMsg("SetIndicatorsNumbers: call=%d, callsetup=%d, callheld=%d", call, callsetup, callheld);
 	InHandMng::SetIndicatorsNumbers (call, callsetup, callheld);
 }
 
 
 void InHand::BeginConnect (uint64 devaddr)
 {
+	InHandLog.LogMsg("About to BeginConnect");
 	InHandMng::BeginConnect(gcnew BluetoothAddress(devaddr));
 }
 
 
 void InHand::Disconnect()
 {
+	InHandLog.LogMsg("About to Disconnect");
 	InHandMng::Disconnect();
 }
 
 
 int InHand::BeginHfpConnect()
 {
+	InHandLog.LogMsg("About to BeginHfpConnect");
 	return InHandMng::BeginHfpConnect();
 }
 
 
 void InHand::StartCall(cchar* dialnumber)
 {
+	InHandLog.LogMsg("About to StartCall");
 	InHandMng::StartCall(%System::String(dialnumber));
 }
 
@@ -98,24 +103,28 @@ void InHand::SendDtmf(cchar* dialchar)
 
 void InHand::Answer()
 {
+	InHandLog.LogMsg("About to Answer");
 	InHandMng::Answer();
 }
 
 
 void InHand::EndCall()
 {
+	InHandLog.LogMsg("About to EndCall");
 	InHandMng::EndCall();
 }
 
 
 void InHand::PutOnHold()
 {
+	InHandLog.LogMsg("About to PutOnHold");
 	InHandMng::PutOnHold();
 }
 
 
 void InHand::ActivateOnHoldCall(int callid)
 {
+	InHandLog.LogMsg("About to ActivateHeldCall");
 	InHandMng::ActivateHeldCall(callid);
 }
 

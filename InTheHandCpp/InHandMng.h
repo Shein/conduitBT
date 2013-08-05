@@ -285,7 +285,7 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
 	}
-	HfpSm::PutEvent_Disconnected();
+	HfpSm::PutEvent_Disconnect();
 }
 
 
@@ -313,7 +313,7 @@ void InHandMng::BeginConnect (BluetoothAddress^ bthaddr)
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
-		HfpSm::PutEvent_Disconnected();
+		HfpSm::PutEvent_Disconnect();
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
@@ -335,7 +335,7 @@ void InHandMng::ConnectCallback (IAsyncResult ^ar)
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
-		HfpSm::PutEvent_Disconnected();
+		HfpSm::PutEvent_Disconnect();
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
@@ -404,7 +404,7 @@ void InHandMng::StartCall(String^ number)
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
-		HfpSm::PutEvent_Disconnected();
+		HfpSm::PutEvent_Disconnect();
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
@@ -420,7 +420,7 @@ void InHandMng::SendDtmf(String^ dialchar)
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
-		HfpSm::PutEvent_Disconnected();
+		HfpSm::PutEvent_Disconnect();
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
@@ -437,7 +437,7 @@ void InHandMng::Answer()
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
-		HfpSm::PutEvent_Disconnected();
+		HfpSm::PutEvent_Disconnect();
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
@@ -454,7 +454,7 @@ void InHandMng::EndCall()
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
-		HfpSm::PutEvent_Disconnected();
+		HfpSm::PutEvent_Disconnect();
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);

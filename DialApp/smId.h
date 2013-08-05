@@ -25,7 +25,7 @@
     ENUM_ENTRY (SMEV, Timeout				),	\
     ENUM_ENTRY (SMEV, SelectDevice			),	\
     ENUM_ENTRY (SMEV, ForgetDevice			),	\
-    ENUM_ENTRY (SMEV, Disconnected			),	\
+    ENUM_ENTRY (SMEV, Disconnect			),	\
     ENUM_ENTRY (SMEV, ConnectStart			),	\
     ENUM_ENTRY (SMEV, Connected				),	\
     ENUM_ENTRY (SMEV, HfpConnectStart		),	\
