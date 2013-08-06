@@ -222,6 +222,12 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
+	static void PutEvent_ListCurrentCalls()
+	{
+		SMEVENT Event = {SM_HFP, SMEV_ListCurrentCalls};
+		SmBase::PutEvent (&Event, SMQ_LOW);
+	}
+	
 	
   // Help functions
   private:
@@ -229,7 +235,7 @@ class HfpSm: public SMT<HfpSm>
 	bool WasPcsoundChanged (SMEVENT* ev);
 	void StartVoice	();
 	void StopVoice	();
-
+	bool ParseCurrentCalls(char* CurrentCalls);
   // Transitions
   private:
 	bool SetHeadsetFlag		  (SMEVENT* ev, int param);
@@ -256,6 +262,7 @@ class HfpSm: public SMT<HfpSm>
 	bool SendDtmf			  (SMEVENT* ev, int param);
 	bool PutOnHold			  (SMEVENT* ev, int param);
 	bool ActivateOnHoldCall	  (SMEVENT* ev, int param);
+	bool ListCurrentCalls	  (SMEVENT* ev, int param);
 		
   // Choices
   private:

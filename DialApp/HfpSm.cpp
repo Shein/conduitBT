@@ -114,6 +114,8 @@ void HfpSm::Init (DialAppCb cb)
 		InitChoice (0, STATE_Ringing,		SMEV_Answer,					STATE_InCallHeadsetOn,	&StartCall);
 		InitChoice (1, STATE_Ringing,		SMEV_Answer,					STATE_InCallHeadsetOff,	&StartCall);
     InitStateNode (STATE_Ringing,			SMEV_AtResponse,				STATE_Ringing,			&RingingCallSetup);
+	InitStateNode (STATE_Ringing,			SMEV_ListCurrentCalls,			STATE_Ringing,			&ListCurrentCalls);
+	
 	//TODO: to think how to precess here SMEV_Headset
     /*-------------------------------------------------------------------------------------------------*/
 
@@ -123,11 +125,13 @@ void HfpSm::Init (DialAppCb cb)
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_EndCall,					STATE_HfpConnected,		&EndCall);
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_AtResponse,				STATE_InCallHeadsetOn,	&AtProcessing);
 	InitStateNode (STATE_InCallHeadsetOn,	SMEV_SendDtmf,					STATE_InCallHeadsetOn,	&SendDtmf);
-	InitStateNode (STATE_InCallHeadsetOn,	SMEV_PutOnHold,					STATE_InCallHeadsetOn,	&PutOnHold);
-	InitStateNode (STATE_InCallHeadsetOn,	SMEV_IncomingCall,				STATE_InCallHeadsetOn,	&PutOnHold);
+//	InitStateNode (STATE_InCallHeadsetOn,	SMEV_PutOnHold,					STATE_InCallHeadsetOn,	&PutOnHold);
+//	InitStateNode (STATE_InCallHeadsetOn,	SMEV_IncomingCall,				STATE_InCallHeadsetOn,	&Ringing);
+//	InitStateNode (STATE_InCallHeadsetOn,	SMEV_CallWaiting,				STATE_InCallHeadsetOn,	&PutOnHold);
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_Headset,					&GetVoiceState3,		2);
 		InitChoice (0, STATE_InCallHeadsetOn,	SMEV_Headset,				STATE_InCallHeadsetOn,	&SetHeadsetFlag);
 		InitChoice (1, STATE_InCallHeadsetOn,	SMEV_Headset,				STATE_InCallHeadsetOff,	&ToHeadsetOff);
+	InitStateNode (STATE_InCallHeadsetOn,	SMEV_ListCurrentCalls,			STATE_InCallHeadsetOn,	&ListCurrentCalls);
 	
     /*--------------------------------------------------------------------------------------------------*/
 
@@ -136,11 +140,13 @@ void HfpSm::Init (DialAppCb cb)
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_EndCall,					STATE_HfpConnected,		&EndCall);
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_AtResponse,				STATE_InCallHeadsetOff,	&AtProcessing);
 	InitStateNode (STATE_InCallHeadsetOff,	SMEV_SendDtmf,					STATE_InCallHeadsetOff,	&SendDtmf);
-	InitStateNode (STATE_InCallHeadsetOff,	SMEV_PutOnHold,					STATE_InCallHeadsetOff,	&PutOnHold);
-	InitStateNode (STATE_InCallHeadsetOff,	SMEV_IncomingCall,				STATE_InCallHeadsetOff,	&PutOnHold);
+//	InitStateNode (STATE_InCallHeadsetOff,	SMEV_PutOnHold,					STATE_InCallHeadsetOff,	&PutOnHold);
+//	InitStateNode (STATE_InCallHeadsetOff,	SMEV_IncomingCall,				STATE_InCallHeadsetOff,	&Ringing);
+//	InitStateNode (STATE_InCallHeadsetOff,	SMEV_CallWaiting,				STATE_InCallHeadsetOff,	&PutOnHold);
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_Headset,					&GetVoiceState3,		2);
 		InitChoice (0, STATE_InCallHeadsetOff,	SMEV_Headset,				STATE_InCallHeadsetOn,	&ToHeadsetOn);
 		InitChoice (1, STATE_InCallHeadsetOff,	SMEV_Headset,				STATE_InCallHeadsetOff,	&SetHeadsetFlag);
+	InitStateNode (STATE_InCallHeadsetOff,	SMEV_ListCurrentCalls,			STATE_InCallHeadsetOff,	&ListCurrentCalls);
     /*--------------------------------------------------------------------------------------------------*/
 
 	UserCallback.Construct (cb);
@@ -242,6 +248,12 @@ void HfpSm::StopVoice ()
 		LogMsg("EXCEPTION %d", err);
 		HfpSm::PutEvent_Failure();	// if we have an error when stopping voice, we should not to notice, it may be the normal case
 	}
+}
+
+bool HfpSm::ParseCurrentCalls(char* CurrentCalls)
+{
+	// Oleg TODO
+	return true;
 }
 
 	
@@ -403,6 +415,8 @@ bool HfpSm::StartCall (SMEVENT* ev, int param)
 		InHand::Answer();
 	if (PublicParams.PcSound)
 		StartVoice();
+
+	InHand::ListCurrentCalls();
 	UserCallback.InCallHeadsetOnOff();
     return true;
 }
@@ -500,6 +514,10 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 			}
 			delete ev->Param.InfoWch;
 			break;
+		case SMEV_AtResponse_ListCurrentCalls:
+			ParseCurrentCalls(ev->Param.InfoCh->Info);
+			// TODO: Add UserCallback
+			break;
 	}
     return true;
 }
@@ -522,6 +540,12 @@ bool HfpSm::PutOnHold(SMEVENT* ev, int param)
 bool HfpSm::ActivateOnHoldCall(SMEVENT* ev, int param)
 {
 	InHand::ActivateOnHoldCall(param);
+	return true;
+}
+
+bool HfpSm::ListCurrentCalls(SMEVENT* ev, int param)
+{
+	InHand::ListCurrentCalls();
 	return true;
 }
 

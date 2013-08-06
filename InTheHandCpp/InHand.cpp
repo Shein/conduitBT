@@ -134,3 +134,8 @@ void InHand::SendAtCommand( char* at )
 	String^ clistr = gcnew String(at);
 	InHandMng::SendAtCommand(clistr);
 }
+
+void InHand::ListCurrentCalls()
+{
+	InHandMng::ListCurrentCalls();
+}

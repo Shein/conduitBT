@@ -53,6 +53,7 @@ public ref class InHandMng
 	static void PutOnHold();
 	static void ActivateHeldCall(int callid);
 	static void SendAtCommand (String ^at);
+	static void ListCurrentCalls();
 
   protected:
 	static void AddSdp(Guid svc);
@@ -102,6 +103,7 @@ void InHandMng::Init ()
 {
     try {
 		AddSdp(BluetoothService::Headset);
+	//	AddSdp(BluetoothService::Handsfree);
 		BthCli = gcnew BluetoothClient();
 
 		CrLf = gcnew array<String^>(1);
@@ -240,7 +242,12 @@ void InHandMng::RecvAtCommand (String ^str)
 	} 
 	else if (str->Contains (CievCallsetup_1)) {
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Incoming);
+	}
+
+	else if (str->IndexOf("+CCWA:") == 2) {
+		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Incoming);//HfpSm::PutEvent_CallWaiting();
 	} 
+
 	else if (str->Contains (CievCallsetup_2)) {
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Outgoing);
 	}
@@ -260,6 +267,11 @@ void InHandMng::RecvAtCommand (String ^str)
 			FreeWchar(swinfo);
 		}
 	}
+
+	else if (str->Contains ("+CLCC:")) {
+		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, sinfo+7);
+	}
+
 	FreePchar(sinfo);
 }
 
@@ -287,6 +299,7 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 		{
 			// We don't use ReadLine because we then don't get to see the CR/LF. 
 			// And we often get the series \r\r\n, which should appear as one new line.
+			System::Array::Clear(buf,0,buf->Length);
 			int nread = rdr->Read(buf, 0, buf->Length);
 			if (nread == 0) {
 				InHandLog.LogMsg ("ReceiveThreadFn detected disconnection");
@@ -364,11 +377,12 @@ int InHandMng::BeginHfpConnect ()
 {
 	try
 	{
+		SendAtCommand("AT+CLIP=1");
 		SendAtCommand("AT+BRSF=102");
 		SendAtCommand("AT+CIND=?");
 		SendAtCommand("AT+CMER=3,0,0,1");
 		SendAtCommand("AT+CMEE=1");
-		return 4; // number of sent AT commands
+		return 5; // number of sent AT commands
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
@@ -505,4 +519,20 @@ void InHandMng::ActivateHeldCall(int callid)
 {
 	// Oleg TODO
 	LogMsg("Not Yet Implemented");
+}
+
+
+void InHandMng::ListCurrentCalls()
+{
+	try	{
+		SendAtCommand("AT+CLCC;");
+	}
+	catch (IOException ^ex) {
+		ProcessIoException (ex);
+		HfpSm::PutEvent_Disconnect();
+	}
+	catch (Exception ^ex) {
+		LogMsg(ex->Message);
+		HfpSm::PutEvent_Failure();
+	}
 }

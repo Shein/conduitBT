@@ -283,9 +283,11 @@ void dialappPutOnHold() throw();
 	DialAppError will be called.
  *************************************************************************************
  */
-void dialappActivateHeldCall(int callid) throw();
+void dialappActivateHeldCall(int callid) throw(); // Not Implemented yet
 
 
+
+/* TODO: For debug only. Must be removed for release */
 void dialappSendAT(char *at);
 
 
