@@ -38,6 +38,7 @@ class InHand
 	static void ActivateOnHoldCall(int callid);
 	static void SendAtCommand( char* at );
 	static void PutOnHold		();
+	static void ListCurrentCalls();
 
 public:
 	static DialAppBthDev  *Devices;

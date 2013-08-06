@@ -39,7 +39,9 @@
     ENUM_ENTRY (SMEV, EndCall				),	\
     ENUM_ENTRY (SMEV, Headset				),	\
     ENUM_ENTRY (SMEV, AtResponse			),	\
-	ENUM_ENTRY (SMEV, PutOnHold				)
+	ENUM_ENTRY (SMEV, PutOnHold				),	\
+	ENUM_ENTRY (SMEV, CallWaiting			),	\
+	ENUM_ENTRY (SMEV, ListCurrentCalls		)
 
 
 
@@ -57,6 +59,7 @@ enum SMEV_ATRESPONSE
 	SMEV_AtResponse_CallSetup_Outgoing		,
 	SMEV_AtResponse_CallSetup_RemoteAlert	,
 	SMEV_AtResponse_CallIdentity			,
+	SMEV_AtResponse_ListCurrentCalls
 };
 
 
