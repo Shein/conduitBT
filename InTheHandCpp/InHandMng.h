@@ -94,7 +94,7 @@ public ref class InHandMng
 	static String^	CievCallHeld_2;
 
   protected:
-	static array<String^> ^CrLf;	// for RecvAtCommands()
+	static array<String^> ^CrLf = gcnew array<String^> {"\r\n"};	// for RecvAtCommands()
 };
 
 
@@ -103,9 +103,6 @@ void InHandMng::Init ()
     try {
 		AddSdp(BluetoothService::Headset);
 		BthCli = gcnew BluetoothClient();
-
-		CrLf = gcnew array<String^>(1);
-		CrLf[0] = "\r\n";
 	}
 	catch (Exception^ ex) {
 		LogMsg ("EXCEPTION in InHandMng::Init: " + ex->Message);
