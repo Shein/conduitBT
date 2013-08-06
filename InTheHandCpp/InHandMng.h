@@ -58,7 +58,8 @@ public ref class InHandMng
 	static void AddSdp(Guid svc);
 	static void ProcessIoException (IOException ^ex);
 	
-	static void RecvAtCommand (array<Char> ^buf, int len);
+	static void RecvAtCommand (String ^str);
+	static void RecvAtCommands(array<Char> ^buf, int len);
 	static void ConnectCallback (IAsyncResult ^ar);
 	static void ReceiveThreadFn (Object ^state);
 
@@ -91,6 +92,9 @@ public ref class InHandMng
 	static String^	CievCallHeld_0;
 	static String^	CievCallHeld_1;
 	static String^	CievCallHeld_2;
+
+  protected:
+	static array<String^> ^CrLf;	// for RecvAtCommands()
 };
 
 
@@ -99,7 +103,10 @@ void InHandMng::Init ()
     try {
 		AddSdp(BluetoothService::Headset);
 		BthCli = gcnew BluetoothClient();
-    }
+
+		CrLf = gcnew array<String^>(1);
+		CrLf[0] = "\r\n";
+	}
 	catch (Exception^ ex) {
 		LogMsg ("EXCEPTION in InHandMng::Init: " + ex->Message);
 		throw int(DialAppError_InitBluetoothRadioError);
@@ -213,22 +220,20 @@ void InHandMng::SetIndicatorsNumbers (int call, int callsetup, int callheld)
 }
 
 
-void InHandMng::RecvAtCommand (array<Char> ^buf, int len)
+void InHandMng::RecvAtCommand (String ^str)
 {
-	String ^str = gcnew String (buf, 0, len);
-
 	char* sinfo = String2Pchar(str);
 
-	InHandLog.LogMsg (sinfo + 2);	// skip leading <cr><lf>
+	InHandLog.LogMsg (sinfo);
 
-	if (str->IndexOf ("OK") == 2) {
+	if (str->IndexOf ("OK") == 0) {
 		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_Ok);
 	} 
-	else if (str->IndexOf ("ERROR") == 2) {
+	else if (str->IndexOf ("ERROR") == 0) {
 		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_Error);
 	} 
-	else if (str->IndexOf ("+CIND: ") == 2) {
-		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_CurrentPhoneIndicators, sinfo + 9);
+	else if (str->IndexOf ("+CIND: ") == 0) {
+		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_CurrentPhoneIndicators, sinfo + 7);
 	} 
 	else if (str->Contains (CievCallsetup_0)) {
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_None);
@@ -259,6 +264,17 @@ void InHandMng::RecvAtCommand (array<Char> ^buf, int len)
 }
 
 
+void InHandMng::RecvAtCommands (array<Char> ^buf, int len)
+{
+	String ^str = gcnew String (buf, 0, len);
+	array<String^> ^cmds = str->Split (CrLf, StringSplitOptions::RemoveEmptyEntries);
+	// str leading <cr><lf> is also skipped
+
+	for each (String^ s in cmds)
+		RecvAtCommand (s);
+}
+
+
 void InHandMng::ReceiveThreadFn (Object ^state)
 {
 	ASSERT_ (StreamNet->CanRead);
@@ -276,7 +292,7 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 				InHandLog.LogMsg ("ReceiveThreadFn detected disconnection");
 				break;
 			}
-			RecvAtCommand (buf, nread);
+			RecvAtCommands (buf, nread);
 		}
 	}
 	catch (IOException ^ex) {
@@ -348,12 +364,11 @@ int InHandMng::BeginHfpConnect ()
 {
 	try
 	{
-		SendAtCommand("AT+BRSF=16");
+		SendAtCommand("AT+BRSF=102");
 		SendAtCommand("AT+CIND=?");
 		SendAtCommand("AT+CMER=3,0,0,1");
 		SendAtCommand("AT+CMEE=1");
-		SendAtCommand("AT+CCWA=1");
-		return 5; // number of sent AT commands
+		return 4; // number of sent AT commands
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);

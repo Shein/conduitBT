@@ -171,14 +171,14 @@ class HfpSm: public SMT<HfpSm>
 	static void PutEvent_Answer ()
 	{
 		SMEVENT Event = {SM_HFP, SMEV_Answer};
-		SmBase::PutEvent (&Event, SMQ_LOW);
+		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
 	static void PutEvent_AtResponse (SMEV_ATRESPONSE resp)
 	{
 		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
 		Event.Param.AtResponse = resp;
-		SmBase::PutEvent (&Event, SMQ_HIGH);
+		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
 	static void PutEvent_AtResponse (SMEV_ATRESPONSE resp, char* info)
@@ -186,7 +186,7 @@ class HfpSm: public SMT<HfpSm>
 		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
 		Event.Param.AtResponse = resp;
 		Event.Param.InfoCh	   = new (info) CallInfo<char>(info);
-		SmBase::PutEvent (&Event, SMQ_HIGH);
+		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
 	static void PutEvent_AtResponse (SMEV_ATRESPONSE resp, wchar* info)
@@ -194,13 +194,13 @@ class HfpSm: public SMT<HfpSm>
 		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
 		Event.Param.AtResponse = resp;
 		Event.Param.InfoWch	   = new (info) CallInfo<wchar>(info);
-		SmBase::PutEvent (&Event, SMQ_HIGH);
+		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
 	static void PutEvent_IncomingCall ()
 	{
 		SMEVENT Event = {SM_HFP, SMEV_IncomingCall};
-		SmBase::PutEvent (&Event, SMQ_LOW);
+		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}	
 	
 	static void PutEvent_EndCall ()

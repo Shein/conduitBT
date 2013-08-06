@@ -26,6 +26,7 @@ namespace DialAppGui {
 		delegate void SetLabelDelegate	(String^ text);
 		delegate void SetErrorDelegate	(String^ text1, String^ text2);
 		delegate void SetDeviceDelegate	(String^ text1, array<String^>^ items);
+		delegate void SetHeadsetButtonDelegate	(bool pcsound);
 
 	public:
 		DialForm()
@@ -63,15 +64,15 @@ namespace DialAppGui {
 				tboxLog->AppendText("Device selected: " + device + "\n");
 		}
 
-		void SetHeadsetButtonName(String^ text)
+		void SetHeadsetButtonName(bool pcsound)
 		{
 		   if (labelState->InvokeRequired) {
-			  SetLabelDelegate^ action = gcnew SetLabelDelegate (this, &DialForm::SetHeadsetButtonName);
-			  labelState->Invoke(action, text);
+			  SetHeadsetButtonDelegate^ action = gcnew SetHeadsetButtonDelegate (this, &DialForm::SetHeadsetButtonName);
+			  labelState->Invoke(action, pcsound);
 			  return;
 		   }
-		   btnHeadset->Text = text;
-		   tboxLog->AppendText(text + "\n");
+		   btnHeadset->Text = pcsound ? "PC Sound Off":"PC Sound On";
+		   tboxLog->AppendText((pcsound ? "PC Sound On":"PC Sound Off") + "\n");
 		}
 
 		void SetError(String^ state, String^ error)

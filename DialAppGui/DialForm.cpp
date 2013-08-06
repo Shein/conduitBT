@@ -72,7 +72,7 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 
 	// Show Parameters
 	if (flags & DIALAPP_FLAG_PCSOUND) {
-		DialForm::This->SetHeadsetButtonName ((param->PcSound) ? "PC Sound Off":"PC Sound On");
+		DialForm::This->SetHeadsetButtonName (param->PcSound);
 	}
 	if (flags & DIALAPP_FLAG_CURDEV) {
 		array<String^>^ items = DialForm::This->InitDevicesCombo();
