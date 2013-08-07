@@ -230,7 +230,7 @@ class HfpSm: public SMT<HfpSm>
 	bool WasPcsoundChanged (SMEVENT* ev);
 	void StartVoice	();
 	void StopVoice	();
-	bool ParseCurrentCalls(char* CurrentCalls);
+	bool ParseCurrentCalls(char* CurrentCalls, DialAppParam* param);
   // Transitions
   private:
 	bool SetHeadsetFlag		  (SMEVENT* ev, int param);
@@ -253,11 +253,9 @@ class HfpSm: public SMT<HfpSm>
 	bool CallFailure		  (SMEVENT* ev, int param);
 	bool EndCallVoiceFailure  (SMEVENT* ev, int param);
 	bool Ringing			  (SMEVENT* ev, int param);
-	bool RingingCallSetup	  (SMEVENT* ev, int param);
 	bool SendDtmf			  (SMEVENT* ev, int param);
 	bool PutOnHold			  (SMEVENT* ev, int param);
 	bool ActivateOnHoldCall	  (SMEVENT* ev, int param);
-	bool ListCurrentCalls	  (SMEVENT* ev, int param);
 		
   // Choices
   private:
@@ -265,6 +263,7 @@ class HfpSm: public SMT<HfpSm>
 	int  GetVoiceState1	(SMEVENT* ev);
 	int  GetVoiceState2	(SMEVENT* ev);
 	int  GetVoiceState3	(SMEVENT* ev);
+	int	 GetRingingState (SMEVENT* ev);
 };
 
 
@@ -361,7 +360,7 @@ inline void HfpSmCb::Calling ()
 inline void HfpSmCb::AbonentInfo ()
 {
 	uint32 stflag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
-	CbFunc (DialAppState(HfpSmObj.State), DialAppError_Ok, DIALAPP_FLAG_ABONENT, &HfpSmObj.PublicParams);
+	CbFunc (DialAppState(HfpSmObj.State), DialAppError_Ok, DIALAPP_FLAG_ABONENT | stflag, &HfpSmObj.PublicParams);
 }
 
 

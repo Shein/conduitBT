@@ -79,7 +79,8 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 		DialForm::This->SetDeviceName ((param->CurDevice) ? %System::String(param->CurDevice->Name):"", items);
 	}
 	if (flags & DIALAPP_FLAG_ABONENT) {
-		DialForm::This->AddInfoMessage ("Abonent: '" + %System::String(param->Abonent) + "'");
+		DialForm::This->AddInfoMessage ("Abonent Number: '" + %System::String(param->AbonentNumber) + "'");
+		DialForm::This->AddInfoMessage ("Abonent Name: '" + %System::String(param->AbonentName) + "'");
 	}
 }
 

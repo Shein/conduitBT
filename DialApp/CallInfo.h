@@ -14,7 +14,8 @@ template<class T> class CallInfo
 
   public:
 	T * Info;
-
+	T * Number;
+	T * Name;
   public:
     void* operator new (size_t nSize, T * info);
     void  operator delete (void* p);

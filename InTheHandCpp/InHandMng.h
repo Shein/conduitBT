@@ -257,21 +257,19 @@ void InHandMng::RecvAtCommand (String ^str)
 	else if (str->Contains (CievCall_1)) {
 		HfpSm::PutEvent_Answer ();
 	}
-	else if (str->Contains ("+COLP")) {
-		int i1 = str->IndexOf('"');
-		int i2 = str->LastIndexOf('"');
-		if (i1 > 0  &&  i2 > i1) {
-			String ^s = str->Substring (i1+1, i2-i1-1);
-			wchar* swinfo = String2Wchar(s);
-			HfpSm::PutEvent_AtResponse (SMEV_AtResponse_CallIdentity, swinfo);
-			FreeWchar(swinfo);
-		}
-	}
+// 	else if (str->Contains ("+COLP")) { // works only with Windows Mobile (HTC)
+// 		int i1 = str->IndexOf('"');
+// 		int i2 = str->LastIndexOf('"');
+// 		if (i1 > 0  &&  i2 > i1) {
+// 			String ^s = str->Substring (i1+1, i2-i1-1);
+// 			wchar* swinfo = String2Wchar(s);
+// 			HfpSm::PutEvent_AtResponse (SMEV_AtResponse_CallIdentity, swinfo);
+// 			FreeWchar(swinfo);
+// 		}
+// 	}
 
 	else if (str->IndexOf ("+CLCC:") == 0) {
-		wchar* swinfo = String2Wchar(str->Substring(7));
-		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, swinfo);
-		FreeWchar(swinfo);
+		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, sinfo+7);
 	}
 
 	FreePchar(sinfo);
@@ -301,7 +299,6 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 		{
 			// We don't use ReadLine because we then don't get to see the CR/LF. 
 			// And we often get the series \r\r\n, which should appear as one new line.
-			System::Array::Clear(buf,0,buf->Length);
 			int nread = rdr->Read(buf, 0, buf->Length);
 			if (nread == 0) {
 				InHandLog.LogMsg ("ReceiveThreadFn detected disconnection");

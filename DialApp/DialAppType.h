@@ -115,8 +115,9 @@ struct DialAppBthDev
 struct DialAppParam
 {
 	bool			PcSound;		// PcSound = On/Off: all messages may contain this field
-	DialAppBthDev  *CurDevice;		// Device address 
-	wchar		   *Abonent;		// Outgoing call abonent name (set with DialAppState_Calling)
+	DialAppBthDev	*CurDevice;		// Device address 
+	char			*AbonentNumber;	//  call abonent Number (set with DialAppState_Calling)
+	char			*AbonentName;
 };
 
 
