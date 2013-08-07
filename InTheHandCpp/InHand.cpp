@@ -139,3 +139,8 @@ void InHand::ListCurrentCalls()
 {
 	InHandMng::ListCurrentCalls();
 }
+
+void InHand::SetCurrentCall( int idx, uint64 number, int dir )
+{
+	// TODO OLEG
+}

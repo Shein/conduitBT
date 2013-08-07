@@ -244,7 +244,7 @@ void InHandMng::RecvAtCommand (String ^str)
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Incoming);
 	}
 
-	else if (str->IndexOf("+CCWA:") == 2) {
+	else if (str->IndexOf("+CCWA:") == 0) {
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Incoming);//HfpSm::PutEvent_CallWaiting();
 	} 
 
@@ -268,8 +268,10 @@ void InHandMng::RecvAtCommand (String ^str)
 		}
 	}
 
-	else if (str->Contains ("+CLCC:")) {
-		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, sinfo+7);
+	else if (str->IndexOf ("+CLCC:") == 0) {
+		wchar* swinfo = String2Wchar(str->Substring(7));
+		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, swinfo);
+		FreeWchar(swinfo);
 	}
 
 	FreePchar(sinfo);

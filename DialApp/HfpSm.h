@@ -222,11 +222,6 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
-	static void PutEvent_ListCurrentCalls()
-	{
-		SMEVENT Event = {SM_HFP, SMEV_ListCurrentCalls};
-		SmBase::PutEvent (&Event, SMQ_LOW);
-	}
 	
 	
   // Help functions
