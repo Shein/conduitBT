@@ -39,7 +39,7 @@ class InHand
 	static void SendAtCommand( char* at );
 	static void PutOnHold		();
 	static void ListCurrentCalls();
-
+	static void SetCurrentCall( int idx, uint64 number, int dir );
 public:
 	static DialAppBthDev  *Devices;
 	static int			   NumDevices;

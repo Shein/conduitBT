@@ -114,7 +114,6 @@ void HfpSm::Init (DialAppCb cb)
 		InitChoice (0, STATE_Ringing,		SMEV_Answer,					STATE_InCallHeadsetOn,	&StartCall);
 		InitChoice (1, STATE_Ringing,		SMEV_Answer,					STATE_InCallHeadsetOff,	&StartCall);
     InitStateNode (STATE_Ringing,			SMEV_AtResponse,				STATE_Ringing,			&RingingCallSetup);
-	InitStateNode (STATE_Ringing,			SMEV_ListCurrentCalls,			STATE_Ringing,			&ListCurrentCalls);
 	
 	//TODO: to think how to precess here SMEV_Headset
     /*-------------------------------------------------------------------------------------------------*/
@@ -131,7 +130,6 @@ void HfpSm::Init (DialAppCb cb)
     InitStateNode (STATE_InCallHeadsetOn,	SMEV_Headset,					&GetVoiceState3,		2);
 		InitChoice (0, STATE_InCallHeadsetOn,	SMEV_Headset,				STATE_InCallHeadsetOn,	&SetHeadsetFlag);
 		InitChoice (1, STATE_InCallHeadsetOn,	SMEV_Headset,				STATE_InCallHeadsetOff,	&ToHeadsetOff);
-	InitStateNode (STATE_InCallHeadsetOn,	SMEV_ListCurrentCalls,			STATE_InCallHeadsetOn,	&ListCurrentCalls);
 	
     /*--------------------------------------------------------------------------------------------------*/
 
@@ -146,7 +144,6 @@ void HfpSm::Init (DialAppCb cb)
     InitStateNode (STATE_InCallHeadsetOff,	SMEV_Headset,					&GetVoiceState3,		2);
 		InitChoice (0, STATE_InCallHeadsetOff,	SMEV_Headset,				STATE_InCallHeadsetOn,	&ToHeadsetOn);
 		InitChoice (1, STATE_InCallHeadsetOff,	SMEV_Headset,				STATE_InCallHeadsetOff,	&SetHeadsetFlag);
-	InitStateNode (STATE_InCallHeadsetOff,	SMEV_ListCurrentCalls,			STATE_InCallHeadsetOff,	&ListCurrentCalls);
     /*--------------------------------------------------------------------------------------------------*/
 
 	UserCallback.Construct (cb);
@@ -250,9 +247,19 @@ void HfpSm::StopVoice ()
 	}
 }
 
-bool HfpSm::ParseCurrentCalls(char* CurrentCalls)
+bool HfpSm::ParseCurrentCalls(char* CurrentCall)
 {
 	// Oleg TODO
+	STRB str(CurrentCall);
+	char* s1, *s2;
+	s1 = str.ScanCharNext('\"')+1;
+	s2 = str.ScanCharNext('\"');
+	*s2 = '\0';
+	uint64 number;
+	sscanf((char*)&number, "%lld", s1);
+	int idx = (int)CurrentCall[0]-48;
+	int dir = (int)CurrentCall[2]-48;
+	InHand::SetCurrentCall(idx, number, dir);
 	return true;
 }
 
@@ -498,6 +505,7 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 			// This command is expected in STATE_HfpConnecting state only
 			ASSERT__ (State == STATE_HfpConnecting);
 			HfpIndicators = ParseAndSetAtIndicators(ev->Param.InfoCh->Info);
+			delete ev->Param.InfoCh;
 			break;
 
 		case SMEV_AtResponse_CallSetup_Incoming:
@@ -506,6 +514,8 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 				HfpSm::PutEvent_IncomingCall ();
 			break;
 
+		case SMEV_AtResponse_ListCurrentCalls:
+			//TODO: ParseCurrentCalls(ev->Param.InfoCh->Info);
 		case SMEV_AtResponse_CallIdentity:
 			// When the current state is STATE_HfpConnected, this event occurred after some failure, to ignore it
 			if (State != STATE_HfpConnected) {
@@ -513,10 +523,6 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 				UserCallback.AbonentInfo();
 			}
 			delete ev->Param.InfoWch;
-			break;
-		case SMEV_AtResponse_ListCurrentCalls:
-			ParseCurrentCalls(ev->Param.InfoCh->Info);
-			// TODO: Add UserCallback
 			break;
 	}
     return true;
