@@ -101,9 +101,9 @@ public ref class InHandMng
 
 void InHandMng::Init ()
 {
-	try {
-		AddSdp(BluetoothService::Headset);
-	//	AddSdp(BluetoothService::Handsfree);
+    try {
+		AddSdp(BluetoothService::Headset  );
+		AddSdp(BluetoothService::Handsfree);
 		BthCli = gcnew BluetoothClient();
 	}
 	catch (Exception^ ex) {
@@ -121,17 +121,23 @@ void InHandMng::End()
 
 void InHandMng::AddSdp (Guid svc)
 {
-	BluetoothListener ^serverListener = gcnew BluetoothListener(svc);
-	ServiceRecord ^sdp = serverListener->ServiceRecord;
-	ServiceClass cod = (ServiceClass)0;
+
+	ServiceRecordBuilder^ bldr = gcnew ServiceRecordBuilder();
+	bldr->AddServiceClass(svc);
+	if(svc.Equals(BluetoothService::Handsfree))
+	{
+		bldr->AddCustomAttribute(gcnew ServiceAttribute(HandsFreeProfileAttributeId::SupportedFeatures,gcnew ServiceElement(ElementType::UInt16, (UInt16)0x0006)));
+	}
+		
+	ServiceRecord^ sdp = bldr->ServiceRecord;
+
 	BluetoothEndPoint ^serverEP = gcnew BluetoothEndPoint(BluetoothAddress::None, svc);
 	Socket ^serverSocket = gcnew Socket(AddressFamily32::Bluetooth, SocketType::Stream, BluetoothProtocolType::RFComm);
 	serverSocket->Bind(serverEP);
 	serverSocket->Listen(int::MaxValue);
 	byte channelNumber = static_cast<byte>((static_cast<BluetoothEndPoint^>(serverSocket->LocalEndPoint))->Port);
 	ServiceRecordHelper::SetRfcommChannelNumber(sdp, channelNumber);
-	cli::array<byte,1> ^ServiceRecordBytes = sdp->ToByteArray();
-	System::IntPtr sdpHandle = Msft::MicrosoftSdpService::SetService(ServiceRecordBytes, cod);
+	System::IntPtr sdpHandle = Msft::MicrosoftSdpService::SetService(sdp->ToByteArray(), (ServiceClass)0);
 	serverSocket->Close();
 }
 
@@ -376,7 +382,7 @@ int InHandMng::BeginHfpConnect ()
 {
 	try
 	{
-		SendAtCommand("AT+BRSF=0");
+		SendAtCommand("AT+BRSF=6");
 		SendAtCommand("AT+CIND=?");
 		SendAtCommand("AT+CMER=3,0,0,1");
 		SendAtCommand("AT+CMEE=1");
