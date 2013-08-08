@@ -150,8 +150,8 @@ int	 dialappGetCurrentState () throw();
     No exceptions.
  Callback:
 	If the call will successfully start, the DialAppCb will be called sequentially 
-	with state = DialAppState_Calling, DialAppState_InCallPcSoundOff or 
-	DialAppState_InCallPcSoundOn; otherwise the callback will report about errors.
+	with state = DialAppState_Calling, DialAppState_InCall; otherwise the callback 
+	will report about errors.
 	In the case of error the callback with correspondent state and error code 
 	DialAppError will be called.
  *************************************************************************************
@@ -184,14 +184,13 @@ void  dialappAnswer () throw();
  Terminates current or cancels incoming call.
  Note: 
 	This function may be called when the State Machine is in DialAppState_Calling, 
-	DialAppState_Ringing, DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn
-	states.
+	DialAppState_Ringing, DialAppState_InCall states.
  Exceptions: 
     No exceptions.
  Callback:
 	If the call will be successfully terminated the DialAppCb will be called with 
-	state = DialAppState_ServiceConnected;
-	otherwise the callback will report about errors.
+	state = DialAppState_ServiceConnected; otherwise the callback will report 
+	about errors.
  *************************************************************************************
  */
 void  dialappEndCall (int callid = 0) throw();
@@ -206,7 +205,9 @@ void  dialappEndCall (int callid = 0) throw();
     No exceptions.
  Callback:
 	After switching to the desired mode the DialAppCb will be called with 
-	current state and DialAppParam param->PcSound value set.
+	current state and DialAppParam param->PcSound value set. In the case a current state 
+	permits to switch the PC sound on right now (e.g. when staying in DialAppState_InCall),
+	the DialAppParam param->PcSoundNowOn will be also set.
 	In the case of error the callback with correspondent state and error code 
 	DialAppError will be called.
  *************************************************************************************
@@ -218,8 +219,8 @@ void  dialappPcSound (bool pcsound) throw();
  *************************************************************************************
  Send DTMF character.
  Note: 
-	This function may be called when the State Machine is in 
-	DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn states only.
+	This function may be called when the internal State Machine is in 
+	DialAppState_InCall state only.
  Parameters:
 	dialchar - DTMF character to send.
  Exceptions: 
@@ -252,8 +253,8 @@ void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
  *************************************************************************************
  Put current call on hold, to answer another.
  Note: 
-	This function may be called when the State Machine is in 
-	DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn states only.
+	This function may be called when the internal State Machine is in 
+	DialAppState_InCall state only.
  Parameters:
 	TBD
  Exceptions: 
@@ -271,8 +272,8 @@ void dialappPutOnHold() throw();
  *************************************************************************************
  Activate held call.
  Note: 
-	This function may be called when the State Machine is in 
-	DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn states only.
+	This function may be called when the internal State Machine is in 
+	DialAppState_InCall state only.
  Parameters:
 	int callid - to be received from the AG:   AT+CIEV:< CallHeld Indicator >,2
  Exceptions: 

@@ -71,8 +71,7 @@ enum DialAppState
 	DialAppState_ServiceConnected,
 	DialAppState_Calling,
 	DialAppState_Ringing,
-	DialAppState_InCallPcSoundOff,
-	DialAppState_InCallPcSoundOn
+	DialAppState_InCall
 };
 
 
@@ -98,9 +97,10 @@ struct DialAppBthDev
  but to the SM's states changes.
  *************************************************************************************
  */
-#define DIALAPP_FLAG_PCSOUND			0x01	// DialAppParam.PcSound was changed
-#define DIALAPP_FLAG_CURDEV				0x02	// DialAppParam.CurDevice was changed
-#define DIALAPP_FLAG_ABONENT			0x04	// DialAppParam.AbonentNumber & AbonentName was set
+#define DIALAPP_FLAG_CURDEV				0x01	// DialAppParam.CurDevice was changed
+#define DIALAPP_FLAG_PCSOUND			0x02	// DialAppParam.PcSound was changed
+#define DIALAPP_FLAG_PCSOUNDON			0x04	// DialAppParam.PcSoundNowOn was changed
+#define DIALAPP_FLAG_ABONENT			0x08	// DialAppParam.AbonentNumber was set (and AbonentName, optionally)
 #define DIALAPP_FLAG_NEWSTATE	  0x40000000	// Set when current state was changed
 #define DIALAPP_FLAG_INITSTATE	  0x80000000	// Set one-time when the SM started, in 1st callback only, before entering to the idle state (when SM's data, e.g. paired device list, are already initialized)
 
@@ -114,7 +114,8 @@ struct DialAppBthDev
  */
 struct DialAppParam
 {
-	bool			PcSound;		// PcSound = On/Off: all messages may contain this field (DIALAPP_FLAG_PCSOUND flag)
+	bool			PcSound;		// PcSound = On/Off: readiness to use PS sound devices for phone conversations (DIALAPP_FLAG_PCSOUND flag)
+	bool			PcSoundNowOn;	// It's true when PC sound devices is working now (may be activated only if PcSound is true; DIALAPP_FLAG_PCSOUNDON flag)
 	DialAppBthDev	*CurDevice;		// Device address (DIALAPP_FLAG_CURDEV flag)
 	char			*AbonentNumber;	// Calling/called abonent Number (DIALAPP_FLAG_ABONENT flag)
 	char			*AbonentName;	// Calling/called abonent Name (may be 0, DIALAPP_FLAG_ABONENT flag)

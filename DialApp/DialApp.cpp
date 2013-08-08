@@ -223,7 +223,7 @@ void dialappActivateHeldCall (int callid)
 
 void dialappEndCall (int callid)
 {
-	HfpSm::PutEvent_EndCall();
+	HfpSm::PutEvent_CallEnd();
 }
 
 

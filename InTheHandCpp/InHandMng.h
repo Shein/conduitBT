@@ -244,10 +244,10 @@ void InHandMng::RecvAtCommand (String ^str)
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Outgoing);
 	}
 	else if (str->Contains (CievCall_0)) {
-		HfpSm::PutEvent_EndCall();
+		HfpSm::PutEvent_CallEnd();
 	}
 	else if (str->Contains (CievCall_1)) {
-		HfpSm::PutEvent_Answer ();
+		HfpSm::PutEvent_CallStart ();
 	}
 	else if (str->IndexOf("+CCWA:") == 0) {
 		//TODO
@@ -458,7 +458,6 @@ void InHandMng::SendDtmf(String^ dialchar)
 }
 
 
-
 void InHandMng::Answer()
 {
 	try	{
@@ -513,6 +512,7 @@ void InHandMng::PutOnHold()
 	SendAtCommand("AT+CHLD=2;");
 	SendAtCommand("AT+CLCC");
 }
+
 
 void InHandMng::ActivateHeldCall(int callid)
 {

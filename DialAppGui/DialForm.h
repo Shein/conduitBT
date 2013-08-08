@@ -24,6 +24,7 @@ namespace DialAppGui {
 
 	public:
 		delegate void SetLabelDelegate	(String^ text);
+		delegate void SetStateDelegate	(String^ text, String^ param);
 		delegate void SetErrorDelegate	(String^ text1, String^ text2);
 		delegate void SetDeviceDelegate	(String^ text1, array<String^>^ items);
 		delegate void SetHeadsetButtonDelegate	(bool pcsound);
@@ -38,15 +39,18 @@ namespace DialAppGui {
 	public:
 		array<String^>^  InitDevicesCombo();
 
-		void SetStateName(String^ state)
+		void SetStateName(String^ state, String^ param)
 		{
 		   if (labelState->InvokeRequired) {
-			  SetLabelDelegate^ action = gcnew SetLabelDelegate (this, &DialForm::SetStateName);
-			  labelState->Invoke(action, state);
+			  SetStateDelegate^ action = gcnew SetStateDelegate (this, &DialForm::SetStateName);
+			  labelState->Invoke(action, state, param);
 			  return;
 		   }
 		   labelState->Text = state;
-		   tboxLog->AppendText("State changed: " + state + "\n");
+		   if (param)
+				tboxLog->AppendText("State changed: " + state + " " + param + "\n");
+		   else
+				tboxLog->AppendText("State changed: " + state + "\n");
 		}
 
 		void SetDeviceName(String^ device, array<String^>^ items)

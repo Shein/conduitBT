@@ -54,8 +54,7 @@ cchar* DialAppStateString[] =
 	"ServiceConnected",
 	"Calling",
 	"Ringing",
-	"InCallPcSoundOff",
-	"InCallPcSoundOn"
+	"InCall"
 };
 
 
@@ -64,10 +63,15 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 {
 	// Show States and Errors
 	if (flags & DIALAPP_FLAG_NEWSTATE) {
-		if (status == DialAppError_Ok)
-			DialForm::This->SetStateName (%System::String(DialAppStateString[state]));
-		else
+		if (status == DialAppError_Ok) {
+			String^ sparam = nullptr;
+			if (flags & DIALAPP_FLAG_PCSOUNDON)
+				sparam = (param->PcSoundNowOn) ? " (PC Sound On)":" (PC Sound Off)";
+			DialForm::This->SetStateName (%System::String(DialAppStateString[state]), sparam);
+		}
+		else {
 			DialForm::This->SetError (%System::String(DialAppStateString[state]), %System::String(DialAppErrorString[status]));
+		}
 	}
 
 	// Show Parameters
@@ -80,7 +84,8 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 	}
 	if (flags & DIALAPP_FLAG_ABONENT) {
 		DialForm::This->AddInfoMessage ("Abonent Number: '" + %System::String(param->AbonentNumber) + "'");
-		DialForm::This->AddInfoMessage ("Abonent Name: '" + %System::String(param->AbonentName) + "'");
+		if (param->AbonentName)
+			DialForm::This->AddInfoMessage ("Abonent Name: '" + %System::String(param->AbonentName) + "'");
 	}
 }
 

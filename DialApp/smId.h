@@ -32,13 +32,13 @@
     ENUM_ENTRY (SMEV, HfpConnected			),	\
     ENUM_ENTRY (SMEV, ServiceConnectStart	),	\
     ENUM_ENTRY (SMEV, ServiceConnected		),	\
-    ENUM_ENTRY (SMEV, IncomingCall			),	\
+    ENUM_ENTRY (SMEV, AtResponse			),	\
     ENUM_ENTRY (SMEV, StartOutgoingCall		),	\
     ENUM_ENTRY (SMEV, Answer				),	\
-    ENUM_ENTRY (SMEV, SendDtmf				),	\
-    ENUM_ENTRY (SMEV, EndCall				),	\
+    ENUM_ENTRY (SMEV, CallEnd				),	\
+    ENUM_ENTRY (SMEV, CallStart				),	\
     ENUM_ENTRY (SMEV, Headset				),	\
-    ENUM_ENTRY (SMEV, AtResponse			),	\
+    ENUM_ENTRY (SMEV, SendDtmf				),	\
 	ENUM_ENTRY (SMEV, PutOnHold				),	\
 	ENUM_ENTRY (SMEV, CallWaiting			)
 
