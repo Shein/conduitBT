@@ -100,7 +100,7 @@ struct DialAppBthDev
  */
 #define DIALAPP_FLAG_PCSOUND			0x01	// DialAppParam.PcSound was changed
 #define DIALAPP_FLAG_CURDEV				0x02	// DialAppParam.CurDevice was changed
-#define DIALAPP_FLAG_ABONENT			0x04	// DialAppParam.Abonent was set
+#define DIALAPP_FLAG_ABONENT			0x04	// DialAppParam.AbonentNumber & AbonentName was set
 #define DIALAPP_FLAG_NEWSTATE	  0x40000000	// Set when current state was changed
 #define DIALAPP_FLAG_INITSTATE	  0x80000000	// Set one-time when the SM started, in 1st callback only, before entering to the idle state (when SM's data, e.g. paired device list, are already initialized)
 
@@ -114,10 +114,10 @@ struct DialAppBthDev
  */
 struct DialAppParam
 {
-	bool			PcSound;		// PcSound = On/Off: all messages may contain this field
-	DialAppBthDev	*CurDevice;		// Device address 
-	char			*AbonentNumber;	//  call abonent Number (set with DialAppState_Calling)
-	char			*AbonentName;
+	bool			PcSound;		// PcSound = On/Off: all messages may contain this field (DIALAPP_FLAG_PCSOUND flag)
+	DialAppBthDev	*CurDevice;		// Device address (DIALAPP_FLAG_CURDEV flag)
+	char			*AbonentNumber;	// Calling/called abonent Number (DIALAPP_FLAG_ABONENT flag)
+	char			*AbonentName;	// Calling/called abonent Name (may be 0, DIALAPP_FLAG_ABONENT flag)
 };
 
 

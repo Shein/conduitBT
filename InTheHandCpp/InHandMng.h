@@ -101,7 +101,7 @@ public ref class InHandMng
 
 void InHandMng::Init ()
 {
-    try {
+	try {
 		AddSdp(BluetoothService::Headset);
 	//	AddSdp(BluetoothService::Handsfree);
 		BthCli = gcnew BluetoothClient();
@@ -109,7 +109,7 @@ void InHandMng::Init ()
 	catch (Exception^ ex) {
 		LogMsg ("EXCEPTION in InHandMng::Init: " + ex->Message);
 		throw int(DialAppError_InitBluetoothRadioError);
-    }
+	}
 }
 
 
@@ -240,11 +240,6 @@ void InHandMng::RecvAtCommand (String ^str)
 	else if (str->Contains (CievCallsetup_1)) {
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Incoming);
 	}
-
-	else if (str->IndexOf("+CCWA:") == 0) {
-		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Incoming);//HfpSm::PutEvent_CallWaiting();
-	} 
-
 	else if (str->Contains (CievCallsetup_2)) {
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Outgoing);
 	}
@@ -254,20 +249,28 @@ void InHandMng::RecvAtCommand (String ^str)
 	else if (str->Contains (CievCall_1)) {
 		HfpSm::PutEvent_Answer ();
 	}
-// 	else if (str->Contains ("+COLP")) { // works only with Windows Mobile (HTC)
-// 		int i1 = str->IndexOf('"');
-// 		int i2 = str->LastIndexOf('"');
-// 		if (i1 > 0  &&  i2 > i1) {
-// 			String ^s = str->Substring (i1+1, i2-i1-1);
-// 			wchar* swinfo = String2Wchar(s);
-// 			HfpSm::PutEvent_AtResponse (SMEV_AtResponse_CallIdentity, swinfo);
-// 			FreeWchar(swinfo);
-// 		}
-// 	}
-
+	else if (str->IndexOf("+CCWA:") == 0) {
+		//TODO
+		//3-way call notification event bringing participator's number
+		//HfpSm::PutEvent_AtResponse(??);
+	} 
 	else if (str->IndexOf ("+CLCC:") == 0) {
 		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, sinfo+7);
 	}
+
+	/* 
+	This works on HTC-Diamond2 - Windows Mobile only
+	else if (str->Contains ("+COLP")) { 
+		int i1 = str->IndexOf('"');
+		int i2 = str->LastIndexOf('"');
+		if (i1 > 0  &&  i2 > i1) {
+			String ^s = str->Substring (i1+1, i2-i1-1);
+			wchar* swinfo = String2Wchar(s);
+			HfpSm::PutEvent_AtResponse (SMEV_AtResponse_CallIdentity, swinfo);
+			FreeWchar(swinfo);
+		}
+	}
+	*/
 
 	FreePchar(sinfo);
 }
@@ -320,12 +323,12 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 // In the future the dialappBluetoothSelectDevice func will be used
 uint64 InHandMng::UiSelectDevice ()
 {
-    SelectBluetoothDeviceDialog^ dlg = gcnew SelectBluetoothDeviceDialog();
-    DialogResult rslt = dlg->ShowDialog();
+	SelectBluetoothDeviceDialog^ dlg = gcnew SelectBluetoothDeviceDialog();
+	DialogResult rslt = dlg->ShowDialog();
 	if (rslt != DialogResult->OK) {
-        return 0;
-    }
-    return dlg->SelectedDevice->DeviceAddress->ToInt64();
+		return 0;
+	}
+	return dlg->SelectedDevice->DeviceAddress->ToInt64();
 }
 #endif
 
@@ -475,8 +478,8 @@ void InHandMng::Answer()
 void InHandMng::EndCall()
 {
 	try	{
-		SendAtCommand("AT+CHUP"); // terminating a ongoing single call or a held call.
-		//SendAtCommand("ATH");
+		SendAtCommand("AT+CHUP");	// terminating a ongoing single call or a held call.
+		SendAtCommand("ATH");		// HTC-Diamond2 terminates by old-style command only
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
