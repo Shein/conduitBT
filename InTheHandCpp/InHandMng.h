@@ -376,12 +376,12 @@ int InHandMng::BeginHfpConnect ()
 {
 	try
 	{
-		SendAtCommand("AT+CLIP=1");
-		SendAtCommand("AT+BRSF=102");
+		SendAtCommand("AT+BRSF=0");
 		SendAtCommand("AT+CIND=?");
 		SendAtCommand("AT+CMER=3,0,0,1");
 		SendAtCommand("AT+CMEE=1");
-		return 5; // number of sent AT commands
+		//SendAtCommand("AT+CLIP=1");
+		return 4; // number of sent AT commands
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
