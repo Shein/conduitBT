@@ -113,7 +113,10 @@ void HfpSm::Init (DialAppCb cb)
     InitStateNode (STATE_Ringing,			SMEV_Answer,					&GetVoiceState2,		2);
 		InitChoice (0, STATE_Ringing,		SMEV_Answer,					STATE_InCallHeadsetOn,	&StartCall);
 		InitChoice (1, STATE_Ringing,		SMEV_Answer,					STATE_InCallHeadsetOff,	&StartCall);
-    InitStateNode (STATE_Ringing,			SMEV_AtResponse,				STATE_Ringing,			&RingingCallSetup);
+	InitStateNode (STATE_Ringing,			SMEV_AtResponse,				&GetRingingState,		2);
+		InitChoice (0, STATE_Ringing,		SMEV_AtResponse,				STATE_HfpConnected,		&EndCall);
+		InitChoice (1, STATE_Ringing,		SMEV_AtResponse,				STATE_Ringing,			&AtProcessing);
+		
 	
 	//TODO: to think how to precess here SMEV_Headset
     /*-------------------------------------------------------------------------------------------------*/
@@ -247,19 +250,26 @@ void HfpSm::StopVoice ()
 	}
 }
 
-bool HfpSm::ParseCurrentCalls(char* CurrentCall)
+bool HfpSm::ParseCurrentCalls(char* CurrentCall, DialAppParam* param)
 {
-	// Oleg TODO
+	// Search for "Number"
+	param->AbonentName = 0;
+	param->AbonentNumber = 0;
+
 	STRB str(CurrentCall);
 	char* s1, *s2;
 	s1 = str.ScanCharNext('\"')+1;
 	s2 = str.ScanCharNext('\"');
-	*s2 = '\0';
-	uint64 number;
-	sscanf((char*)&number, "%lld", s1);
-	int idx = (int)CurrentCall[0]-48;
-	int dir = (int)CurrentCall[2]-48;
-	InHand::SetCurrentCall(idx, number, dir);
+	*s2 = '\0';	
+	param->AbonentNumber = s1;
+
+	// Search for "Name"
+	if(s1 = str.ScanCharNext('\"'))
+	{
+		s2 = str.ScanCharNext('\"');
+		*s2 = '\0';	
+		param->AbonentName = s1+1;
+	}
 	return true;
 }
 
@@ -423,8 +433,11 @@ bool HfpSm::StartCall (SMEVENT* ev, int param)
 	if (PublicParams.PcSound)
 		StartVoice();
 
-	InHand::ListCurrentCalls();
 	UserCallback.InCallHeadsetOnOff();
+
+	// for outgoing call only. Incoming call requested at ringing()
+	if(ev->Param.AtResponse == SMEV_AtResponse_CallSetup_Outgoing) 
+		InHand::ListCurrentCalls();
     return true;
 }
 
@@ -473,14 +486,7 @@ bool HfpSm::Ringing (SMEVENT* ev, int param)
 {
 	//StartVoice(ev, param);
 	UserCallback.Ring ();
-    return true;
-}
-
-
-bool HfpSm::RingingCallSetup (SMEVENT* ev, int param)
-{
-	if (ev->Param.AtResponse == SMEV_AtResponse_CallSetup_None)
-		PutEvent_EndCall();
+	InHand::ListCurrentCalls();
     return true;
 }
 
@@ -515,14 +521,9 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 			break;
 
 		case SMEV_AtResponse_ListCurrentCalls:
-			//TODO: ParseCurrentCalls(ev->Param.InfoCh->Info);
-		case SMEV_AtResponse_CallIdentity:
-			// When the current state is STATE_HfpConnected, this event occurred after some failure, to ignore it
-			if (State != STATE_HfpConnected) {
-				PublicParams.Abonent = ev->Param.InfoWch->Info;
-				UserCallback.AbonentInfo();
-			}
-			delete ev->Param.InfoWch;
+			ParseCurrentCalls(ev->Param.InfoCh->Info, &PublicParams);
+			UserCallback.AbonentInfo();
+			delete ev->Param.InfoCh;
 			break;
 	}
     return true;
@@ -546,12 +547,6 @@ bool HfpSm::PutOnHold(SMEVENT* ev, int param)
 bool HfpSm::ActivateOnHoldCall(SMEVENT* ev, int param)
 {
 	InHand::ActivateOnHoldCall(param);
-	return true;
-}
-
-bool HfpSm::ListCurrentCalls(SMEVENT* ev, int param)
-{
-	InHand::ListCurrentCalls();
 	return true;
 }
 
@@ -594,3 +589,10 @@ int HfpSm::GetVoiceState3 (SMEVENT* ev)
 	// Here PublicParams.PcSound was not set yet
 	return (ev->Param.HeadsetOn) ?   0 : 1;		// to STATE_InCallHeadsetOn or STATE_InCallHeadsetOff state
 }
+
+int HfpSm::GetRingingState(SMEVENT* ev)
+{
+	return (int) (ev->Param.AtResponse != SMEV_AtResponse_CallSetup_None); // 0 - end call. 1 - AT Response
+}
+
+

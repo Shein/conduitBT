@@ -54,7 +54,6 @@ enum SMEV_ATRESPONSE
 	SMEV_AtResponse_CallSetup_Incoming		,
 	SMEV_AtResponse_CallSetup_Outgoing		,
 	SMEV_AtResponse_CallSetup_RemoteAlert	,
-	SMEV_AtResponse_CallIdentity			,
 	SMEV_AtResponse_ListCurrentCalls
 };
 
