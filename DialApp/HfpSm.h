@@ -52,6 +52,7 @@ class HfpSmCb
 	void CallEndedVoiceFailure	();
 	void AbonentInfo			();
 	void Ring					();
+	void IncomingWaitingCall	();
 
   protected:
 	DialAppCb	CbFunc;
@@ -222,7 +223,13 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
-
+	static void PutEvent_CallWaiting(char* info)
+	{
+		SMEVENT Event = {SM_HFP, SMEV_CallWaiting};
+		Event.Param.InfoCh	   = new (info) CallInfo<char>(info);
+		SmBase::PutEvent (&Event, SMQ_HIGH);
+	}
+	
   // Help functions
   private:
 	bool ParseAndSetAtIndicators (char* services);
@@ -256,6 +263,7 @@ class HfpSm: public SMT<HfpSm>
 	bool SendDtmf			  (SMEVENT* ev, int param);
 	bool PutOnHold			  (SMEVENT* ev, int param);
 	bool ActivateOnHoldCall	  (SMEVENT* ev, int param);
+	bool IncomingWaitingCall  (SMEVENT* ev, int param);
 
   // Choices
   private:
@@ -372,5 +380,11 @@ inline void HfpSmCb::Ring ()
 	CbFunc (DialAppState_Ringing, DialAppError_Ok, flag, &HfpSmObj.PublicParams);
 }
 
+inline void HfpSmCb::IncomingWaitingCall ()
+{
+	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
+	flag |= DIALAPP_FLAG_CALL_WAITING;
+	CbFunc (DialAppState_Ringing, DialAppError_Ok, flag, &HfpSmObj.PublicParams);
+}
 
 #endif  // _HFPSM_H_

@@ -101,6 +101,7 @@ struct DialAppBthDev
 #define DIALAPP_FLAG_PCSOUND			0x02	// DialAppParam.PcSound was changed
 #define DIALAPP_FLAG_PCSOUNDON			0x04	// DialAppParam.PcSoundNowOn was changed
 #define DIALAPP_FLAG_ABONENT			0x08	// DialAppParam.AbonentNumber was set (and AbonentName, optionally)
+#define DIALAPP_FLAG_CALL_WAITING		0x10	// DialAppParam.AbonentNumber was set for incoming 3-way call
 #define DIALAPP_FLAG_NEWSTATE	  0x40000000	// Set when current state was changed
 #define DIALAPP_FLAG_INITSTATE	  0x80000000	// Set one-time when the SM started, in 1st callback only, before entering to the idle state (when SM's data, e.g. paired device list, are already initialized)
 

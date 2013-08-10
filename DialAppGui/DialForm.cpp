@@ -87,6 +87,11 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 		if (param->AbonentName)
 			DialForm::This->AddInfoMessage ("Abonent Name: '" + %System::String(param->AbonentName) + "'");
 	}
+
+	if(flags & DIALAPP_FLAG_CALL_WAITING){
+		DialForm::This->AddInfoMessage ("Incomming call: '" +  %System::String(param->AbonentName) +" " + %System::String(param->AbonentNumber) + "'");
+	}
+
 }
 
 

@@ -127,9 +127,9 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_InCall,			SMEV_CallEnd,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_InCall,			SMEV_AtResponse,				STATE_InCall,			&AtProcessing);
 	InitStateNode (STATE_InCall,			SMEV_SendDtmf,					STATE_InCall,			&SendDtmf);
-//	InitStateNode (STATE_InCall,			SMEV_PutOnHold,					STATE_InCall,			&PutOnHold);
+	InitStateNode (STATE_InCall,			SMEV_PutOnHold,					STATE_InCall,			&PutOnHold);
 //	InitStateNode (STATE_InCall,			SMEV_IncomingCall,				STATE_InCall,			&Ringing);
-//	InitStateNode (STATE_InCall,			SMEV_CallWaiting,				STATE_InCall,			&PutOnHold);
+	InitStateNode (STATE_InCall,			SMEV_CallWaiting,				STATE_InCall,			&IncomingWaitingCall);
 	InitStateNode (STATE_InCall,			SMEV_Headset,					STATE_InCall,			&SwitchVoiceOnOff);
 	/*--------------------------------------------------------------------------------------------------*/
 
@@ -480,6 +480,12 @@ bool HfpSm::Ringing (SMEVENT* ev, int param)
 	return true;
 }
 
+bool HfpSm::IncomingWaitingCall (SMEVENT* ev, int param)
+{
+	ParseCurrentCalls(ev->Param.InfoCh->Info, &PublicParams);
+	UserCallback.IncomingWaitingCall();
+	return true;
+}
 
 bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 {

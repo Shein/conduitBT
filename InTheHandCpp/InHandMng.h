@@ -54,7 +54,15 @@ public ref class InHandMng
 	static void ActivateHeldCall(int callid);
 	static void SendAtCommand (String ^at);
 	static void ListCurrentCalls();
-
+	/// Handsfree Supported Features
+	/// Bit     Feature                                                     Default in HF
+	/// (0=LSB)
+	/// 0       EC and/or NR function (yes/no, 1 = yes, 0 = no)             0
+	/// 1       Call waiting and three way calling(yes/no, 1 = yes, 0 = no) 0  Enabling is equivalent to AT+CCWA=1 - Call Waiting Notification Activation
+	/// 2       CLI presentation capability (yes/no, 1 = yes, 0 = no)       0
+	/// 3       Voice recognition activation (yes/no, 1= yes, 0 = no)       0
+	/// 4       Remote volume control (yes/no, 1 = yes, 0 = no)             0
+	static UInt16 HandsfreeSupportedFeatures = 166;
   protected:
 	static void AddSdp(Guid svc);
 	static void ProcessIoException (IOException ^ex);
@@ -126,7 +134,7 @@ void InHandMng::AddSdp (Guid svc)
 	bldr->AddServiceClass(svc);
 	if(svc.Equals(BluetoothService::Handsfree))
 	{
-		bldr->AddCustomAttribute(gcnew ServiceAttribute(HandsFreeProfileAttributeId::SupportedFeatures,gcnew ServiceElement(ElementType::UInt16, (UInt16)0x0006)));
+		bldr->AddCustomAttribute(gcnew ServiceAttribute(HandsFreeProfileAttributeId::SupportedFeatures,gcnew ServiceElement(ElementType::UInt16, (UInt16)HandsfreeSupportedFeatures)));
 	}
 		
 	ServiceRecord^ sdp = bldr->ServiceRecord;
@@ -258,7 +266,7 @@ void InHandMng::RecvAtCommand (String ^str)
 	else if (str->IndexOf("+CCWA:") == 0) {
 		//TODO
 		//3-way call notification event bringing participator's number
-		//HfpSm::PutEvent_AtResponse(??);
+		HfpSm::PutEvent_CallWaiting(sinfo+7);
 	} 
 	else if (str->IndexOf ("+CLCC:") == 0) {
 		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, sinfo+7);
@@ -382,11 +390,11 @@ int InHandMng::BeginHfpConnect ()
 {
 	try
 	{
-		SendAtCommand("AT+BRSF=6");
-		SendAtCommand("AT+CIND=?");
-		SendAtCommand("AT+CMER=3,0,0,1");
-		SendAtCommand("AT+CMEE=1");
-		//SendAtCommand("AT+CLIP=1");
+		SendAtCommand("AT+BRSF=" + HandsfreeSupportedFeatures); // Used In HF SDP, according to HF Spec 4.2.1
+		SendAtCommand("AT+CIND=?");			// The mapping of the indicators is given by the “AT+CIND=?” test command
+		SendAtCommand("AT+CMER=3,0,0,1");	// Indicators status update -3,0,0,1 activates “indicator events reporting”.
+		SendAtCommand("AT+CMEE=1");			// Enable the use of result code +CME ERROR
+		//SendAtCommand("AT+CLIP=1");			// Calling Line Identification notification HF Spec 4.23 (sending incoming call info along with RING)
 		return 4; // number of sent AT commands
 	}
 	catch (IOException ^ex) {
@@ -516,7 +524,6 @@ be supported
 void InHandMng::PutOnHold()
 {	
 	SendAtCommand("AT+CHLD=2;");
-	SendAtCommand("AT+CLCC");
 }
 
 
