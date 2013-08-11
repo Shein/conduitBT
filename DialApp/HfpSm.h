@@ -251,6 +251,7 @@ class HfpSm: public SMT<HfpSm>
 	bool AtProcessing		  (SMEVENT* ev, int param);
 	bool IncorrectState4Call  (SMEVENT* ev, int param);
 	bool StartOutgoingCall	  (SMEVENT* ev, int param);
+	bool CallFromPhone		  (SMEVENT* ev, int param);
 	bool Answer				  (SMEVENT* ev, int param);
 	bool OutgoingCall		  (SMEVENT* ev, int param);
 	bool StartCall			  (SMEVENT* ev, int param);
@@ -269,7 +270,7 @@ class HfpSm: public SMT<HfpSm>
   private:
 	int  IsHfpConnected		(SMEVENT* ev);
 	int  ChoiceCallSetup	(SMEVENT* ev);
-	int  ChoiceToRinging	(SMEVENT* ev);
+	int  ToRingingOrCalling	(SMEVENT* ev);
 	int  ChoiceFromRinging	(SMEVENT* ev);
 };
 

@@ -90,9 +90,10 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_HfpConnected,		SMEV_CallEnd,					STATE_HfpConnected,		&EndCall/*NULLTRANS*/);
 	InitStateNode (STATE_HfpConnected,		SMEV_Headset,					STATE_HfpConnected,		&SetHeadsetFlag);
 	InitStateNode (STATE_HfpConnected,		SMEV_StartOutgoingCall,			STATE_Calling,			&StartOutgoingCall);
-	InitStateNode (STATE_HfpConnected,		SMEV_AtResponse,				&ChoiceToRinging,		2);
+	InitStateNode (STATE_HfpConnected,		SMEV_AtResponse,				&ToRingingOrCalling,	3);
 		InitChoice (0, STATE_HfpConnected,	SMEV_AtResponse,				STATE_HfpConnected,		&AtProcessing);
 		InitChoice (1, STATE_HfpConnected,	SMEV_AtResponse,				STATE_Ringing,			&Ringing);
+		InitChoice (2, STATE_HfpConnected,	SMEV_AtResponse,				STATE_Calling,			&CallFromPhone);
 	/*-------------------------------------------------------------------------------------------------*/
 
 	/*---------------------------------- STATE: Calling   ---------------------------------------------*/
@@ -432,6 +433,15 @@ bool HfpSm::OutgoingCall (SMEVENT* ev, int param)
 }
 
 
+bool HfpSm::CallFromPhone (SMEVENT* ev, int param)
+{
+	LogMsg ("Initiating call from phone");
+	InHand::ListCurrentCalls();
+	UserCallback.Calling();
+	return true;
+}
+
+
 bool HfpSm::Answer (SMEVENT* ev, int param)
 {
 	InHand::Answer();
@@ -551,13 +561,16 @@ int HfpSm::IsHfpConnected (SMEVENT* ev)
 }
 
 
-int HfpSm::ChoiceToRinging (SMEVENT* ev)
+int HfpSm::ToRingingOrCalling (SMEVENT* ev)
 {
 	switch (ev->Param.AtResponse)
 	{
 		case SMEV_AtResponse_CallSetup_Incoming:
 			LogMsg("CallSetup_Incoming");
 			return 1; // to STATE_Ringing
+		case SMEV_AtResponse_CallSetup_Outgoing:
+			LogMsg("CallSetup_Outgoing");
+			return 2; // to STATE_Ringing
 	}
 	return 0; // call AtProcessing
 }
