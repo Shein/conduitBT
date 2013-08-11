@@ -54,6 +54,7 @@ public ref class InHandMng
 	static void ActivateHeldCall(int callid);
 	static void SendAtCommand (String ^at);
 	static void ListCurrentCalls();
+
 	/// Handsfree Supported Features
 	/// Bit     Feature                                                     Default in HF
 	/// (0=LSB)
@@ -63,6 +64,7 @@ public ref class InHandMng
 	/// 3       Voice recognition activation (yes/no, 1= yes, 0 = no)       0
 	/// 4       Remote volume control (yes/no, 1 = yes, 0 = no)             0
 	static UInt16 HandsfreeSupportedFeatures = 166;
+
   protected:
 	static void AddSdp(Guid svc);
 	static void ProcessIoException (IOException ^ex);
@@ -391,10 +393,10 @@ int InHandMng::BeginHfpConnect ()
 	try
 	{
 		SendAtCommand("AT+BRSF=" + HandsfreeSupportedFeatures); // Used In HF SDP, according to HF Spec 4.2.1
-		SendAtCommand("AT+CIND=?");			// The mapping of the indicators is given by the “AT+CIND=?” test command
-		SendAtCommand("AT+CMER=3,0,0,1");	// Indicators status update -3,0,0,1 activates “indicator events reporting”.
+		SendAtCommand("AT+CIND=?");			// The mapping of the indicators is given by the "AT+CIND=?" test command
+		SendAtCommand("AT+CMER=3,0,0,1");	// Indicators status update -3,0,0,1 activates "indicator events reporting".
 		SendAtCommand("AT+CMEE=1");			// Enable the use of result code +CME ERROR
-		//SendAtCommand("AT+CLIP=1");			// Calling Line Identification notification HF Spec 4.23 (sending incoming call info along with RING)
+		//SendAtCommand("AT+CLIP=1");		// Calling Line Identification notification HF Spec 4.23 (sending incoming call info along with RING)
 		return 4; // number of sent AT commands
 	}
 	catch (IOException ^ex) {

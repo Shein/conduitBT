@@ -101,11 +101,10 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_Calling,			SMEV_CallEnd,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_Calling,			SMEV_CallStart,					STATE_InCall,			&StartCall);
 	InitStateNode (STATE_Calling,			SMEV_Headset,					STATE_Calling,			&SetHeadsetFlag);
-	InitStateNode (STATE_Calling,			SMEV_AtResponse,				&ChoiceCallSetup,		4);
+	InitStateNode (STATE_Calling,			SMEV_AtResponse,				&ChoiceCallSetup,		3);
 		InitChoice (0, STATE_Calling,		SMEV_AtResponse,				STATE_HfpConnected,		&EndCall);
-		InitChoice (1, STATE_Calling,		SMEV_AtResponse,				STATE_HfpConnected,		&EndCall);
-		InitChoice (2, STATE_Calling,		SMEV_AtResponse,				STATE_Calling,			&OutgoingCall);
-		InitChoice (3, STATE_Calling,		SMEV_AtResponse,				STATE_Calling,			&AtProcessing);
+		InitChoice (1, STATE_Calling,		SMEV_AtResponse,				STATE_Calling,			&OutgoingCall);
+		InitChoice (2, STATE_Calling,		SMEV_AtResponse,				STATE_Calling,			&AtProcessing);
 	/*-------------------------------------------------------------------------------------------------*/
 
 	/*---------------------------------- STATE: Ringing   ---------------------------------------------*/
@@ -581,12 +580,11 @@ int HfpSm::ChoiceCallSetup (SMEVENT* ev)
 	switch (ev->Param.AtResponse)
 	{
 		case SMEV_AtResponse_Error:
-			return 0;	// call failure, back to STATE_HfpConnected
 		case SMEV_AtResponse_CallSetup_None:
-			return 1;	// call terminated, back to STATE_HfpConnected
+			return 0;	// call failure or call terminated - back to STATE_HfpConnected
 		case SMEV_AtResponse_CallSetup_Outgoing:
 			LogMsg("CallSetup_Outgoing");
-			return 2;	// OutgoingCall
+			return 1;	// OutgoingCall
 	}
-	return 3;	// stay in STATE_Calling, call AtProcessing
+	return 2;	// stay in STATE_Calling, call AtProcessing
 }

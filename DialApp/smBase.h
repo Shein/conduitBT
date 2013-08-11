@@ -22,7 +22,7 @@
    Size of global SM-Base buffer for allocating choices.
    Comment out this define to disable the choices at all.
 */
-#define SMBASE_CHOICES		10
+#define SMBASE_CHOICES		9
 
 
 /* 
