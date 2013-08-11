@@ -63,6 +63,9 @@ public ref class InHandMng
 	/// 2       CLI presentation capability (yes/no, 1 = yes, 0 = no)       0
 	/// 3       Voice recognition activation (yes/no, 1= yes, 0 = no)       0
 	/// 4       Remote volume control (yes/no, 1 = yes, 0 = no)             0
+	///	5		Enhanced call status	(yes/no, 1 = yes, 0 = no)
+	///	6		Enhanced call control	(yes/no, 1 = yes, 0 = no)
+	///	7		Codec negotiation		(yes/no, 1 = yes, 0 = no)
 	static UInt16 HandsfreeSupportedFeatures = 166;
 
   protected:
@@ -309,7 +312,7 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 
 	StreamReader ^rdr = gcnew StreamReader(StreamNet, Encoding::ASCII);
 	array<Char>  ^buf = gcnew array<Char>(250);
-
+	System::String ^str;
 	try	{
 		while (true)
 		{
@@ -320,6 +323,10 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 				InHandLog.LogMsg ("ReceiveThreadFn detected disconnection");
 				break;
 			}
+			
+			str = gcnew System::String(buf);
+			char* sinfo = String2Pchar("ReceiveThreadFn: "+ str);
+			InHandLog.LogMsg (sinfo);
 			RecvAtCommands (buf, nread);
 		}
 	}

@@ -87,7 +87,7 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_HfpConnected,		SMEV_ForgetDevice,				STATE_Idle,				&ForgetDevice);
 	InitStateNode (STATE_HfpConnected,		SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
 	InitStateNode (STATE_HfpConnected,		SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
-	InitStateNode (STATE_HfpConnected,		SMEV_CallEnd,					STATE_HfpConnected,		NULLTRANS);
+	InitStateNode (STATE_HfpConnected,		SMEV_CallEnd,					STATE_HfpConnected,		&EndCall/*NULLTRANS*/);
 	InitStateNode (STATE_HfpConnected,		SMEV_Headset,					STATE_HfpConnected,		&SetHeadsetFlag);
 	InitStateNode (STATE_HfpConnected,		SMEV_StartOutgoingCall,			STATE_Calling,			&StartOutgoingCall);
 	InitStateNode (STATE_HfpConnected,		SMEV_AtResponse,				&ChoiceToRinging,		2);
