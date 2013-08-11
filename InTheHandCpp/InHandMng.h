@@ -66,7 +66,7 @@ public ref class InHandMng
 	///	5		Enhanced call status	(yes/no, 1 = yes, 0 = no)
 	///	6		Enhanced call control	(yes/no, 1 = yes, 0 = no)
 	///	7		Codec negotiation		(yes/no, 1 = yes, 0 = no)
-	static UInt16 HandsfreeSupportedFeatures = 166;
+	static UInt16 HandsfreeSupportedFeatures = 116;
 
   protected:
 	static void AddSdp(Guid svc);
@@ -403,8 +403,9 @@ int InHandMng::BeginHfpConnect ()
 		SendAtCommand("AT+CIND=?");			// The mapping of the indicators is given by the "AT+CIND=?" test command
 		SendAtCommand("AT+CMER=3,0,0,1");	// Indicators status update -3,0,0,1 activates "indicator events reporting".
 		SendAtCommand("AT+CMEE=1");			// Enable the use of result code +CME ERROR
+		SendAtCommand("AT+CCWA=1");			// Call Waiting Notification Activation
 		//SendAtCommand("AT+CLIP=1");		// Calling Line Identification notification HF Spec 4.23 (sending incoming call info along with RING)
-		return 4; // number of sent AT commands
+		return 5; // number of sent AT commands
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
