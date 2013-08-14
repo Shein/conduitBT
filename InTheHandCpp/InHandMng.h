@@ -281,8 +281,7 @@ void InHandMng::RecvAtCommand (String ^str)
 		HfpSm::PutEvent_NoHeldCallsNotification ();
 	}
 
-	else if (str->Contains (CievCallHeld_1) 
-		|| str->Contains (CievCallHeld_2)) {
+	else if (str->Contains (CievCallHeld_1)) {
 		HfpSm::PutEvent_CallHeldNotification ();
 	}
 
