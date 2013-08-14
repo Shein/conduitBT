@@ -14,5 +14,4 @@ EXPORTS
 	dialappSendDtmf			
 	dialappDebugMode
 	dialappPutOnHold
-	dialappActivateHeldCall
 	dialappSendAT

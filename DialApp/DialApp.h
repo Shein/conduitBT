@@ -193,7 +193,7 @@ void  dialappAnswer () throw();
 	about errors.
  *************************************************************************************
  */
-void  dialappEndCall (int callid = 0) throw();
+void  dialappEndCall () throw();
 
 
 /*
@@ -255,37 +255,13 @@ void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
  Note: 
 	This function may be called when the internal State Machine is in 
 	DialAppState_InCall state only.
- Parameters:
-	TBD
  Exceptions: 
-    TBD
+	No exceptions.
  Callback:
-	Returns CallID, in DialAppParam (3rd param). The field param - TBD
-	In the case of error the callback with correspondent state and error code 
-	DialAppError will be called.
+	TBD
  *************************************************************************************
  */
 void dialappPutOnHold() throw();
-
-
-/*
- *************************************************************************************
- Activate held call.
- Note: 
-	This function may be called when the internal State Machine is in 
-	DialAppState_InCall state only.
- Parameters:
-	int callid - to be received from the AG:   AT+CIEV:< CallHeld Indicator >,2
- Exceptions: 
-    TBD
- Callback:
-	TBD
-	In the case of error the callback with correspondent state and error code 
-	DialAppError will be called.
- *************************************************************************************
- */
-void dialappActivateHeldCall(int callid) throw(); // Not Implemented yet
-
 
 
 /* TODO: For debug only. Must be removed for release */

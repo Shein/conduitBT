@@ -124,13 +124,16 @@ void HfpSm::Init (DialAppCb cb)
 	/*---------------------------------- STATE: InCall  ------------------------------------------------*/
 	InitStateNode (STATE_InCall,			SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
 	InitStateNode (STATE_InCall,			SMEV_Failure,					STATE_HfpConnected,		&EndCallVoiceFailure);
-	InitStateNode (STATE_InCall,			SMEV_CallEnd,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_InCall,			SMEV_AtResponse,				STATE_InCall,			&AtProcessing);
 	InitStateNode (STATE_InCall,			SMEV_SendDtmf,					STATE_InCall,			&SendDtmf);
 	InitStateNode (STATE_InCall,			SMEV_PutOnHold,					STATE_InCall,			&PutOnHold);
-//	InitStateNode (STATE_InCall,			SMEV_IncomingCall,				STATE_InCall,			&Ringing);
-	InitStateNode (STATE_InCall,			SMEV_CallWaiting,				STATE_InCall,			&IncomingWaitingCall);
+	InitStateNode (STATE_InCall,			SMEV_CallWaiting,				STATE_InCall,			&IncomingWaitingCallNotification);
 	InitStateNode (STATE_InCall,			SMEV_Headset,					STATE_InCall,			&SwitchVoiceOnOff);
+	InitStateNode (STATE_InCall,			SMEV_CallHeld,					STATE_InCall,			&CallHeldNotification);
+	InitStateNode (STATE_InCall,			SMEV_NoHeldCalls,				STATE_InCall,			&NoHeldCallsNotification);
+	InitStateNode (STATE_InCall,			SMEV_CallEnd,					&IsCallsHeld,			2);
+		InitChoice (0, STATE_InCall,		SMEV_CallEnd,					STATE_HfpConnected,		&EndCall);
+		InitChoice (1, STATE_InCall,		SMEV_CallEnd,					STATE_InCall,			&EndCall);
 	/*--------------------------------------------------------------------------------------------------*/
 
 	UserCallback.Construct (cb);
@@ -459,7 +462,7 @@ bool HfpSm::StartCall (SMEVENT* ev, int param)
 bool HfpSm::EndCallVoiceFailure (SMEVENT* ev, int param)
 {
 	LogMsg ("Ending call because of voice channel problem");
-	bool res = EndCall (ev, param);
+	bool res = EndCall (ev, param);  // TODO: what will happens in 3-way call???
 	if (ev->Param.ReportFailure)
 		UserCallback.CallEndedVoiceFailure();
 	// else it may be normal case of closing channel, so do not report
@@ -489,10 +492,23 @@ bool HfpSm::Ringing (SMEVENT* ev, int param)
 	return true;
 }
 
-bool HfpSm::IncomingWaitingCall (SMEVENT* ev, int param)
+bool HfpSm::IncomingWaitingCallNotification (SMEVENT* ev, int param)
 {
 	ParseCurrentCalls(ev->Param.InfoCh->Info, &PublicParams);
-	UserCallback.IncomingWaitingCall();
+	UserCallback.IncomingWaitingCallNotification();
+	return true;
+}
+
+bool HfpSm::CallHeldNotification (SMEVENT* ev, int param)
+{
+	HeldCalls = true;
+	UserCallback.CallHeldNotification();
+	return true;
+}
+
+bool HfpSm::NoHeldCallsNotification (SMEVENT* ev, int param)
+{
+	HeldCalls = false;
 	return true;
 }
 
@@ -600,4 +616,9 @@ int HfpSm::ChoiceCallSetup (SMEVENT* ev)
 			return 1;	// OutgoingCall
 	}
 	return 2;	// stay in STATE_Calling, call AtProcessing
+}
+
+int HfpSm::IsCallsHeld(SMEVENT* ev)
+{
+	return HeldCalls;
 }

@@ -215,13 +215,7 @@ void dialappPutOnHold()
 }
 
 
-void dialappActivateHeldCall (int callid)
-{
-
-}
-
-
-void dialappEndCall (int callid)
+void dialappEndCall ()
 {
 	HfpSm::PutEvent_CallEnd();
 }

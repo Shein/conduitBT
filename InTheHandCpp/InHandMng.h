@@ -277,6 +277,15 @@ void InHandMng::RecvAtCommand (String ^str)
 		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, sinfo+7);
 	}
 
+	else if (str->Contains (CievCallHeld_0)) {
+		HfpSm::PutEvent_NoHeldCallsNotification ();
+	}
+
+	else if (str->Contains (CievCallHeld_1) 
+		|| str->Contains (CievCallHeld_2)) {
+		HfpSm::PutEvent_CallHeldNotification ();
+	}
+
 	/* 
 	This works on HTC-Diamond2 - Windows Mobile only
 	else if (str->Contains ("+COLP")) { 
@@ -323,10 +332,6 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 				InHandLog.LogMsg ("ReceiveThreadFn detected disconnection");
 				break;
 			}
-			
-			str = gcnew System::String(buf);
-			char* sinfo = String2Pchar("ReceiveThreadFn: "+ str);
-			InHandLog.LogMsg (sinfo);
 			RecvAtCommands (buf, nread);
 		}
 	}

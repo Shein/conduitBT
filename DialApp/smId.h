@@ -40,7 +40,9 @@
     ENUM_ENTRY (SMEV, Headset				),	\
     ENUM_ENTRY (SMEV, SendDtmf				),	\
 	ENUM_ENTRY (SMEV, PutOnHold				),	\
-	ENUM_ENTRY (SMEV, CallWaiting			)
+	ENUM_ENTRY (SMEV, CallWaiting			),	\
+	ENUM_ENTRY (SMEV, CallHeld				),	\
+	ENUM_ENTRY (SMEV, NoHeldCalls			)
 
 /*
    SMEV_AtResponse event extension (SMEV_PAR, AtResponse field)
