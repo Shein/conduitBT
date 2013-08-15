@@ -35,12 +35,11 @@ class InHand
 	static void SendDtmf		(cchar* dialchar);
 	static void Answer			();
 	static void EndCall			();
-	static void ActivateOnHoldCall(int callid);
-	static void SendAtCommand( char* at );
+	static void SendAtCommand   (char* at);
 	static void PutOnHold		();
 	static void ListCurrentCalls();
-	static void SetCurrentCall( int idx, uint64 number, int dir );
-public:
+
+  public:
 	static DialAppBthDev  *Devices;
 	static int			   NumDevices;
 };

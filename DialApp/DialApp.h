@@ -170,8 +170,7 @@ void  dialappCall (cchar* dialnumber) throw();
     No exceptions.
  Callback:
 	If the call will successfully start, the DialAppCb will be called with 
-	state = DialAppState_InCallPcSoundOff or DialAppState_InCallPcSoundOn; 
-	otherwise the callback will report about errors.
+	state = DialAppState_InCall, otherwise the callback will report about errors.
 	In the case of error the callback with correspondent state and error code 
 	DialAppError will be called.
  *************************************************************************************
@@ -251,14 +250,16 @@ void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
 
 /*
  *************************************************************************************
- Put current call on hold, to answer another.
+ Put current call on hold and to answer on another waiting call.
  Note: 
 	This function may be called when the internal State Machine is in 
 	DialAppState_InCall state only.
  Exceptions: 
 	No exceptions.
  Callback:
-	TBD
+	After switching to a waiting call, a callback with the state = DialAppState_InCall and 
+	the flag combined from DIALAPP_FLAG_ABONENT_CURRENT, DIALAPP_FLAG_ABONENT_WAITING
+	and DIALAPP_FLAG_ABONENT_HELD will be called.
  *************************************************************************************
  */
 void dialappPutOnHold() throw();

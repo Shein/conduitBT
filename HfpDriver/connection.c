@@ -53,7 +53,7 @@ void HfpRepeatReaderPendingReadCompletion (_In_ WDFREQUEST  Request, _In_ WDFIOT
     status = Params->IoStatus.Status;
 
     if (NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONT_READER, "Pending read completion, RepeatReader: 0x%p, status: %!STATUS!, Buffer: 0x%p, BufferSize: %d", repeatReader, Params->IoStatus.Status, repeatReader->TransferBrb.Buffer, repeatReader->TransferBrb.BufferSize);
+        TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONT_READER, "Pending read completion, RepeatReader: 0x%p, status: %d, Buffer: 0x%p, BufferSize: %d", repeatReader, Params->IoStatus.Status, repeatReader->TransferBrb.Buffer, repeatReader->TransferBrb.BufferSize);
            
         repeatReader->Connection->ContinuousReader.ReaderCompleteCallback(
             repeatReader->Connection->DevCtxHdr,
@@ -64,7 +64,7 @@ void HfpRepeatReaderPendingReadCompletion (_In_ WDFREQUEST  Request, _In_ WDFIOT
 
     }
     else {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONT_READER, "Pending read completed with failure, RepeatReader: 0x%p, status: %!STATUS!", repeatReader, Params->IoStatus.Status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONT_READER, "Pending read completed with failure, RepeatReader: 0x%p, status: %d", repeatReader, Params->IoStatus.Status);
     }
 
     if (!NT_SUCCESS(status))
@@ -114,7 +114,7 @@ NTSTATUS HfpRepeatReaderInitialize(_In_ HFP_CONNECTION* Connection, _In_ HFP_REP
     status = WdfRequestCreate(&attributes, Connection->DevCtxHdr->IoTarget, &RepeatReader->RequestPendingRead);                    
 
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONT_READER, "Creating request for pending read failed, Status code %!STATUS!\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONT_READER, "Creating request for pending read failed, Status=%X", status);
         goto exit;
     }
 
@@ -131,14 +131,14 @@ NTSTATUS HfpRepeatReaderInitialize(_In_ HFP_CONNECTION* Connection, _In_ HFP_REP
     status = WdfMemoryCreate(
         &attributes,
         NonPagedPool,
-        POOLTAG_BTHECHOSAMPLE,
+        POOLTAG_HFPDRIVER,
         BufferSize,
         &RepeatReader->MemoryPendingRead,
         NULL //buffer
         );
 
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONT_READER, "Creating memory for pending read failed, Status code %!STATUS!\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONT_READER, "Creating memory for pending read failed, Status=%X", status);
         goto exit;
     }
 
@@ -208,7 +208,7 @@ NTSTATUS HfpRepeatReaderSubmit(_In_ HFPDEVICE_CONTEXT_HEADER* DevCtxHdr, _In_ HF
 
     if (FALSE == WdfRequestSend(RepeatReader->RequestPendingRead, DevCtxHdr->IoTarget, NULL)) {
         status = WdfRequestGetStatus(RepeatReader->RequestPendingRead);
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONT_READER, "Request send failed for request 0x%p, Brb 0x%p, Status code %!STATUS!\n", RepeatReader->RequestPendingRead, brb, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONT_READER, "Request send failed for request 0x%p, Brb 0x%p, Status code %d\n", RepeatReader->RequestPendingRead, brb, status);
         goto exit;
     }
     else {
@@ -412,13 +412,13 @@ NTSTATUS HfpConnectionObjectCreate (_In_ HFPDEVICE_CONTEXT_HEADER* DevCtxHdr, _I
 
     status = WdfObjectCreate (&attributes, &connectionObject);
     if (!NT_SUCCESS(status))  {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "WdfObjectCreate for connection object failed, Status code %!STATUS!\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "WdfObjectCreate for connection object failed, Status=%X", status);
         goto exit;
     }
 
     status = HfpConnectionObjectInit (connectionObject, DevCtxHdr);
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "Context initialize for connection object failed, ConnectionObject 0x%p, Status code %!STATUS!\n", connectionObject, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "Context initialize for connection object failed, ConnectionObject 0x%p, Status code %d\n", connectionObject, status);
         goto exit;
     }
 
@@ -544,7 +544,7 @@ NTSTATUS FormatRequestWithBrb (_In_ WDFIOTARGET IoTarget, _In_ WDFREQUEST Reques
     status = WdfMemoryCreatePreallocated (&attributes, Brb, BrbSize, &memoryArg1);
 
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_UTIL, "Creating preallocated memory for Brb 0x%p failed, Request to be formatted 0x%p, Status code %!STATUS!\n", Brb, Request, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_UTIL, "Creating preallocated memory for Brb 0x%p failed, Request to be formatted 0x%p, Status code %d\n", Brb, Request, status);
         goto exit;
     }
 
@@ -561,7 +561,7 @@ NTSTATUS FormatRequestWithBrb (_In_ WDFIOTARGET IoTarget, _In_ WDFREQUEST Reques
         );
 
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_UTIL, "Formatting request 0x%p with Brb 0x%p failed, Status code %!STATUS!\n", Request, Brb, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_UTIL, "Formatting request 0x%p with Brb 0x%p failed, Status code %d\n", Request, Brb, status);
         goto exit;
     }
 
@@ -596,11 +596,11 @@ NTSTATUS HfpConnectionObjectFormatRequestForScoTransfer(
     WdfSpinLockRelease(Connection->ConnectionLock);
 
     if (NULL == *Brb) {
-        brb = (struct _BRB_SCO_TRANSFER*) Connection->DevCtxHdr->ProfileDrvInterface.BthAllocateBrb (BRB_SCO_TRANSFER, POOLTAG_BTHECHOSAMPLE);
+        brb = (struct _BRB_SCO_TRANSFER*) Connection->DevCtxHdr->ProfileDrvInterface.BthAllocateBrb (BRB_SCO_TRANSFER, POOLTAG_HFPDRIVER);
 
         if (!brb) {
             status = STATUS_INSUFFICIENT_RESOURCES;
-            TraceEvents(TRACE_LEVEL_ERROR, DBG_WRITE, "Failed to allocate BRB_SCO_TRANSFER, returning status code %!STATUS!\n", status);
+            TraceEvents(TRACE_LEVEL_ERROR, DBG_WRITE, "Failed to allocate BRB_SCO_TRANSFER, returning status code %d\n", status);
             goto exit;
         }
         brbAllocatedLocally = TRUE;
@@ -618,7 +618,7 @@ NTSTATUS HfpConnectionObjectFormatRequestForScoTransfer(
     if (bufferSize > (ULONG)(-1))
     {
         status = STATUS_BUFFER_OVERFLOW;
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_WRITE, "Buffer passed in longer than max ULONG, returning status code %!STATUS!\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_WRITE, "Buffer passed in longer than max ULONG, returning status code %d\n", status);
         goto exit;        
     }
     

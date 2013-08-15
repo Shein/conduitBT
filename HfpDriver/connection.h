@@ -88,8 +88,6 @@ typedef struct _HFP_CONNECTION
     HFPDEVICE_CONTEXT_HEADER*		DevCtxHdr;    
     HFP_CONNECTION_STATE			ConnectionState;
     WDFSPINLOCK                     ConnectionLock;			// Connection lock, used to synchronize access to _HFP_CONNECTION data structure
-    USHORT                          OutMTU;
-    USHORT                          InMTU;
     SCO_CHANNEL_HANDLE				ChannelHandle;
     BTH_ADDR                        RemoteAddress;
     struct _BRB                     ConnectDisconnectBrb;	// Preallocated Brb, Request used for connect/disconnect
@@ -303,7 +301,7 @@ NTSTATUS HfpConnectionObjectInit (_In_ WDFOBJECT ConnectionObject, _In_ HFPDEVIC
     NTSTATUS Status code.
 */
 _IRQL_requires_max_(DISPATCH_LEVEL)
-NTSTATUS HfpRepeatReaderSubmit(_In_ HFPDEVICE_CONTEXT_HEADER* DevCtx, _In_ HFP_REPEAT_READER* RepeatReader);
+NTSTATUS HfpRepeatReaderSubmit(_In_ HFPDEVICE_CONTEXT_HEADER* devCtx, _In_ HFP_REPEAT_READER* RepeatReader);
 
 
 /*

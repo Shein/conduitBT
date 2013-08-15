@@ -51,7 +51,6 @@ public ref class InHandMng
 	static void Answer ();
 	static void EndCall ();
 	static void PutOnHold();
-	static void ActivateHeldCall(int callid);
 	static void SendAtCommand (String ^at);
 	static void ListCurrentCalls();
 
@@ -269,20 +268,20 @@ void InHandMng::RecvAtCommand (String ^str)
 		HfpSm::PutEvent_CallStart ();
 	}
 	else if (str->IndexOf("+CCWA:") == 0) {
-		//TODO
 		//3-way call notification event bringing participator's number
 		HfpSm::PutEvent_CallWaiting(sinfo+7);
 	} 
 	else if (str->IndexOf ("+CLCC:") == 0) {
 		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, sinfo+7);
 	}
-
 	else if (str->Contains (CievCallHeld_0)) {
-		HfpSm::PutEvent_NoHeldCallsNotification ();
+		HfpSm::PutEvent_CallHeld (SMEV_AtResponse_CallHeld_None);
 	}
-
 	else if (str->Contains (CievCallHeld_1)) {
-		HfpSm::PutEvent_CallHeldNotification ();
+		HfpSm::PutEvent_CallHeld (SMEV_AtResponse_CallHeld_HeldAndActive);
+	}
+	else if (str->Contains (CievCallHeld_2)) {
+		HfpSm::PutEvent_CallHeld (SMEV_AtResponse_CallHeld_HeldOnly);
 	}
 
 	/* 
@@ -320,7 +319,6 @@ void InHandMng::ReceiveThreadFn (Object ^state)
 
 	StreamReader ^rdr = gcnew StreamReader(StreamNet, Encoding::ASCII);
 	array<Char>  ^buf = gcnew array<Char>(250);
-	System::String ^str;
 	try	{
 		while (true)
 		{
@@ -538,13 +536,6 @@ be supported
 void InHandMng::PutOnHold()
 {	
 	SendAtCommand("AT+CHLD=2;");
-}
-
-
-void InHandMng::ActivateHeldCall(int callid)
-{
-	// Oleg TODO
-	LogMsg("Not Yet Implemented");
 }
 
 

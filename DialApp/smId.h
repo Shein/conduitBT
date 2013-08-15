@@ -41,8 +41,7 @@
     ENUM_ENTRY (SMEV, SendDtmf				),	\
 	ENUM_ENTRY (SMEV, PutOnHold				),	\
 	ENUM_ENTRY (SMEV, CallWaiting			),	\
-	ENUM_ENTRY (SMEV, CallHeld				),	\
-	ENUM_ENTRY (SMEV, NoHeldCalls			)
+	ENUM_ENTRY (SMEV, CallHeld				)
 
 /*
    SMEV_AtResponse event extension (SMEV_PAR, AtResponse field)
@@ -56,6 +55,9 @@ enum SMEV_ATRESPONSE
 	SMEV_AtResponse_CallSetup_Incoming		,
 	SMEV_AtResponse_CallSetup_Outgoing		,
 	SMEV_AtResponse_CallSetup_RemoteAlert	,
+	SMEV_AtResponse_CallHeld_None			,
+	SMEV_AtResponse_CallHeld_HeldAndActive	,
+	SMEV_AtResponse_CallHeld_HeldOnly		,
 	SMEV_AtResponse_ListCurrentCalls
 };
 

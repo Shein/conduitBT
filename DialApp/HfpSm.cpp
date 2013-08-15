@@ -87,7 +87,7 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_HfpConnected,		SMEV_ForgetDevice,				STATE_Idle,				&ForgetDevice);
 	InitStateNode (STATE_HfpConnected,		SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
 	InitStateNode (STATE_HfpConnected,		SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
-	InitStateNode (STATE_HfpConnected,		SMEV_CallEnd,					STATE_HfpConnected,		&EndCall/*NULLTRANS*/);
+	InitStateNode (STATE_HfpConnected,		SMEV_CallEnd,					STATE_HfpConnected,		&EndCall/*NULLTRANS*/);	// workaround for iPhone (it still hasn't correct notifications when 3-way call TODO)
 	InitStateNode (STATE_HfpConnected,		SMEV_Headset,					STATE_HfpConnected,		&SetHeadsetFlag);
 	InitStateNode (STATE_HfpConnected,		SMEV_StartOutgoingCall,			STATE_Calling,			&StartOutgoingCall);
 	InitStateNode (STATE_HfpConnected,		SMEV_AtResponse,				&ToRingingOrCalling,	3);
@@ -127,13 +127,12 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_InCall,			SMEV_AtResponse,				STATE_InCall,			&AtProcessing);
 	InitStateNode (STATE_InCall,			SMEV_SendDtmf,					STATE_InCall,			&SendDtmf);
 	InitStateNode (STATE_InCall,			SMEV_PutOnHold,					STATE_InCall,			&PutOnHold);
-	InitStateNode (STATE_InCall,			SMEV_CallWaiting,				STATE_InCall,			&IncomingWaitingCallNotification);
+	InitStateNode (STATE_InCall,			SMEV_CallWaiting,				STATE_InCall,			&IncomingWaitingCall);
 	InitStateNode (STATE_InCall,			SMEV_Headset,					STATE_InCall,			&SwitchVoiceOnOff);
-	InitStateNode (STATE_InCall,			SMEV_CallHeld,					STATE_InCall,			&CallHeldNotification);
-	InitStateNode (STATE_InCall,			SMEV_NoHeldCalls,				STATE_InCall,			&NoHeldCallsNotification);
-	InitStateNode (STATE_InCall,			SMEV_CallEnd,					&IsCallsHeld,			2);
+	InitStateNode (STATE_InCall,			SMEV_CallHeld,					STATE_InCall,			&CallHeld);
+	InitStateNode (STATE_InCall,			SMEV_CallEnd,					&IsCallHeld,			2);
 		InitChoice (0, STATE_InCall,		SMEV_CallEnd,					STATE_HfpConnected,		&EndCall);
-		InitChoice (1, STATE_InCall,		SMEV_CallEnd,					STATE_InCall,			&EndCall);
+		InitChoice (1, STATE_InCall,		SMEV_CallEnd,					STATE_InCall,			&EndHeldCall);
 	/*--------------------------------------------------------------------------------------------------*/
 
 	UserCallback.Construct (cb);
@@ -239,34 +238,112 @@ void HfpSm::StopVoiceHlp ()
 	PublicParams.PcSoundNowOn = false;
 }
 
-bool HfpSm::ParseCurrentCalls(char* CurrentCall, DialAppParam* param)
+
+void HfpSm::ClearAllCallInfo ()
 {
-	param->AbonentName   = 0;
-	param->AbonentNumber = 0;
+	if (CallInfoCurrent)
+		delete CallInfoCurrent;
+	if (CallInfoWaiting)
+		delete CallInfoWaiting;
+	if (CallInfoHeld)
+		delete CallInfoHeld;
 
-	STRB str(CurrentCall);
-
-	// Search for "Number"
-	char* s1 = str.ScanChar('\"');
-	if (!s1)
-		return false;
-	char* s2 = str.ScanCharNext('\"');
-	if (!s2)
-		return false;
-	*s2 = '\0';	
-	param->AbonentNumber = s1 + 1;
-
-	// Search for "Name"
-	if (s1 = str.ScanCharNext('\"'))
-	{
-		s2 = str.ScanCharNext('\"');
-		if (!s2)
-			return false;
-		*s2 = '\0';	
-		param->AbonentName = s1 + 1;
-	}
-	return true;
+	CallInfoCurrent = CallInfoWaiting = CallInfoHeld = 0;
+	PublicParams.AbonentCurrent = PublicParams.AbonentWaiting = PublicParams.AbonentHeld = 0;
 }
+
+
+void HfpSm::SetCallInfo4CurrentCall (CallInfo<char> *info)
+{
+	if (CallInfoCurrent)
+		delete CallInfoCurrent;
+
+	if (info) {
+		CallInfoCurrent = info;
+		CallInfoCurrent->Parse2NumberName ();
+		PublicParams.AbonentCurrent = CallInfoCurrent->GetAbonent();
+	}
+	else {
+		CallInfoCurrent = 0;
+		PublicParams.AbonentCurrent = 0;
+	}
+	UserCallback.CallCurrentInfo();
+}
+
+
+void HfpSm::SetCallInfo4WaitingCall (CallInfo<char> *info)
+{
+	if (CallInfoWaiting)
+		delete CallInfoWaiting;
+
+	if (info) {
+		CallInfoWaiting = info;
+		CallInfoWaiting->Parse2NumberName ();
+		PublicParams.AbonentWaiting = CallInfoWaiting->GetAbonent();
+	}
+	else {
+		CallInfoWaiting = 0;
+		PublicParams.AbonentWaiting = 0;
+	}
+	UserCallback.CallWaitingInfo();
+}
+
+
+void HfpSm::SetCallInfo4HeldCall (SMEV_ATRESPONSE heldstatus)
+{
+	uint32 addflag = 0;
+
+	switch (heldstatus)
+	{
+		case SMEV_AtResponse_CallHeld_None:			// No held call: clear the kept 
+		case SMEV_AtResponse_CallHeld_HeldOnly:		// Current call=>held: clear the kept and set held = current 
+			if (CallInfoHeld) {
+				delete CallInfoHeld;
+				CallInfoHeld = 0;
+				PublicParams.AbonentHeld = 0;
+			}
+			if (heldstatus == SMEV_AtResponse_CallHeld_None)
+				break;
+			CallInfoHeld = CallInfoCurrent;
+			PublicParams.AbonentHeld = CallInfoHeld->GetAbonent();
+			CallInfoCurrent = 0;
+			PublicParams.AbonentCurrent = 0;
+			addflag = DIALAPP_FLAG_ABONENT_CURRENT;
+			break;
+
+		case SMEV_AtResponse_CallHeld_HeldAndActive:	// Switch the held with the current or with the waiting
+			// For now we will use CallInfoWaiting to understand were we are
+			// TODO
+			if (CallInfoWaiting) {
+				// Probably we are switching held and waiting
+				if (CallInfoHeld)
+					delete CallInfoHeld;
+				CallInfoHeld = CallInfoWaiting;
+				CallInfoWaiting = 0;
+				PublicParams.AbonentWaiting = 0;
+				PublicParams.AbonentHeld	= CallInfoHeld->GetAbonent();
+				addflag = DIALAPP_FLAG_ABONENT_WAITING;
+			}
+			else 
+			{
+				// Probably we are switching held and current 
+				CallInfo<char> *c = CallInfoHeld;
+				CallInfoHeld = CallInfoCurrent;
+				CallInfoCurrent = c;
+				PublicParams.AbonentCurrent = CallInfoCurrent->GetAbonent();
+				PublicParams.AbonentHeld	= CallInfoHeld->GetAbonent();
+				addflag = DIALAPP_FLAG_ABONENT_CURRENT;
+			}
+			break;
+
+		default:
+			LogMsg("Incorrect Held Status");
+			return;
+	}
+
+	UserCallback.CallHeldInfo(addflag);
+}
+
 
 	
 /********************************************************************************\
@@ -333,6 +410,7 @@ bool HfpSm::Disconnect (SMEVENT* ev, int param)
 		InHand::Disconnect ();
 	MyTimer.Start(TIMEOUT_CONNECTION_POLLING,true);
 	UserCallback.DevicePresent (0);
+	ClearAllCallInfo();
 	return true;
 }
 
@@ -405,6 +483,15 @@ bool HfpSm::EndCall (SMEVENT* ev, int param)
 		UserCallback.CallFailure();
 	else
 		UserCallback.CallEnded();
+	ClearAllCallInfo();
+	return true;
+}
+
+
+bool HfpSm::EndHeldCall (SMEVENT* ev, int param)
+{
+	LogMsg ("Ending held call...");
+	InHand::EndCall();
 	return true;
 }
 
@@ -466,6 +553,7 @@ bool HfpSm::EndCallVoiceFailure (SMEVENT* ev, int param)
 	if (ev->Param.ReportFailure)
 		UserCallback.CallEndedVoiceFailure();
 	// else it may be normal case of closing channel, so do not report
+	ClearAllCallInfo();
 	return res;
 }
 
@@ -492,25 +580,22 @@ bool HfpSm::Ringing (SMEVENT* ev, int param)
 	return true;
 }
 
-bool HfpSm::IncomingWaitingCallNotification (SMEVENT* ev, int param)
+
+bool HfpSm::IncomingWaitingCall (SMEVENT* ev, int param)
 {
-	ParseCurrentCalls(ev->Param.InfoCh->Info, &PublicParams);
-	UserCallback.IncomingWaitingCallNotification();
+	SetCallInfo4WaitingCall(ev->Param.InfoCh);
 	return true;
 }
 
-bool HfpSm::CallHeldNotification (SMEVENT* ev, int param)
+
+bool HfpSm::CallHeld (SMEVENT* ev, int param)
 {
-	HeldCalls = true;
-	UserCallback.CallHeldNotification();
+	HeldCalls = (ev->Param.AtResponse != SMEV_AtResponse_CallHeld_None);
+	SetCallInfo4HeldCall (ev->Param.AtResponse);
+	UserCallback.CallHeldInfo();
 	return true;
 }
 
-bool HfpSm::NoHeldCallsNotification (SMEVENT* ev, int param)
-{
-	HeldCalls = false;
-	return true;
-}
 
 bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 {
@@ -536,9 +621,7 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 			break;
 
 		case SMEV_AtResponse_ListCurrentCalls:
-			ParseCurrentCalls(ev->Param.InfoCh->Info, &PublicParams);
-			UserCallback.AbonentInfo();
-			delete ev->Param.InfoCh;
+			SetCallInfo4CurrentCall (ev->Param.InfoCh);
 			break;
 	}
 	return true;
@@ -555,13 +638,6 @@ bool HfpSm::SendDtmf(SMEVENT* ev, int param)
 bool HfpSm::PutOnHold(SMEVENT* ev, int param)
 {
 	InHand::PutOnHold();
-	return true;
-}
-
-
-bool HfpSm::ActivateOnHoldCall(SMEVENT* ev, int param)
-{
-	InHand::ActivateOnHoldCall(param);
 	return true;
 }
 
@@ -618,7 +694,8 @@ int HfpSm::ChoiceCallSetup (SMEVENT* ev)
 	return 2;	// stay in STATE_Calling, call AtProcessing
 }
 
-int HfpSm::IsCallsHeld(SMEVENT* ev)
+
+int HfpSm::IsCallHeld (SMEVENT* ev)
 {
 	return HeldCalls;
 }

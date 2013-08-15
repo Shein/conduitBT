@@ -87,6 +87,17 @@ struct DialAppBthDev
 };
 
 
+/*
+ *************************************************************************************
+ Abonent information structure.
+ *************************************************************************************
+ */
+struct DialAppAbonent
+{
+	char	*Number;	// Abonent Number 
+	char	*Name;		// Abonent Name (optional, may be 0)
+};
+
 
 /*
  *************************************************************************************
@@ -100,9 +111,9 @@ struct DialAppBthDev
 #define DIALAPP_FLAG_CURDEV				0x01	// DialAppParam.CurDevice was changed
 #define DIALAPP_FLAG_PCSOUND			0x02	// DialAppParam.PcSound was changed
 #define DIALAPP_FLAG_PCSOUNDON			0x04	// DialAppParam.PcSoundNowOn was changed
-#define DIALAPP_FLAG_ABONENT			0x08	// DialAppParam.AbonentNumber was set (and AbonentName, optionally)
-#define DIALAPP_FLAG_CALL_WAITING		0x10	// DialAppParam.AbonentNumber was set for incoming 3-way call
-#define DIALAPP_FLAG_CALL_HELD			0x20	// DialAppParam.AbonentHeld was set (call is placed on hold or active/held calls swapped)
+#define DIALAPP_FLAG_ABONENT_CURRENT	0x08	// DialAppParam.AbonentCurrent was set
+#define DIALAPP_FLAG_ABONENT_WAITING	0x10	// DialAppParam.AbonentWaiting was set (for incoming 3-way call)
+#define DIALAPP_FLAG_ABONENT_HELD		0x20	// DialAppParam.AbonentHeld was set (call is placed on hold or active/held calls swapped)
 #define DIALAPP_FLAG_NEWSTATE	  0x40000000	// Set when current state was changed
 #define DIALAPP_FLAG_INITSTATE	  0x80000000	// Set one-time when the SM started, in 1st callback only, before entering to the idle state (when SM's data, e.g. paired device list, are already initialized)
 
@@ -118,9 +129,10 @@ struct DialAppParam
 {
 	bool			PcSound;		// PcSound = On/Off: readiness to use PS sound devices for phone conversations (DIALAPP_FLAG_PCSOUND flag)
 	bool			PcSoundNowOn;	// It's true when PC sound devices is working now (may be activated only if PcSound is true; DIALAPP_FLAG_PCSOUNDON flag)
-	DialAppBthDev	*CurDevice;		// Device address (DIALAPP_FLAG_CURDEV flag)
-	char			*AbonentNumber;	// Calling/called abonent Number (DIALAPP_FLAG_ABONENT flag)
-	char			*AbonentName;	// Calling/called abonent Name (may be 0, DIALAPP_FLAG_ABONENT flag)
+	DialAppBthDev  *CurDevice;		// Device address (DIALAPP_FLAG_CURDEV flag)
+	DialAppAbonent *AbonentCurrent;	// Currently in call abonent information (DIALAPP_FLAG_ABONENT_CURRENT flag)
+	DialAppAbonent *AbonentWaiting;	// Waiting abonent information (DIALAPP_FLAG_ABONENT_WAITING flag)
+	DialAppAbonent *AbonentHeld;	// On hold abonent information (DIALAPP_FLAG_ABONENT_HELD flag)
 };
 
 

@@ -13,8 +13,15 @@ Abstract:
   Device interface exposed by our bth client device
 */
 
+/* HFP Profile Service Class: 0000111E-0000-1000-8000-00805F9B34FB */
+//DEFINE_GUID(HFP_DEVICE_INTERFACE, 0x0000111E, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);
+
+#define HFP_CLASS_ID	0x111E
+
 /* fc71b33d-d528-4763-a86c-78777c7bcd7b */
 DEFINE_GUID(HFP_DEVICE_INTERFACE, 0xfc71b33d, 0xd528, 0x4763, 0xa8, 0x6c, 0x78, 0x77, 0x7c, 0x7b, 0xcd, 0x7b);
+
+extern __declspec(selectany) const PWSTR BthHfpDriverName = L"HfpDriver";
 
 /*
   IOCTL_xxx codes definitions for our device.

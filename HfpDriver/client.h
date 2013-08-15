@@ -13,16 +13,16 @@ Environment:
 
 
 /*
- Query profile driver interface
+ Query profile driver interface and store it in device context
 
  Arguments:
-    DevCtx - Client context where we store the interface
+    devCtx - Client context where we store the interface
 
  Return Value:
     NTSTATUS Status code.
 */
 _IRQL_requires_max_(PASSIVE_LEVEL)
-NTSTATUS HfpBthQueryInterfaces(_In_ HFPDEVICE_CONTEXT* DevCtx);
+NTSTATUS HfpBthQueryInterfaces(_In_ HFPDEVICE_CONTEXT* devCtx);
 
 
 /*
@@ -30,7 +30,7 @@ NTSTATUS HfpBthQueryInterfaces(_In_ HFPDEVICE_CONTEXT* DevCtx);
  This routine allocates open channel BRB. If the request is sent down successfully completion routine needs to free this BRB.
     
  Arguments:
-    _In_ BTHECHOSAMPLE_CLIENT_CONTEXT* DevCtx - 
+    _In_ BTHECHOSAMPLE_CLIENT_CONTEXT* devCtx - 
     _In_ WDFFILEOBJECT FileObject - 
     _In_ WDFREQUEST Request - 
 
@@ -38,7 +38,7 @@ NTSTATUS HfpBthQueryInterfaces(_In_ HFPDEVICE_CONTEXT* DevCtx);
     NTSTATUS Status code.
 */
 _IRQL_requires_same_
-NTSTATUS HfpOpenRemoteConnection(_In_ HFPDEVICE_CONTEXT* DevCtx, _In_ WDFFILEOBJECT FileObject, _In_ WDFREQUEST Request);
+NTSTATUS HfpOpenRemoteConnection(_In_ HFPDEVICE_CONTEXT* devCtx, _In_ WDFFILEOBJECT FileObject, _In_ WDFREQUEST Request);
 
 
 /*

@@ -44,7 +44,7 @@ void HfpReadWriteCompletion (_In_ WDFREQUEST Request, _In_ WDFIOTARGET  Target, 
 void HfpEvtQueueIoWrite (_In_ WDFQUEUE Queue, _In_ WDFREQUEST Request, _In_ size_t Length)
 {
     NTSTATUS			status;
-    HFPDEVICE_CONTEXT*	DevCtx;
+    HFPDEVICE_CONTEXT*	devCtx;
     WDFMEMORY			memory;
     struct _BRB_SCO_TRANSFER * brb = NULL;    
     HFP_CONNECTION*		connection;
@@ -56,17 +56,17 @@ void HfpEvtQueueIoWrite (_In_ WDFQUEUE Queue, _In_ WDFREQUEST Request, _In_ size
 
     connection = GetFileContext(WdfRequestGetFileObject(Request))->Connection;
 	// KS: TODO, check connection here, and in the Read func, for null
-    DevCtx = GetClientDeviceContext(WdfIoQueueGetDevice(Queue));
+    devCtx = GetClientDeviceContext(WdfIoQueueGetDevice(Queue));
     status = WdfRequestRetrieveInputMemory (Request, &memory);
 
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_WRITE, "WdfRequestRetrieveInputMemory failed, request 0x%p, Status code %!STATUS!\n", Request, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_WRITE, "WdfRequestRetrieveInputMemory failed, request 0x%p, Status code %d\n", Request, status);
         goto exit;        
     }
 
     // Get the BRB from request context and initialize it as BRB_SCO_TRANSFER BRB
     brb = (struct _BRB_SCO_TRANSFER*) GetRequestContext(Request);
-    DevCtx->Header.ProfileDrvInterface.BthReuseBrb ((PBRB)brb, BRB_SCO_TRANSFER);
+    devCtx->Header.ProfileDrvInterface.BthReuseBrb ((PBRB)brb, BRB_SCO_TRANSFER);
 
     // Format the Write request for SCO OUT transfer. This routine allocates a BRB which is returned to us in brb parameter.
     // This BRB is freed by the completion routine is we send the request successfully, else it is freed by this routine.
@@ -79,9 +79,9 @@ void HfpEvtQueueIoWrite (_In_ WDFQUEUE Queue, _In_ WDFREQUEST Request, _In_ size
     WdfRequestSetCompletionRoutine(Request, HfpReadWriteCompletion, brb);
 
     // Send the request down the stack
-    if (!WdfRequestSend(Request, DevCtx->Header.IoTarget, NULL))  {
+    if (!WdfRequestSend(Request, devCtx->Header.IoTarget, NULL))  {
         status = WdfRequestGetStatus(Request);
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_UTIL, "Request send failed for request 0x%p, Brb 0x%p, Status code %!STATUS!\n", Request, brb, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_UTIL, "Request send failed for request 0x%p, Brb 0x%p, Status code %d\n", Request, brb, status);
         goto exit;
     }    
 
@@ -97,7 +97,7 @@ void HfpEvtQueueIoWrite (_In_ WDFQUEUE Queue, _In_ WDFREQUEST Request, _In_ size
 void HfpEvtQueueIoRead (_In_ WDFQUEUE  Queue, _In_ WDFREQUEST  Request, _In_ size_t Length)
 {
     NTSTATUS			status;
-    HFPDEVICE_CONTEXT*	DevCtx;
+    HFPDEVICE_CONTEXT*	devCtx;
     WDFMEMORY			memory;
     struct _BRB_SCO_TRANSFER* brb = NULL;    
     HFP_CONNECTION*		connection;
@@ -107,17 +107,17 @@ void HfpEvtQueueIoRead (_In_ WDFQUEUE  Queue, _In_ WDFREQUEST  Request, _In_ siz
     TraceEvents(TRACE_LEVEL_INFORMATION, DBG_WRITE, "IoRead request %d bytes\n", Length);
 
     connection = GetFileContext(WdfRequestGetFileObject(Request))->Connection;
-    DevCtx	   = GetClientDeviceContext(WdfIoQueueGetDevice(Queue));
+    devCtx	   = GetClientDeviceContext(WdfIoQueueGetDevice(Queue));
 
     status = WdfRequestRetrieveOutputMemory (Request, &memory);
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_WRITE, "WdfRequestRetrieveInputMemory failed, request 0x%p, Status code %!STATUS!\n", Request, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_WRITE, "WdfRequestRetrieveInputMemory failed, request 0x%p, Status code %d\n", Request, status);
         goto exit;        
     }
 
     // Get the BRB from request context and initialize it as BRB_SCO_TRANSFER BRB
     brb = (struct _BRB_SCO_TRANSFER*) GetRequestContext(Request);
-    DevCtx->Header.ProfileDrvInterface.BthReuseBrb ((PBRB)brb,  BRB_SCO_TRANSFER);
+    devCtx->Header.ProfileDrvInterface.BthReuseBrb ((PBRB)brb,  BRB_SCO_TRANSFER);
 
     // Format the Read request for SCO IN transfer. This routine allocates a BRB which is returned to us in brb parameter.
     // This BRB is freed by the completion routine is we send the request successfully, else it is freed by this routine.
@@ -130,9 +130,9 @@ void HfpEvtQueueIoRead (_In_ WDFQUEUE  Queue, _In_ WDFREQUEST  Request, _In_ siz
     WdfRequestSetCompletionRoutine (Request, HfpReadWriteCompletion, brb);
 
     // Send the request down the stack
-    if (!WdfRequestSend (Request, DevCtx->Header.IoTarget, NULL))  {
+    if (!WdfRequestSend (Request, devCtx->Header.IoTarget, NULL))  {
         status = WdfRequestGetStatus(Request);
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_UTIL, "Request send failed for request 0x%p, Brb 0x%p, Status code %!STATUS!\n", Request, brb, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_UTIL, "Request send failed for request 0x%p, Brb 0x%p, Status code %d\n", Request, brb, status);
         goto exit;
     }
 
@@ -156,7 +156,7 @@ void HfpEvtQueueIoStop (_In_ WDFQUEUE  Queue, _In_ WDFREQUEST  Request, _In_ ULO
 
 void HfpEvtQueueIoDeviceControl (WDFQUEUE Queue, WDFREQUEST Request, size_t OutBufferLen, size_t InBufferLen, ULONG IoControlCode)
 {
-    HFPDEVICE_CONTEXT*	DevCtx;
+    HFPDEVICE_CONTEXT*	devCtx;
     NTSTATUS			status;
     PVOID				inbuf;
     size_t				size;
@@ -184,11 +184,11 @@ void HfpEvtQueueIoDeviceControl (WDFQUEUE Queue, WDFREQUEST Request, size_t OutB
 				break;
 			}
 
-			DevCtx = GetClientDeviceContext(WdfIoQueueGetDevice(Queue));
-		    DevCtx->ServerBthAddress = *((BTH_ADDR*)inbuf);
-			TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "ServerBthAddress = %llX\n", DevCtx->ServerBthAddress);
+			devCtx = GetClientDeviceContext(WdfIoQueueGetDevice(Queue));
+		    devCtx->ServerBthAddress = *((BTH_ADDR*)inbuf);
+			TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "ServerBthAddress = %llX\n", devCtx->ServerBthAddress);
 
-			status = HfpOpenRemoteConnection(DevCtx, WdfRequestGetFileObject(Request), Request);
+			status = HfpOpenRemoteConnection(devCtx, WdfRequestGetFileObject(Request), Request);
 			// if it succeeds RemoteConnectCompletion will complete the request; so return here
 			if (NT_SUCCESS(status))
 				return;

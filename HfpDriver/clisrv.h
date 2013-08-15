@@ -28,7 +28,7 @@ Environment:
 #include "trace.h"
 #include "hfppublic.h"
 
-#define POOLTAG_BTHECHOSAMPLE 'htbw'
+#define POOLTAG_HFPDRIVER 'htbw'
 
 
 /*

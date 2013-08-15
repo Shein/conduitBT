@@ -18,6 +18,11 @@ typedef struct
 {
     HFPDEVICE_CONTEXT_HEADER	Header;					// Context common to client and server
     BTH_ADDR                    ServerBthAddress;		// Destination Bluetooth address
+    HANDLE_SDP					SdpRecordHandle;		// Handle to published SDP record
+    SCO_SERVER_HANDLE			ScoServerHandle;		// Handle obtained by registering SCO server
+    struct _BRB					RegisterUnregisterBrb;	// BRB used for server register
+    WDFSPINLOCK					ConnectionListLock;		// Connection List lock
+    LIST_ENTRY					ConnectionList;			// Outstanding open connections
 } HFPDEVICE_CONTEXT;
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(HFPDEVICE_CONTEXT, GetClientDeviceContext)
@@ -78,4 +83,18 @@ EVT_WDF_DEVICE_FILE_CREATE		HfpEvtDeviceFileCreate;
     FileObject - File object corresponding to Close
 */
 EVT_WDF_FILE_CLOSE	 HfpEvtFileClose;
+
+
+
+/*
+ This routine is invoked by HfpSrvRemoteConnectResponseCompletion when connect 
+ response is completed. We initialize and submit continuous readers in this routine.
+
+ Arguments:
+    ConnectionObject - connection object for which connect response completed
+*/
+_IRQL_requires_max_(DISPATCH_LEVEL)
+NTSTATUS HfpSrvConnectionStateConnected (WDFOBJECT ConnectionObject);
+
+
 

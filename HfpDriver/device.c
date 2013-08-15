@@ -13,6 +13,7 @@ Environment:
 #include "device.h"
 #include "clisrv.h"
 #include "client.h"
+#include "server.h"
 #include "queue.h"
 
 #define INITGUID
@@ -50,6 +51,7 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
     // Configure Pnp/power callbacks
     WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&pnpPowerCallbacks);
     pnpPowerCallbacks.EvtDeviceSelfManagedIoInit = HfpEvtDeviceSelfManagedIoInit;
+    //pnpPowerCallbacks.EvtDeviceSelfManagedIoCleanup = KS TODO - take the code the server
     WdfDeviceInitSetPnpPowerEventCallbacks(DeviceInit, &pnpPowerCallbacks);
 
     // Configure file callbacks
@@ -69,7 +71,7 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
     status = WdfDeviceCreate (&DeviceInit, &deviceAttributes, &device);
 
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "WdfDeviceCreate failed with Status code %!STATUS!\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "WdfDeviceCreate failed with Status=%X", status);
         goto exit;
     }
 
@@ -79,7 +81,7 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
     status = HfpSharedDeviceContextHeaderInit(&devCtx->Header, device);
 
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "Initialization of context failed with Status code %!STATUS!\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "Initialization of context failed with Status=%X", status);
         goto exit;       
     }
 
@@ -99,7 +101,7 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
     status = WdfIoQueueCreate (device, &ioQueueConfig, WDF_NO_OBJECT_ATTRIBUTES, &queue);
     
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "WdfIoQueueCreate failed  %!STATUS!\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "WdfIoQueueCreate failed  %d\n", status);
         goto exit;
     }
 
@@ -107,7 +109,7 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
     status = WdfDeviceCreateDeviceInterface(device, &HFP_DEVICE_INTERFACE, NULL);
 
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "Enabling device interface failed with Status code %!STATUS!\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "Enabling device interface failed with Status=%X", status);
         goto exit;       
     }
 
@@ -119,10 +121,47 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
 
 
 
-NTSTATUS HfpEvtDeviceSelfManagedIoInit (_In_ WDFDEVICE  Device)
+NTSTATUS HfpEvtDeviceSelfManagedIoInit (_In_ WDFDEVICE Device)
 {
+    NTSTATUS status;
+	struct _BRB_SCO_REGISTER_SERVER* brb;
     HFPDEVICE_CONTEXT* devCtx = GetClientDeviceContext(Device);
-    return HfpSharedRetrieveLocalInfo(&devCtx->Header);
+
+    status = HfpSharedRetrieveLocalInfo(&devCtx->Header);
+    if (!NT_SUCCESS(status)) {
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "HfpSharedRetrieveLocalInfo failed\n");
+        goto exit;        
+    }
+
+    TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "HfpEvtDeviceSelfManagedIoInit: LocalBthAddr %X", devCtx->Header.LocalBthAddr);
+
+	// Registers SCO server
+    devCtx->Header.ProfileDrvInterface.BthReuseBrb(&(devCtx->RegisterUnregisterBrb), BRB_SCO_REGISTER_SERVER);
+
+    brb = (struct _BRB_SCO_REGISTER_SERVER*) &(devCtx->RegisterUnregisterBrb);
+
+    // Format BRB
+    brb->BtAddress					= devCtx->Header.LocalBthAddr; //BTH_ADDR_NULL;
+    brb->IndicationCallback			= &HfpSrvIndicationCallback;
+    brb->IndicationCallbackContext	= devCtx;
+    brb->IndicationFlags			= SCO_INDICATION_VALID_FLAGS;
+    brb->ReferenceObject			= WdfDeviceWdmGetDeviceObject(devCtx->Header.Device);
+
+    status = HfpSharedSendBrbSynchronously (devCtx->Header.IoTarget, devCtx->Header.Request, (PBRB)brb, sizeof(*brb));
+    
+    if (!NT_SUCCESS(status)) {
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "BRB_SCO_REGISTER_SERVER failed, status = %X", status);
+        goto exit;        
+    }
+
+    // Store server handle
+    devCtx->ScoServerHandle = brb->ServerHandle;
+    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "BRB_SCO_REGISTER_SERVER completed, handle = %X", devCtx->ScoServerHandle);
+
+    /*status = */HfpSrvPublishSdpRecord(Device);
+
+	exit:
+    return status;
 }
 
 
@@ -162,8 +201,37 @@ void HfpEvtFileClose (_In_ WDFFILEOBJECT  FileObject)
     devCtx = GetClientDeviceContext(WdfFileObjectGetDevice(FileObject));
     connection = GetFileContext(FileObject)->Connection;
 
-    // Since this routine is called at passive level we can disconnect synchronously.
+    // Since this routine is called at passive level we can disconnect synchronously
 	if (connection)
 		HfpConnectionObjectRemoteDisconnectSynchronously (&(devCtx->Header), connection);
+}
+
+
+
+_IRQL_requires_max_(DISPATCH_LEVEL)
+NTSTATUS HfpSrvConnectionStateConnected (WDFOBJECT ConnectionObject)
+{
+    TraceEvents(TRACE_LEVEL_VERBOSE, DBG_PNP, "HfpSrvConnectionStateConnected !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	UNREFERENCED_PARAMETER(ConnectionObject);
+    return 0;
+
+	/*
+    HFP_CONNECTION* connection = GetConnectionObjectContext(ConnectionObject);
+
+    NTSTATUS status = HfpConnectionObjectInitializeContinuousReader(
+        connection,
+        BthEchoSrvConnectionObjectContReaderReadCompletedCallback,
+        BthEchoSrvConnectionObjectContReaderFailedCallback,
+        BthEchoSampleMaxDataLength
+        );
+
+    if (!NT_SUCCESS(status))
+        goto exit;
+
+    status = HfpConnectionObjectContinuousReaderSubmitReaders(connection);
+    
+	exit:    
+    return status;
+	*/
 }
 

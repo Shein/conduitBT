@@ -122,25 +122,15 @@ void InHand::PutOnHold()
 }
 
 
-void InHand::ActivateOnHoldCall(int callid)
-{
-	InHandLog.LogMsg("About to ActivateHeldCall");
-	InHandMng::ActivateHeldCall(callid);
-}
-
-
 void InHand::SendAtCommand( char* at )
 {
 	String^ clistr = gcnew String(at);
 	InHandMng::SendAtCommand(clistr);
 }
 
+
 void InHand::ListCurrentCalls()
 {
 	InHandMng::ListCurrentCalls();
 }
 
-void InHand::SetCurrentCall( int idx, uint64 number, int dir )
-{
-	// TODO OLEG
-}

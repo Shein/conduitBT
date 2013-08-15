@@ -6,15 +6,15 @@
 ;Abstract:
 ;    INF file for installing the Bluetooth HFP Profile Driver
 ;
-;    devcon.exe HfpDriver.inf BTHENUM\{c07508f2-b970-43ca-b5dd-cc4f2391bef4}
+;    devcon.exe update HfpDriver.inf BTHENUM\{c07508f2-b970-43ca-b5dd-cc4f2391bef4}
 ;--*/
 
 [Version]
 Signature="$WINDOWS NT$"
-Class=Sample
+Class=Bluetooth
 ClassGuid={e0cbf06c-cd8b-4647-bb8a-263b43f0f974}
-Provider=%MSFT%
-DriverVer=06/21/2006,6.0.5841.
+Provider=%CNDT%
+DriverVer=08/14/2013,1.1.0.
 CatalogFile=KmdfSamples.cat
 
 [DestinationDirs]
@@ -31,13 +31,13 @@ HfpDriver.sys  = 1,,
 ;*****************************************
 
 [Manufacturer]
-%MSFT%=Microsoft,NTamd64...1
-%MSFT%=Microsoft,NTx86...1
+%CNDT%=Conduit,NTamd64...1
+%CNDT%=Conduit,NTx86...1
 
-[Microsoft.NTamd64...1]
+[Conduit.NTamd64...1]
 %HfpDriver.DeviceDesc% = HfpDriver_Inst,BTHENUM\{c07508f2-b970-43ca-b5dd-cc4f2391bef4}
 
-[Microsoft.NTx86...1]
+[Conduit.NTx86...1]
 %HfpDriver.DeviceDesc% = HfpDriver_Inst,BTHENUM\{c07508f2-b970-43ca-b5dd-cc4f2391bef4}
 [HfpDriver_Inst.NT]
 CopyFiles=Drivers_Dir
@@ -87,7 +87,7 @@ KmdfLibraryVersion = $KMDFVERSION$
 
 [Strings]
 SPSVCINST_ASSOCSERVICE= 0x00000002
-MSFT = "Microsoft"
+CNDT = "Conduit"
 StdMfg = "(Standard system devices)"
 DiskId1 = "HfpDriver installation disk"
 HfpDriver.DeviceDesc = "Bluetooth HFP Profile Driver"

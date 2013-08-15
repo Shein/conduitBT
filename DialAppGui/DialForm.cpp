@@ -82,18 +82,16 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 		array<String^>^ items = DialForm::This->InitDevicesCombo();
 		DialForm::This->SetDeviceName ((param->CurDevice) ? %System::String(param->CurDevice->Name):"", items);
 	}
-	if (flags & DIALAPP_FLAG_ABONENT) {
-		DialForm::This->AddInfoMessage ("Abonent Number: '" + %System::String(param->AbonentNumber) + "'");
-		if (param->AbonentName)
-			DialForm::This->AddInfoMessage ("Abonent Name: '" + %System::String(param->AbonentName) + "'");
+	if (flags & DIALAPP_FLAG_ABONENT_CURRENT) {
+		DialForm::This->AddInfoMessage ("Abonent Number: '" + %System::String(param->AbonentCurrent->Number) + "'");
+		if (param->AbonentCurrent->Name)
+			DialForm::This->AddInfoMessage ("Abonent Name: '" + %System::String(param->AbonentCurrent->Name) + "'");
 	}
-
-	if(flags & DIALAPP_FLAG_CALL_WAITING){
-		DialForm::This->AddInfoMessage ("Incomming call: '" +  %System::String(param->AbonentName) +" " + %System::String(param->AbonentNumber) + "'");
+	if(flags & DIALAPP_FLAG_ABONENT_WAITING){
+		DialForm::This->AddInfoMessage ("Incoming call: '" +  %System::String(param->AbonentWaiting->Name) +" " + %System::String(param->AbonentWaiting->Number) + "'");
 	}
-
-	if(flags & DIALAPP_FLAG_CALL_HELD){
-		DialForm::This->AddInfoMessage ("Call On Hold: '" /*+  %System::String(param->AbonentName) +" " + %System::String(param->AbonentNumber) + "'"*/);
+	if(flags & DIALAPP_FLAG_ABONENT_HELD){
+		DialForm::This->AddInfoMessage ("Call On Hold: '" +  %System::String(param->AbonentHeld->Name) +" " + %System::String(param->AbonentHeld->Number) + "'");
 	}
 }
 

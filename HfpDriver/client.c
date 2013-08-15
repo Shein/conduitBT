@@ -23,28 +23,27 @@ Environment:
 
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (PAGE, HfpBthQueryInterfaces)
-//#pragma alloc_text (PAGE, HfpRetrieveServerSdpRecord)
 #endif
 
 
 _IRQL_requires_max_(PASSIVE_LEVEL)
-NTSTATUS HfpBthQueryInterfaces(_In_ HFPDEVICE_CONTEXT* DevCtx)
+NTSTATUS HfpBthQueryInterfaces(_In_ HFPDEVICE_CONTEXT* devCtx)
 {
     NTSTATUS status;
 
     PAGED_CODE();
 
     status = WdfFdoQueryForInterface(
-        DevCtx->Header.Device,
+        devCtx->Header.Device,
         &GUID_BTHDDI_PROFILE_DRIVER_INTERFACE, 
-        (PINTERFACE) (&DevCtx->Header.ProfileDrvInterface),
-        sizeof(DevCtx->Header.ProfileDrvInterface), 
+        (PINTERFACE) (&devCtx->Header.ProfileDrvInterface),
+        sizeof(devCtx->Header.ProfileDrvInterface), 
         BTHDDI_PROFILE_DRIVER_INTERFACE_VERSION_FOR_QI, 
         NULL
         );
                 
     if (!NT_SUCCESS(status))  {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "QueryInterface failed for Interface profile driver interface, version %d, Status code %!STATUS!\n", BTHDDI_PROFILE_DRIVER_INTERFACE_VERSION_FOR_QI, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "QueryInterface failed for Interface profile driver interface, version %d, Status code %d\n", BTHDDI_PROFILE_DRIVER_INTERFACE_VERSION_FOR_QI, status);
         goto exit;
     }
 
@@ -91,10 +90,10 @@ void HfpRemoteConnectCompletion (_In_ WDFREQUEST  Request, _In_ WDFIOTARGET Targ
 {
     NTSTATUS status;
     struct _BRB_SCO_OPEN_CHANNEL *brb;    
-    HFPDEVICE_CONTEXT* DevCtx;
+    HFPDEVICE_CONTEXT* devCtx;
     HFP_CONNECTION* connection;
     
-    DevCtx = GetClientDeviceContext(WdfIoTargetGetDevice(Target));
+    devCtx = GetClientDeviceContext(WdfIoTargetGetDevice(Target));
 
     status = Params->IoStatus.Status;
 
@@ -118,7 +117,7 @@ void HfpRemoteConnectCompletion (_In_ WDFREQUEST  Request, _In_ WDFIOTARGET Targ
         // Set the file context to the connection passed in
 		GetFileContext(WdfRequestGetFileObject(Request))->Connection = connection;
         // If such post processing here fails we may disconnect:
-        // HfpConnectionObjectRemoteDisconnect (&(DevCtx->Header), connection);
+        // HfpConnectionObjectRemoteDisconnect (&(devCtx->Header), connection);
     }
     else {
         connection->ConnectionState = ConnectionStateConnectFailed;
@@ -132,7 +131,7 @@ void HfpRemoteConnectCompletion (_In_ WDFREQUEST  Request, _In_ WDFIOTARGET Targ
 
 
 _IRQL_requires_same_
-NTSTATUS HfpOpenRemoteConnection (_In_ HFPDEVICE_CONTEXT* DevCtx, _In_ WDFFILEOBJECT FileObject, _In_ WDFREQUEST Request)
+NTSTATUS HfpOpenRemoteConnection (_In_ HFPDEVICE_CONTEXT* devCtx, _In_ WDFFILEOBJECT FileObject, _In_ WDFREQUEST Request)
 {
     NTSTATUS status;
     WDFOBJECT connectionObject;    
@@ -144,7 +143,7 @@ NTSTATUS HfpOpenRemoteConnection (_In_ HFPDEVICE_CONTEXT* DevCtx, _In_ WDFFILEOB
 
     // Create the connection object that would store information about the open channel
     // Set file object as the parent for this connection object
-    status = HfpConnectionObjectCreate (&DevCtx->Header,FileObject/*parent*/, &connectionObject);
+    status = HfpConnectionObjectCreate (&devCtx->Header,FileObject/*parent*/, &connectionObject);
     if (!NT_SUCCESS(status))
         goto exit;
 
@@ -154,11 +153,11 @@ NTSTATUS HfpOpenRemoteConnection (_In_ HFPDEVICE_CONTEXT* DevCtx, _In_ WDFFILEOB
     // Get the BRB from request context and initialize it as BRB_SCO_OPEN_CHANNEL BRB
     brb = (struct _BRB_SCO_OPEN_CHANNEL *)GetRequestContext(Request);
 
-    DevCtx->Header.ProfileDrvInterface.BthReuseBrb((PBRB)brb, BRB_SCO_OPEN_CHANNEL);
+    devCtx->Header.ProfileDrvInterface.BthReuseBrb((PBRB)brb, BRB_SCO_OPEN_CHANNEL);
     
     brb->Hdr.ClientContext[0] = connection;
 
-    brb->BtAddress			= DevCtx->ServerBthAddress;
+    brb->BtAddress			= devCtx->ServerBthAddress;
 	brb->TransmitBandwidth	= 
 	brb->ReceiveBandwidth	= 8000;  // 64Kb/s
 	brb->MaxLatency			= 0xF;
@@ -169,11 +168,11 @@ NTSTATUS HfpOpenRemoteConnection (_In_ HFPDEVICE_CONTEXT* DevCtx, _In_ WDFFILEOB
     brb->CallbackFlags		= SCO_CALLBACK_DISCONNECT;	// Get notification about remote disconnect 
     brb->Callback			= &HfpIndicationCallback;
     brb->CallbackContext	= connection;
-    brb->ReferenceObject	= (PVOID) WdfDeviceWdmGetDeviceObject(DevCtx->Header.Device);
+    brb->ReferenceObject	= (PVOID) WdfDeviceWdmGetDeviceObject(devCtx->Header.Device);
 
-    status = HfpSharedSendBrbAsync(DevCtx->Header.IoTarget, Request, (PBRB)brb, sizeof(*brb), HfpRemoteConnectCompletion, brb/*Context*/);
+    status = HfpSharedSendBrbAsync(devCtx->Header.IoTarget, Request, (PBRB)brb, sizeof(*brb), HfpRemoteConnectCompletion, brb/*Context*/);
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "Sending brb for opening connection failed, returning status code %!STATUS!\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "Sending brb for opening connection failed, returning status code %d\n", status);
         goto exit;
     }            
 

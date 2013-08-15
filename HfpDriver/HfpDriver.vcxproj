@@ -54,6 +54,12 @@
       <WppTraceFunction>TraceEvents(LEVEL,FLAGS,MSG,...)</WppTraceFunction>
       <WppGenerateUsingTemplateFile>{km-WdfDefault.tpl}*.tmh</WppGenerateUsingTemplateFile>
     </ClCompile>
+    <ClCompile Include="sdp.c" />
+    <ClCompile Include="server.c" />
+    <ClCompile Include="serve_.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <Inf Include=".\HfpDriver.inx">
       <Architecture>$(InfArch)</Architecture>
       <SpecifyArchitecture>true</SpecifyArchitecture>
@@ -108,6 +114,8 @@
     <ClInclude Include="driver.h" />
     <ClInclude Include="hfppublic.h" />
     <ClInclude Include="queue.h" />
+    <ClInclude Include="sdp.h" />
+    <ClInclude Include="server.h" />
     <ClInclude Include="trace.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
