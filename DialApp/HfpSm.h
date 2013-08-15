@@ -70,6 +70,7 @@ class HfpSm: public SMT<HfpSm>
 		// Timeouts in milliseconds
 		TIMEOUT_CONNECTION_POLLING	= 5000,
 		TIMEOUT_HFP_NEGOTIATION		=  500,
+		TIMEOUT_WAITING_HOLD_SWITCH	=   20,
 	};
 
   public:
@@ -80,7 +81,7 @@ class HfpSm: public SMT<HfpSm>
 	static HfpSmCb   UserCallback;
 
   public:
-	HfpSm(): SMT<HfpSm>("HfpSm  "), MyTimer(SM_HFP, SMEV_Timeout), ScoAppObj(0) 
+	HfpSm(): SMT<HfpSm>("HfpSm  "), MyTimer(SM_HFP, SMEV_Timeout), ScoAppObj(0), CallInfoCurrent(0), CallInfoHeld(0), CallInfoWaiting(0)
 	{
 		memset (&PublicParams, 0, sizeof(DialAppParam));
 	}
@@ -97,11 +98,10 @@ class HfpSm: public SMT<HfpSm>
 	int			AtResponsesCnt;
 	int			AtResponsesNum;
 	bool		HfpIndicators;
-	bool		HeldCalls; //True on +CIEV <callheld>,1 or 2. False on +CIEV <callheld>,0
 
-	CallInfo<char>   *CallInfoCurrent;
-	CallInfo<char>   *CallInfoWaiting;
-	CallInfo<char>   *CallInfoHeld;
+	CallInfo<char>   *CallInfoCurrent;		// Set in InCall state after the abonent information is present
+	CallInfo<char>   *CallInfoHeld;			// Set in InCall state when the Current call is turned to Held, it is indication about Held call presence
+	CallInfo<char>   *CallInfoWaiting;		// Set in InCall state after incoming waiting call received, it is indication about Waiting call presence
 
   public:
 	static void PutEvent_Failure ()
@@ -185,7 +185,7 @@ class HfpSm: public SMT<HfpSm>
 	{
 		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
 		Event.Param.AtResponse = resp;
-		SmBase::PutEvent (&Event, SMQ_LOW);
+		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
 	static void PutEvent_AtResponse (SMEV_ATRESPONSE resp, char* info)
@@ -232,8 +232,16 @@ class HfpSm: public SMT<HfpSm>
 	static void PutEvent_CallWaiting(char* info)
 	{
 		SMEVENT Event = {SM_HFP, SMEV_CallWaiting};
+		Event.Param.AtResponse = SMEV_AtResponse_CallWaiting_Ringing;
 		Event.Param.InfoCh = new (info) CallInfo<char>(info);
 		SmBase::PutEvent (&Event, SMQ_HIGH);
+	}
+
+	static void PutEvent_CallWaitingStopped()
+	{
+		SMEVENT Event = {SM_HFP, SMEV_CallWaiting};
+		Event.Param.AtResponse = SMEV_AtResponse_CallWaiting_Stopped;
+		SmBase::PutEvent (&Event, SMQ_LOW);	// low queue, SMEV_CallHeld must be first 
 	}
 
 	static void PutEvent_CallHeld (SMEV_ATRESPONSE resp)
@@ -269,6 +277,7 @@ class HfpSm: public SMT<HfpSm>
 	bool StartOutgoingCall	  (SMEVENT* ev, int param);
 	bool CallFromPhone		  (SMEVENT* ev, int param);
 	bool Answer				  (SMEVENT* ev, int param);
+	bool Answer2Waiting		  (SMEVENT* ev, int param);
 	bool OutgoingCall		  (SMEVENT* ev, int param);
 	bool StartCall			  (SMEVENT* ev, int param);
 	bool EndCall			  (SMEVENT* ev, int param);
@@ -281,6 +290,7 @@ class HfpSm: public SMT<HfpSm>
 	bool SendDtmf			  (SMEVENT* ev, int param);
 	bool PutOnHold			  (SMEVENT* ev, int param);
 	bool IncomingWaitingCall  (SMEVENT* ev, int param);
+	bool SendWaitingCallStop  (SMEVENT* ev, int param);
 	bool CallHeld		  	  (SMEVENT* ev, int param);
 
   // Choices

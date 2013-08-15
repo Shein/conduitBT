@@ -58,6 +58,8 @@ enum SMEV_ATRESPONSE
 	SMEV_AtResponse_CallHeld_None			,
 	SMEV_AtResponse_CallHeld_HeldAndActive	,
 	SMEV_AtResponse_CallHeld_HeldOnly		,
+	SMEV_AtResponse_CallWaiting_Ringing		,
+	SMEV_AtResponse_CallWaiting_Stopped		,
 	SMEV_AtResponse_ListCurrentCalls
 };
 

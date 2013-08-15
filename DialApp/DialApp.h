@@ -162,15 +162,19 @@ void  dialappCall (cchar* dialnumber) throw();
 
 /*
  *************************************************************************************
- Answer on the incoming call.
+ Answer on an incoming or waiting call.
  Note: 
 	This function may be called when the State Machine is in DialAppState_Ringing
-	state only.
+	state or in DialAppState_InCall after receiving DIALAPP_FLAG_ABONENT_WAITING 
+	notification callback.
  Exceptions: 
     No exceptions.
  Callback:
 	If the call will successfully start, the DialAppCb will be called with 
 	state = DialAppState_InCall, otherwise the callback will report about errors.
+	This or subsequent callback will also notify about calling information changes
+	by DIALAPP_FLAG_ABONENT_CURRENT / DIALAPP_FLAG_ABONENT_HELD / 
+	DIALAPP_FLAG_ABONENT_WAITING flags.
 	In the case of error the callback with correspondent state and error code 
 	DialAppError will be called.
  *************************************************************************************
