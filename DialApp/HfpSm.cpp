@@ -87,7 +87,7 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_HfpConnected,		SMEV_ForgetDevice,				STATE_Idle,				&ForgetDevice);
 	InitStateNode (STATE_HfpConnected,		SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
 	InitStateNode (STATE_HfpConnected,		SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
-	InitStateNode (STATE_HfpConnected,		SMEV_CallEnd,					STATE_HfpConnected,		&EndCall/*NULLTRANS*/);	// workaround for iPhone (it still hasn't correct notifications when 3-way call TODO)
+	InitStateNode (STATE_HfpConnected,		SMEV_CallEnded,					STATE_HfpConnected,		NULLTRANS);
 	InitStateNode (STATE_HfpConnected,		SMEV_Headset,					STATE_HfpConnected,		&SetHeadsetFlag);
 	InitStateNode (STATE_HfpConnected,		SMEV_StartOutgoingCall,			STATE_Calling,			&StartOutgoingCall);
 	InitStateNode (STATE_HfpConnected,		SMEV_AtResponse,				&ToRingingOrCalling,	3);
@@ -100,6 +100,7 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_Calling,			SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
 	InitStateNode (STATE_Calling,			SMEV_Failure,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_Calling,			SMEV_CallEnd,					STATE_HfpConnected,		&EndCall);
+	InitStateNode (STATE_Calling,			SMEV_CallEnded,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_Calling,			SMEV_CallStart,					STATE_InCall,			&StartCall);
 	InitStateNode (STATE_Calling,			SMEV_Headset,					STATE_Calling,			&SetHeadsetFlag);
 	InitStateNode (STATE_Calling,			SMEV_AtResponse,				&ChoiceCallSetup,		3);
@@ -112,6 +113,7 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_Ringing,			SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
 	InitStateNode (STATE_Ringing,			SMEV_Failure,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_Ringing,			SMEV_CallEnd,					STATE_HfpConnected,		&EndCall);
+	InitStateNode (STATE_Ringing,			SMEV_CallEnded,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_Ringing,			SMEV_Answer,					STATE_Ringing,			&Answer);
 	InitStateNode (STATE_Ringing,			SMEV_CallStart,					STATE_InCall,			&StartCall);
 	InitStateNode (STATE_Ringing,			SMEV_AtResponse,				&ChoiceFromRinging,		2);
@@ -132,9 +134,8 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_InCall,			SMEV_Timeout,					STATE_InCall,			&SendWaitingCallStop);
 	InitStateNode (STATE_InCall,			SMEV_Headset,					STATE_InCall,			&SwitchVoiceOnOff);
 	InitStateNode (STATE_InCall,			SMEV_CallHeld,					STATE_InCall,			&CallHeld);
-	InitStateNode (STATE_InCall,			SMEV_CallEnd,					&IsCallHeld,			2);
-		InitChoice (0, STATE_InCall,		SMEV_CallEnd,					STATE_HfpConnected,		&EndCall);
-		InitChoice (1, STATE_InCall,		SMEV_CallEnd,					STATE_InCall,			&EndHeldCall);
+	InitStateNode (STATE_InCall,			SMEV_CallEnd,					STATE_InCall,			&StartCallEnding);
+	InitStateNode (STATE_InCall,			SMEV_CallEnded,					STATE_HfpConnected,		&FinalizeCallEnding);
 	/*--------------------------------------------------------------------------------------------------*/
 
 	UserCallback.Construct (cb);
@@ -493,10 +494,24 @@ bool HfpSm::EndCall (SMEVENT* ev, int param)
 }
 
 
-bool HfpSm::EndHeldCall (SMEVENT* ev, int param)
+bool HfpSm::StartCallEnding (SMEVENT* ev, int param)
 {
-	LogMsg ("Ending held call...");
+	LogMsg ("Ending current call...");
 	InHand::EndCall();
+	return true;
+}
+
+
+bool HfpSm::FinalizeCallEnding (SMEVENT* ev, int param)
+{
+	LogMsg ("Current call ended...");
+	if (PublicParams.PcSoundNowOn)
+		StopVoiceHlp ();
+	if (ev->Ev == SMEV_Failure)
+		UserCallback.CallFailure();
+	else
+		UserCallback.CallEnded();
+	ClearAllCallInfo();
 	return true;
 }
 
@@ -740,8 +755,3 @@ int HfpSm::ChoiceCallSetup (SMEVENT* ev)
 	return 2;	// stay in STATE_Calling, call AtProcessing
 }
 
-
-int HfpSm::IsCallHeld (SMEVENT* ev)
-{
-	return (CallInfoHeld != 0);
-}

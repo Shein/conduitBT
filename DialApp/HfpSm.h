@@ -210,6 +210,12 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
+	static void PutEvent_CallEnded ()
+	{
+		SMEVENT Event = {SM_HFP, SMEV_CallEnded};
+		SmBase::PutEvent (&Event, SMQ_HIGH);
+	}
+
 	static void PutEvent_CallStart ()
 	{
 		SMEVENT Event = {SM_HFP, SMEV_CallStart};
@@ -281,7 +287,8 @@ class HfpSm: public SMT<HfpSm>
 	bool OutgoingCall		  (SMEVENT* ev, int param);
 	bool StartCall			  (SMEVENT* ev, int param);
 	bool EndCall			  (SMEVENT* ev, int param);
-	bool EndHeldCall		  (SMEVENT* ev, int param);
+	bool StartCallEnding	  (SMEVENT* ev, int param);
+	bool FinalizeCallEnding	  (SMEVENT* ev, int param);
 	bool SwitchVoiceOnOff	  (SMEVENT* ev, int param);
 	bool ConnectFailure		  (SMEVENT* ev, int param);
 	bool ServiceConnectFailure(SMEVENT* ev, int param);
@@ -299,7 +306,6 @@ class HfpSm: public SMT<HfpSm>
 	int  ChoiceCallSetup	(SMEVENT* ev);
 	int  ToRingingOrCalling	(SMEVENT* ev);
 	int  ChoiceFromRinging	(SMEVENT* ev);
-	int	 IsCallHeld			(SMEVENT* ev);
 };
 
 

@@ -37,6 +37,7 @@
     ENUM_ENTRY (SMEV, Answer				),	\
     ENUM_ENTRY (SMEV, CallEnd				),	\
     ENUM_ENTRY (SMEV, CallStart				),	\
+    ENUM_ENTRY (SMEV, CallEnded				),	\
     ENUM_ENTRY (SMEV, Headset				),	\
     ENUM_ENTRY (SMEV, SendDtmf				),	\
 	ENUM_ENTRY (SMEV, PutOnHold				),	\

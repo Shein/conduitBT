@@ -262,7 +262,11 @@ void InHandMng::RecvAtCommand (String ^str)
 		HfpSm::PutEvent_AtResponse(SMEV_AtResponse_CallSetup_Outgoing);
 	}
 	else if (str->Contains (CievCall_0)) {
-		HfpSm::PutEvent_CallEnd();
+		// HfpSm::PutEvent_CallEnd();
+		// In order to differ CallEnd initiated by a user and this AT command it's introduced new CallEnded event 
+		// In general it is unnecessary, but because of iPhone's problem, when being in 3-way call, it stops to send
+		// callsetup and callheld commands. As result we need this event in order to terminate the call
+		HfpSm::PutEvent_CallEnded();
 	}
 	else if (str->Contains (CievCall_1)) {
 		HfpSm::PutEvent_CallStart ();
