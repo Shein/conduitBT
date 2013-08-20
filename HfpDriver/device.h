@@ -61,6 +61,18 @@ EVT_WDF_DRIVER_DEVICE_ADD	HfpEvtDriverDeviceAdd;
 EVT_WDF_DEVICE_SELF_MANAGED_IO_INIT		HfpEvtDeviceSelfManagedIoInit;
 
 
+/*
+ This routine is called by the framework only once and hence we use it for our one time de-initialization.
+ In this routine we remove SDP record and unregister server. We also disconnect all the outstanding connections.
+
+ Arguments:
+    Device - Framework device object
+
+ Return Value:
+    NTSTATUS Status code.
+*/
+EVT_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP  HfpEvtDeviceSelfManagedIoCleanup;
+
 
 /*
  This routine is invoked by Framework when an application opens a handle to our device.

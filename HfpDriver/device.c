@@ -25,6 +25,7 @@ Environment:
 
 #ifdef ALLOC_PRAGMA
 #pragma alloc_text (PAGE, HfpEvtDriverDeviceAdd)
+#pragma alloc_text (PAGE, HfpEvtDeviceSelfManagedIoCleanup)
 #pragma alloc_text (PAGE, HfpEvtDeviceFileCreate)
 #pragma alloc_text (PAGE, HfpEvtFileClose)
 #endif
@@ -51,7 +52,7 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
     // Configure Pnp/power callbacks
     WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&pnpPowerCallbacks);
     pnpPowerCallbacks.EvtDeviceSelfManagedIoInit = HfpEvtDeviceSelfManagedIoInit;
-    //pnpPowerCallbacks.EvtDeviceSelfManagedIoCleanup = KS TODO - take the code the server
+    pnpPowerCallbacks.EvtDeviceSelfManagedIoCleanup = HfpEvtDeviceSelfManagedIoCleanup;
     WdfDeviceInitSetPnpPowerEventCallbacks(DeviceInit, &pnpPowerCallbacks);
 
     // Configure file callbacks
@@ -113,7 +114,26 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
         goto exit;       
     }
 
-	exit:    
+	#if 1	// Get Bluetooth Radio System info (if needed)
+	{
+	struct _BRB_SCO_GET_SYSTEM_INFO* brb;
+	devCtx->Header.ProfileDrvInterface.BthReuseBrb(&(devCtx->RegisterUnregisterBrb), BRB_SCO_GET_SYSTEM_INFO);
+	brb = (struct _BRB_SCO_GET_SYSTEM_INFO*) &(devCtx->RegisterUnregisterBrb);
+	status = HfpSharedSendBrbSynchronously (devCtx->Header.IoTarget, devCtx->Header.Request, (PBRB)brb, sizeof(*brb));
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "BRB_SCO_GET_SYSTEM_INFO failed, status = %X", status);
+		goto exit;        
+	}
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "BRB_SCO_GET_SYSTEM_INFO:");
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, " Features = %X", brb->Features);
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, " MaxChannels = %X", brb->MaxChannels);
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, " TransferUnit = %X", brb->TransferUnit);
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, " PacketTypes = %X", brb->PacketTypes);
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, " DataFormats = %X", brb->DataFormats);
+	}
+	#endif
+
+	exit:
     // We don't need to worry about deleting any objects on failure because all the object created so far are parented to device and when
     // we return an error, framework will delete the device and as a result all the child objects will get deleted along with that.
     return status;
@@ -123,85 +143,142 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
 
 NTSTATUS HfpEvtDeviceSelfManagedIoInit (_In_ WDFDEVICE Device)
 {
-    NTSTATUS status;
+	NTSTATUS status;
+	HFPDEVICE_CONTEXT* devCtx = GetClientDeviceContext(Device);
+
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "HfpEvtDeviceSelfManagedIoInit\n");
+
+	#if 1
+	{
 	struct _BRB_SCO_REGISTER_SERVER* brb;
-    HFPDEVICE_CONTEXT* devCtx = GetClientDeviceContext(Device);
 
-    status = HfpSharedRetrieveLocalInfo(&devCtx->Header);
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "HfpSharedRetrieveLocalInfo failed\n");
-        goto exit;        
-    }
+	status = HfpSharedRetrieveLocalInfo(&devCtx->Header);
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "HfpSharedRetrieveLocalInfo failed\n");
+		goto exit;
+	}
 
-    TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "HfpEvtDeviceSelfManagedIoInit: LocalBthAddr %X", devCtx->Header.LocalBthAddr);
+	TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "HfpEvtDeviceSelfManagedIoInit: LocalBthAddr %X", devCtx->Header.LocalBthAddr);
 
 	// Registers SCO server
-    devCtx->Header.ProfileDrvInterface.BthReuseBrb(&(devCtx->RegisterUnregisterBrb), BRB_SCO_REGISTER_SERVER);
+	devCtx->Header.ProfileDrvInterface.BthReuseBrb(&(devCtx->RegisterUnregisterBrb), BRB_SCO_REGISTER_SERVER);
 
-    brb = (struct _BRB_SCO_REGISTER_SERVER*) &(devCtx->RegisterUnregisterBrb);
+	brb = (struct _BRB_SCO_REGISTER_SERVER*) &(devCtx->RegisterUnregisterBrb);
 
-    // Format BRB
-    brb->BtAddress					= devCtx->Header.LocalBthAddr; //BTH_ADDR_NULL;
-    brb->IndicationCallback			= &HfpSrvIndicationCallback;
-    brb->IndicationCallbackContext	= devCtx;
-    brb->IndicationFlags			= SCO_INDICATION_VALID_FLAGS;
-    brb->ReferenceObject			= WdfDeviceWdmGetDeviceObject(devCtx->Header.Device);
+	// Format BRB
+	brb->BtAddress					= devCtx->Header.LocalBthAddr; // BTH_ADDR_NULL;
+	brb->IndicationCallback			= &HfpSrvIndicationCallback;
+	brb->IndicationCallbackContext	= devCtx;
+	brb->IndicationFlags			= SCO_INDICATION_VALID_FLAGS;
+	brb->ReferenceObject			= WdfDeviceWdmGetDeviceObject(devCtx->Header.Device);
 
-    status = HfpSharedSendBrbSynchronously (devCtx->Header.IoTarget, devCtx->Header.Request, (PBRB)brb, sizeof(*brb));
-    
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "BRB_SCO_REGISTER_SERVER failed, status = %X", status);
-        goto exit;        
-    }
+	status = HfpSharedSendBrbSynchronously (devCtx->Header.IoTarget, devCtx->Header.Request, (PBRB)brb, sizeof(*brb));
 
-    // Store server handle
-    devCtx->ScoServerHandle = brb->ServerHandle;
-    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "BRB_SCO_REGISTER_SERVER completed, handle = %X", devCtx->ScoServerHandle);
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "BRB_SCO_REGISTER_SERVER failed, status = %X", status);
+		goto exit;
+	}
 
-    /*status = */HfpSrvPublishSdpRecord(Device);
+	// Store server handle
+	devCtx->ScoServerHandle = brb->ServerHandle;
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "BRB_SCO_REGISTER_SERVER completed, handle = %X", devCtx->ScoServerHandle);
+	}
+	#endif
+
+	/*status = */HfpSrvPublishSdpRecord(devCtx->Header.Device);
 
 	exit:
-    return status;
+	return status;
+}
+
+
+void HfpEvtDeviceSelfManagedIoCleanup (_In_ WDFDEVICE  Device)
+{
+	HFPDEVICE_CONTEXT* devCtx = GetClientDeviceContext(Device);
+
+	PAGED_CODE();
+
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "HfpEvtDeviceSelfManagedIoCleanup, ScoServerHandle = %X\n", devCtx->ScoServerHandle);
+
+	if (devCtx->SdpRecordHandle)
+		HfpSrvRemoveSdpRecord(devCtx);
+
+	if (devCtx->ScoServerHandle) {		// Unregisters SCO server
+		NTSTATUS status;
+		struct _BRB_SCO_UNREGISTER_SERVER *brb;
+
+		devCtx->Header.ProfileDrvInterface.BthReuseBrb (&(devCtx->RegisterUnregisterBrb), BRB_SCO_UNREGISTER_SERVER);
+
+		brb = (struct _BRB_SCO_UNREGISTER_SERVER*) &(devCtx->RegisterUnregisterBrb);
+
+		brb->BtAddress	  = devCtx->Header.LocalBthAddr; // BTH_ADDR_NULL;
+		brb->ServerHandle = devCtx->ScoServerHandle;
+
+		status = HfpSharedSendBrbSynchronously (devCtx->Header.IoTarget, devCtx->Header.Request, (PBRB)brb, sizeof(*brb));
+
+		if (!NT_SUCCESS(status)) {
+			TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "BRB_SCO_UNREGISTER_SERVER failed, Status=%X", status);
+			// Send does not fail for resource reasons
+			NT_ASSERT(FALSE);
+			goto exit;
+		}
+
+		devCtx->ScoServerHandle = 0;
+		TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "BRB_SCO_UNREGISTER_SERVER completed");
+	}
+
+
+	// Disconnect any open connections, after this point no more connections can come because we have 
+	// unregistered server.
+	//
+	// BthEchoSrvDisconnectConnectionsOnRemove does not wait for disconnect to complete. Connection object's 
+	// cleanup callback waits on that. Since connection objects are children of device, they will be cleaned 
+	// up and disconnect would complete before device object is cleaned up.
+
+	// TODO BthEchoSrvDisconnectConnectionsOnRemove(devCtx);
+
+	exit:
+	return;
 }
 
 
 
 void HfpEvtDeviceFileCreate (_In_ WDFDEVICE Device, _In_ WDFREQUEST Request, _In_ WDFFILEOBJECT FileObject)
 {
-    NTSTATUS status = STATUS_SUCCESS;
+	NTSTATUS status = STATUS_SUCCESS;
 
-    // Must be cleared before we may open it in the HfpEvtQueueIoDeviceControl,IOCTL_HFP_OPEN_SCO
+	// Must be cleared before we may open it in the HfpEvtQueueIoDeviceControl,IOCTL_HFP_OPEN_SCO
 	// In order to check this state when closing
 	GetFileContext(FileObject)->Connection = 0;
 
 	UNREFERENCED_PARAMETER(Device);
-        
-    PAGED_CODE();
-    TraceEvents(TRACE_LEVEL_VERBOSE, DBG_PNP, "HfpEvtDeviceFileCreate\n");
+
+	PAGED_CODE();
+	TraceEvents(TRACE_LEVEL_VERBOSE, DBG_PNP, "HfpEvtDeviceFileCreate\n");
 
 	// All the activity of this function is moved to HfpEvtQueueIoDeviceControl-IOCTL_HFP_OPEN_SCO,
 	// because of the user application first must supply the destination Bluetooth device address,
 	// and only then the SCO channel may be opened and the tx/rx will start.
 	// As result this function is empty.
 
-    WdfRequestComplete(Request, status);        
+	WdfRequestComplete(Request, status);
 }
 
 
 
 void HfpEvtFileClose (_In_ WDFFILEOBJECT  FileObject)
-{    
-    HFPDEVICE_CONTEXT*	devCtx;
-    HFP_CONNECTION* connection;
+{
+	HFPDEVICE_CONTEXT*	devCtx;
+	HFP_CONNECTION* connection;
 
-    PAGED_CODE();
+	PAGED_CODE();
 
-    TraceEvents(TRACE_LEVEL_VERBOSE, DBG_PNP, "HfpEvtFileClose\n");
+	TraceEvents(TRACE_LEVEL_VERBOSE, DBG_PNP, "HfpEvtFileClose\n");
 
-    devCtx = GetClientDeviceContext(WdfFileObjectGetDevice(FileObject));
-    connection = GetFileContext(FileObject)->Connection;
+	devCtx = GetClientDeviceContext(WdfFileObjectGetDevice(FileObject));
+	connection = GetFileContext(FileObject)->Connection;
 
-    // Since this routine is called at passive level we can disconnect synchronously
+	// Since this routine is called at passive level we can disconnect synchronously
 	if (connection)
 		HfpConnectionObjectRemoteDisconnectSynchronously (&(devCtx->Header), connection);
 }
@@ -211,27 +288,27 @@ void HfpEvtFileClose (_In_ WDFFILEOBJECT  FileObject)
 _IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS HfpSrvConnectionStateConnected (WDFOBJECT ConnectionObject)
 {
-    TraceEvents(TRACE_LEVEL_VERBOSE, DBG_PNP, "HfpSrvConnectionStateConnected !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	TraceEvents(TRACE_LEVEL_VERBOSE, DBG_PNP, "HfpSrvConnectionStateConnected !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 	UNREFERENCED_PARAMETER(ConnectionObject);
-    return 0;
+	return 0;
 
 	/*
-    HFP_CONNECTION* connection = GetConnectionObjectContext(ConnectionObject);
+	HFP_CONNECTION* connection = GetConnectionObjectContext(ConnectionObject);
 
-    NTSTATUS status = HfpConnectionObjectInitializeContinuousReader(
-        connection,
-        BthEchoSrvConnectionObjectContReaderReadCompletedCallback,
-        BthEchoSrvConnectionObjectContReaderFailedCallback,
-        BthEchoSampleMaxDataLength
-        );
+	NTSTATUS status = HfpConnectionObjectInitializeContinuousReader(
+		connection,
+		BthEchoSrvConnectionObjectContReaderReadCompletedCallback,
+		BthEchoSrvConnectionObjectContReaderFailedCallback,
+		BthEchoSampleMaxDataLength
+		);
 
-    if (!NT_SUCCESS(status))
-        goto exit;
+	if (!NT_SUCCESS(status))
+		goto exit;
 
-    status = HfpConnectionObjectContinuousReaderSubmitReaders(connection);
-    
-	exit:    
-    return status;
+	status = HfpConnectionObjectContinuousReaderSubmitReaders(connection);
+
+	exit:
+	return status;
 	*/
 }
 

@@ -694,11 +694,14 @@ bool HfpSm::Answer2Waiting(SMEVENT* ev, int param)
 {
 	if (CallInfoWaiting) {
 		LogMsg("Answering on Waiting incoming call");
-		InHand::PutOnHold();
+		//InHand::PutOnHold(); 
+		// this is moved before return as workaround for iPhone 
+		// (it has not call waiting notifications, so CallInfoWaiting is always 0)
 	}
 	else {
 		LogMsg("NO WAITING CALLS TO ANSWER");
 	}
+	InHand::PutOnHold();
 	return true;
 }
 

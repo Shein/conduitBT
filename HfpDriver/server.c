@@ -93,8 +93,10 @@ NTSTATUS HfpSrvPublishSdpRecord (_In_ WDFDEVICE Device)
         &sdpRecordLength
         );
 
-    if (!NT_SUCCESS(status))
+    if (!NT_SUCCESS(status)) {
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "CreateSdpRecord failed, Status %X\n", status);
         goto exit;
+    }
     
 	// -----------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------
@@ -129,8 +131,11 @@ NTSTATUS HfpSrvPublishSdpRecord (_In_ WDFDEVICE Device)
     devCtx->SdpRecordHandle = sdpRecordHandle;
     TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "IOCTL_BTH_SDP_SUBMIT_RECORD completed, handle = %X", sdpRecordHandle);
 
-exit:
-    return status;    
+	exit:
+    if (sdpRecordStream)
+        FreeSdpRecord(sdpRecordStream);
+    
+    return status;
 }
 
 
@@ -151,24 +156,19 @@ void HfpSrvRemoveSdpRecord (_In_ HFPDEVICE_CONTEXT* devCtx)
 
     sdpRecordHandle = devCtx->SdpRecordHandle;
 
-    WDF_MEMORY_DESCRIPTOR_INIT_BUFFER(
-        &inMemDesc,
-        &sdpRecordHandle,
-        sizeof(HANDLE_SDP)
-        );
+    WDF_MEMORY_DESCRIPTOR_INIT_BUFFER (&inMemDesc, &sdpRecordHandle, sizeof(HANDLE_SDP));
     
     status = WdfIoTargetSendIoctlSynchronously(
         devCtx->Header.IoTarget,
         devCtx->Header.Request,
         IOCTL_BTH_SDP_REMOVE_RECORD,
         &inMemDesc,
-        NULL,   //outMemDesc
-        NULL,   //sendOptions
-        NULL    //bytesReturned
+        0,		//outMemDesc
+        0,		//sendOptions
+        0		//bytesReturned
         );
 
-    if (!NT_SUCCESS(status))
-    {
+    if (!NT_SUCCESS(status)) {
         TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "IOCTL_BTH_SDP_REMOVE_RECORD failed, Status=%X", status);
 
         // Send does not fail for resource reasons
@@ -178,7 +178,7 @@ void HfpSrvRemoveSdpRecord (_In_ HFPDEVICE_CONTEXT* devCtx)
 
     devCtx->SdpRecordHandle = HANDLE_SDP_NULL;
 
-exit:
+	exit:
     return;    
 }
 

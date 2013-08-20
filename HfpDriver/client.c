@@ -43,7 +43,7 @@ NTSTATUS HfpBthQueryInterfaces(_In_ HFPDEVICE_CONTEXT* devCtx)
         );
                 
     if (!NT_SUCCESS(status))  {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "QueryInterface failed for Interface profile driver interface, version %d, Status code %d\n", BTHDDI_PROFILE_DRIVER_INTERFACE_VERSION_FOR_QI, status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "QueryInterface failed, version %d, Status %X", BTHDDI_PROFILE_DRIVER_INTERFACE_VERSION_FOR_QI, status);
         goto exit;
     }
 

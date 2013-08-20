@@ -138,6 +138,7 @@ void InHandMng::AddSdp (Guid svc)
 	bldr->AddServiceClass(svc);
 	if(svc.Equals(BluetoothService::Handsfree))
 	{
+		bldr->AddServiceClass(BluetoothService::GenericAudio);
 		bldr->AddCustomAttribute(gcnew ServiceAttribute(HandsFreeProfileAttributeId::SupportedFeatures,gcnew ServiceElement(ElementType::UInt16, (UInt16)HandsfreeSupportedFeatures)));
 	}
 		
