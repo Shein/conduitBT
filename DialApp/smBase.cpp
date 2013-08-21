@@ -20,6 +20,8 @@ IMPL_ENUM (SMEV, SMEV_LIST)
 SmBase	SmBase::This;
 SM*		SmBase::SmGlobalArray [SMID_NUMS];
 
+Semaph	SmBase::QueueSemaphor;
+
 FIFO_ALLOC <SMEVENT,SmBase::SM_HQUEUE_SIZE>  SmBase::QueueHigh;
 FIFO_ALLOC <SMEVENT,SmBase::SM_LQUEUE_SIZE>  SmBase::QueueLow;
 
@@ -95,6 +97,7 @@ void SmBase::Init()
 	This.Construct();
 }
 
+
 void SmBase::End()
 { 
 	This.Destruct();
@@ -111,7 +114,7 @@ bool SmBase::PutEvent (SMEVENT *pEv, SMQ level)
             ASSERT_f (pEv->SmId && pEv->SmId!=SMID_ALL);
             SmGlobalArray[pEv->SmId]->Execute (pEv);
             res = true;
-            break;
+            goto exit;
 
         case SMQ_HIGH:
             res = QueueHigh.PutElement (*pEv);
@@ -122,7 +125,10 @@ bool SmBase::PutEvent (SMEVENT *pEv, SMQ level)
             break;
     }
     
-    return res;
+    QueueSemaphor.Signal();
+
+	exit:
+	return res;
 }
 
 
@@ -154,6 +160,8 @@ void SmBase::Run ()
     // Do endless loop SMQ_HIGH..SMQ_LOW
     for (int i = SMQ_HIGH; ; i = (i+1) & 1)
     {
+		if (i==SMQ_HIGH) // take it ones for all queues (because it's unknown to which queue PutEvent was)
+			QueueSemaphor.Take();
         while (!fifos[i]->IsEmpty()) {
             ev = fifos[i]->GetFirst();
             SmGlobalArray[ev->SmId]->Execute (ev);
@@ -164,4 +172,3 @@ void SmBase::Run ()
     }
 }
 
- 

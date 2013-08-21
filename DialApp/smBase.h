@@ -268,6 +268,7 @@ class SmBase : public DebLog, public Thread
     virtual void Run();
 
   protected:
+	static Semaph	QueueSemaphor;
 	static FIFO_ALLOC <SMEVENT,SM_HQUEUE_SIZE>  QueueHigh;
 	static FIFO_ALLOC <SMEVENT,SM_LQUEUE_SIZE>  QueueLow;
 

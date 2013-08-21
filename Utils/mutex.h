@@ -32,6 +32,22 @@ class Event_os
 };
 
 
+class Semaph_os
+{
+  public:
+    enum { WAIT_FOREVER = INFINITE };   
+
+  public:
+    Semaph_os()  { hWinSemaph = CreateSemaphore (NULL, 0/*InitCount*/, LONG_MAX, NULL); }
+    ~Semaph_os() { CloseHandle (hWinSemaph); }
+
+    int GetWaitHandle() { return int(hWinSemaph); }
+
+  protected:
+    HANDLE  hWinSemaph;
+};
+
+
 class Mutex : protected Mutex_os
 {
   public:
@@ -50,11 +66,19 @@ class Event : protected Event_os
 };
 
 
+class Semaph : protected Semaph_os
+{
+  public:
+    void Signal ();
+    bool Take (unsigned timeout = WAIT_FOREVER);  // WAIT_FOREVER is defined in Semaph_os
+    void Reset () { while (Take(0)); }
+    int  GetWaitHandle() { return Semaph::GetWaitHandle(); }
+};
+
 
 class MUTEXLOCK
 {
   public:
-
     MUTEXLOCK (Mutex* pMutex) : pMutex(pMutex)  { pMutex->Lock();   }
     ~MUTEXLOCK ()                               { pMutex->Unlock(); }
 
@@ -97,5 +121,19 @@ inline void Event::Reset()
 {
     ResetEvent (hWinEvent);
 }
+
+
+inline void Semaph::Signal ()
+{
+    ReleaseSemaphore (hWinSemaph, 1, NULL);     
+}
+
+
+inline bool Semaph::Take (unsigned timeout)
+{
+    int ret = WaitForSingleObject (hWinSemaph, timeout);
+	return (ret == WAIT_OBJECT_0);
+}
+
 
 #pragma managed(pop)
