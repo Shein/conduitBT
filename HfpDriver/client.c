@@ -162,7 +162,9 @@ NTSTATUS HfpOpenRemoteConnection (_In_ HFPDEVICE_CONTEXT* devCtx, _In_ WDFFILEOB
 	brb->ReceiveBandwidth	= 8000;  // 64Kb/s
 	brb->MaxLatency			= 0xF;
 	brb->PacketType			= SCO_PKT_ALL;
-	brb->ContentFormat		= SCO_VS_IN_CODING_ALAW | SCO_VS_IN_SAMPLE_SIZE_8BIT | SCO_VS_AIR_CODING_FORMAT_CVSD;
+	brb->ContentFormat		= SCO_VS_IN_CODING_LINEAR/*SCO_VS_IN_CODING_ALAW*/ 
+							| SCO_VS_IN_SAMPLE_SIZE_16BIT/*SCO_VS_IN_SAMPLE_SIZE_8BIT*/ 
+							| SCO_VS_AIR_CODING_FORMAT_CVSD;
 	brb->RetransmissionEffort= SCO_RETRANSMISSION_NONE;
     brb->ChannelFlags		= SCO_CF_LINK_SUPPRESS_PIN;
     brb->CallbackFlags		= SCO_CALLBACK_DISCONNECT;	// Get notification about remote disconnect 

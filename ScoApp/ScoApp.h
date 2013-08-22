@@ -63,6 +63,7 @@ class ScoApp : public DebLog
 	WaveIn	*WaveInDev;
 };
 
+#define DMO_ENABLED
 
 #pragma managed(pop)
 
