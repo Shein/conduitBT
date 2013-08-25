@@ -8,7 +8,6 @@
 // DMO
 #include <dsound.h> // required for "DSUtil.h"
 #include <wmcodecdsp.h> // IMediaBuffer
-#include <combaseapi.h>
 #include <uuids.h>
 #include <Dmort.h>
 #include <Propsys.h>
