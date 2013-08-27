@@ -11,6 +11,22 @@ Environment:
 --*/
 
 
+#include <ntddk.h>
+#include <wdm.h>
+#include <wdf.h>
+#include <initguid.h> 
+#include <ntstrsafe.h>
+#include <bthdef.h>
+#include <ntintsafe.h>
+#include <bthguid.h>
+#include <bthioctl.h>
+#include <sdpnode.h>
+#include <bthddi.h>
+#include <bthsdpddi.h>
+#include <bthsdpdef.h>
+
+
+
 /*
  DriverEntry initializes the driver and is the first routine called by the system after the driver is loaded.
 

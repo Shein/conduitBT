@@ -31,14 +31,14 @@ NTSTATUS HfpBthQueryInterfaces(_In_ HFPDEVICE_CONTEXT* devCtx);
     
  Arguments:
     _In_ BTHECHOSAMPLE_CLIENT_CONTEXT* devCtx - 
-    _In_ WDFFILEOBJECT FileObject - 
+    _In_ WDFFILEOBJECT fileObject - 
     _In_ WDFREQUEST Request - 
 
  Return Value:
     NTSTATUS Status code.
 */
 _IRQL_requires_same_
-NTSTATUS HfpOpenRemoteConnection(_In_ HFPDEVICE_CONTEXT* devCtx, _In_ WDFFILEOBJECT FileObject, _In_ WDFREQUEST Request);
+NTSTATUS HfpOpenRemoteConnection(_In_ HFPDEVICE_CONTEXT* devCtx, _In_ WDFFILEOBJECT fileObject, _In_ WDFREQUEST Request);
 
 
 /*

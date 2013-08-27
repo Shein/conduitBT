@@ -16,12 +16,29 @@ HfpSm		HfpSmObj;
 HfpSmCb  	HfpSm::UserCallback;
 
 
+//static
+void HfpSm::ScoConnectCallback()
+{
+	SMEVENT Event = {SM_HFP, SMEV_SwitchVoice};
+	Event.Param.PcSound = true;
+	SmBase::PutEvent (&Event, SMQ_HIGH);
+}
+
+
+//static
+void HfpSm::ScoDisconnectCallback()
+{
+	SMEVENT Event = {SM_HFP, SMEV_SwitchVoice};
+	Event.Param.PcSound = false;
+	SmBase::PutEvent (&Event, SMQ_HIGH);
+}
+
+
 void HfpSm::Construct()
 {
 	MyTimer.Construct ();
 	SMT<HfpSm>::Construct (SM_HFP);
-	ScoAppObj = new ScoApp();
-	ScoAppObj->Construct();
+	ScoAppObj = new ScoApp (ScoConnectCallback, ScoDisconnectCallback);
 }
 
 
@@ -37,7 +54,7 @@ void HfpSm::Init (DialAppCb cb)
 	/*---------------------------------- STATE: Idle ---------------------------------------------------*/
 	InitStateNode (STATE_Idle,				SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
 	InitStateNode (STATE_Idle,				SMEV_StartOutgoingCall,			STATE_Idle,				&IncorrectState4Call);
-	InitStateNode (STATE_Idle,				SMEV_Headset,					STATE_Idle,				&SetHeadsetFlag);
+	InitStateNode (STATE_Idle,				SMEV_SwitchHeadset,				STATE_Idle,				&SetPcsoundPrefFlag);
 	/*-------------------------------------------------------------------------------------------------*/
 
 	/*---------------------------------- STATE: Disconnected ------------------------------------------*/
@@ -47,7 +64,7 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_Disconnected,		SMEV_ConnectStart,				STATE_Connecting,		&Connect);
 	InitStateNode (STATE_Disconnected,		SMEV_Timeout,					STATE_Connecting,		&Connect);
 	InitStateNode (STATE_Disconnected,		SMEV_StartOutgoingCall,			STATE_Disconnected,		&IncorrectState4Call);
-	InitStateNode (STATE_Disconnected,		SMEV_Headset,					STATE_Disconnected,		&SetHeadsetFlag);
+	InitStateNode (STATE_Disconnected,		SMEV_SwitchHeadset,				STATE_Disconnected,		&SetPcsoundPrefFlag);
 	/*-------------------------------------------------------------------------------------------------*/
 
 	/*---------------------------------- STATE: Connecting   ------------------------------------------*/
@@ -57,7 +74,7 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_Connecting,		SMEV_Failure,					STATE_Disconnected,		&ConnectFailure);
 	InitStateNode (STATE_Connecting,		SMEV_Connected,					STATE_Connected,		&Connected);
 	InitStateNode (STATE_Connecting,		SMEV_StartOutgoingCall,			STATE_Connecting,		&IncorrectState4Call);
-	InitStateNode (STATE_Connecting,		SMEV_Headset,					STATE_Connecting,		&SetHeadsetFlag);
+	InitStateNode (STATE_Connecting,		SMEV_SwitchHeadset,				STATE_Connecting,		&SetPcsoundPrefFlag);
 	/*-------------------------------------------------------------------------------------------------*/
 
 	/*---------------------------------- STATE: Connected   -------------------------------------------*/
@@ -66,7 +83,7 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_Connected,			SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
 	InitStateNode (STATE_Connected,			SMEV_HfpConnectStart,			STATE_HfpConnecting,	&HfpConnect);
 	InitStateNode (STATE_Connected,			SMEV_StartOutgoingCall,			STATE_Connected,		&IncorrectState4Call);
-	InitStateNode (STATE_Connected,			SMEV_Headset,					STATE_Connected,		&SetHeadsetFlag);
+	InitStateNode (STATE_Connected,			SMEV_SwitchHeadset,				STATE_Connected,		&SetPcsoundPrefFlag);
 	/*-------------------------------------------------------------------------------------------------*/
 
 	/*---------------------------------- STATE: HfpConnecting   ---------------------------------------*/
@@ -80,7 +97,7 @@ void HfpSm::Init (DialAppCb cb)
 		InitChoice (1, STATE_HfpConnecting,	SMEV_Timeout,					STATE_HfpConnected,		&HfpConnected);
 	InitStateNode (STATE_HfpConnecting,		SMEV_StartOutgoingCall,			STATE_HfpConnecting,	&IncorrectState4Call);
 	InitStateNode (STATE_HfpConnecting,		SMEV_AtResponse,				STATE_HfpConnecting,	&AtProcessing);
-	InitStateNode (STATE_HfpConnecting,		SMEV_Headset,					STATE_HfpConnecting,	&SetHeadsetFlag);
+	InitStateNode (STATE_HfpConnecting,		SMEV_SwitchHeadset,				STATE_HfpConnecting,	&SetPcsoundPrefFlag);
 	/*------------------------------------------------------------------------------------------------*/
 
 	/*---------------------------------- STATE: HfpConnected   ----------------------------------------*/
@@ -88,7 +105,7 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_HfpConnected,		SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
 	InitStateNode (STATE_HfpConnected,		SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
 	InitStateNode (STATE_HfpConnected,		SMEV_CallEnded,					STATE_HfpConnected,		NULLTRANS);
-	InitStateNode (STATE_HfpConnected,		SMEV_Headset,					STATE_HfpConnected,		&SetHeadsetFlag);
+	InitStateNode (STATE_HfpConnected,		SMEV_SwitchHeadset,				STATE_HfpConnected,		&SetPcsoundPrefFlag);
 	InitStateNode (STATE_HfpConnected,		SMEV_StartOutgoingCall,			STATE_Calling,			&StartOutgoingCall);
 	InitStateNode (STATE_HfpConnected,		SMEV_AtResponse,				&ToRingingOrCalling,	3);
 		InitChoice (0, STATE_HfpConnected,	SMEV_AtResponse,				STATE_HfpConnected,		&AtProcessing);
@@ -102,7 +119,8 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_Calling,			SMEV_CallEnd,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_Calling,			SMEV_CallEnded,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_Calling,			SMEV_CallStart,					STATE_InCall,			&StartCall);
-	InitStateNode (STATE_Calling,			SMEV_Headset,					STATE_Calling,			&SetHeadsetFlag);
+	InitStateNode (STATE_Calling,			SMEV_SwitchHeadset,				STATE_Calling,			&SetPcsoundPrefFlag);
+	InitStateNode (STATE_Calling,			SMEV_SwitchVoice,				STATE_Calling,			&SwitchedVoiceOnOff);
 	InitStateNode (STATE_Calling,			SMEV_AtResponse,				&ChoiceCallSetup,		3);
 		InitChoice (0, STATE_Calling,		SMEV_AtResponse,				STATE_HfpConnected,		&EndCall);
 		InitChoice (1, STATE_Calling,		SMEV_AtResponse,				STATE_Calling,			&OutgoingCall);
@@ -116,23 +134,26 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_Ringing,			SMEV_CallEnded,					STATE_HfpConnected,		&EndCall);
 	InitStateNode (STATE_Ringing,			SMEV_Answer,					STATE_Ringing,			&Answer);
 	InitStateNode (STATE_Ringing,			SMEV_CallStart,					STATE_InCall,			&StartCall);
+	InitStateNode (STATE_Ringing,			SMEV_SwitchHeadset,				STATE_Ringing,			&SetPcsoundPrefFlag);
+	InitStateNode (STATE_Ringing,			SMEV_SwitchVoice,				STATE_Ringing,			&SwitchedVoiceOnOff);
 	InitStateNode (STATE_Ringing,			SMEV_AtResponse,				&ChoiceFromRinging,		2);
 		InitChoice (0, STATE_Ringing,		SMEV_AtResponse,				STATE_HfpConnected,		&EndCall);
 		InitChoice (1, STATE_Ringing,		SMEV_AtResponse,				STATE_Ringing,			&AtProcessing);
-	
-	//TODO: to think how to precess here SMEV_Headset
 	/*-------------------------------------------------------------------------------------------------*/
 
 	/*---------------------------------- STATE: InCall  ------------------------------------------------*/
 	InitStateNode (STATE_InCall,			SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
-	InitStateNode (STATE_InCall,			SMEV_Failure,					STATE_HfpConnected,		&EndCallVoiceFailure);
+	InitStateNode (STATE_InCall,			SMEV_Failure,					STATE_InCall,			&StopVoice);
 	InitStateNode (STATE_InCall,			SMEV_AtResponse,				STATE_InCall,			&AtProcessing);
 	InitStateNode (STATE_InCall,			SMEV_SendDtmf,					STATE_InCall,			&SendDtmf);
 	InitStateNode (STATE_InCall,			SMEV_Answer,					STATE_InCall,			&Answer2Waiting);
 	InitStateNode (STATE_InCall,			SMEV_PutOnHold,					STATE_InCall,			&PutOnHold);
 	InitStateNode (STATE_InCall,			SMEV_CallWaiting,				STATE_InCall,			&IncomingWaitingCall);
 	InitStateNode (STATE_InCall,			SMEV_Timeout,					STATE_InCall,			&SendWaitingCallStop);
-	InitStateNode (STATE_InCall,			SMEV_Headset,					STATE_InCall,			&SwitchVoiceOnOff);
+	InitStateNode (STATE_InCall,			SMEV_SwitchHeadset,				STATE_InCall,			&SwitchVoiceOnOff);
+	InitStateNode (STATE_InCall,			SMEV_SwitchVoice,				&ChoiceIncomingVoice,	2);
+		InitChoice (0, STATE_InCall,		SMEV_SwitchVoice,				STATE_InCall,			&RejectVoice);
+		InitChoice (1, STATE_InCall,		SMEV_SwitchVoice,				STATE_InCall,			&SwitchedVoiceOnOff);
 	InitStateNode (STATE_InCall,			SMEV_CallHeld,					STATE_InCall,			&CallHeld);
 	InitStateNode (STATE_InCall,			SMEV_CallEnd,					STATE_InCall,			&StartCallEnding);
 	InitStateNode (STATE_InCall,			SMEV_CallEnded,					STATE_HfpConnected,		&FinalizeCallEnding);
@@ -198,47 +219,47 @@ bool HfpSm::ParseAndSetAtIndicators (char* services)
 }
 
 
-bool HfpSm::WasPcsoundChanged (SMEVENT* ev)
+bool HfpSm::WasPcsoundPrefChanged (SMEVENT* ev)
 {
-	if (PublicParams.PcSound != ev->Param.HeadsetOn) {
-		PublicParams.PcSound = ev->Param.HeadsetOn;
-		LogMsg ("Headset = %d", PublicParams.PcSound);
+	if (PublicParams.PcSoundPref != ev->Param.PcSound) {
+		PublicParams.PcSoundPref = ev->Param.PcSound;
+		LogMsg ("PcSoundPref = %d", PublicParams.PcSoundPref);
 		return true;
 	}
 	return false;
 }
 
 
-void HfpSm::StartVoiceHlp ()
+void HfpSm::StartVoiceHlp (bool waveonly)
 {
 	LogMsg ("Starting voice...");
 	try
 	{
-		ScoAppObj->OpenSco (PublicParams.CurDevice->Address);
+		ScoAppObj->OpenSco(waveonly);
 		ScoAppObj->VoiceStart();
-		PublicParams.PcSoundNowOn = true;
+		PublicParams.PcSound = true;
 	}
 	catch (int err)
 	{
 		LogMsg("EXCEPTION %d", err);
-		HfpSm::PutEvent_Failure2Report();	// if we have an error when starting voice, we should to notice
+		HfpSm::PutEvent_Failure(DialAppError_OpenScoFailure);	// if we have an error when starting voice, we should to notice
 	}
 }
 
 
-void HfpSm::StopVoiceHlp ()
+void HfpSm::StopVoiceHlp (bool waveonly)
 {
 	LogMsg ("Stopping voice...");
 	try
 	{
-		ScoAppObj->CloseSco();
+		ScoAppObj->CloseSco(waveonly);
 	}
 	catch (int err)
 	{
 		LogMsg("EXCEPTION %d", err);
 		HfpSm::PutEvent_Failure();	// if we have an error when stopping voice, we should not to notice, it may be the normal case
 	}
-	PublicParams.PcSoundNowOn = false;
+	PublicParams.PcSound = false;
 }
 
 
@@ -356,13 +377,43 @@ void HfpSm::SetCallInfo4HeldCall (SMEV_ATRESPONSE heldstatus)
 								SM TRANSITIONS
 \********************************************************************************/
 
-bool HfpSm::SetHeadsetFlag (SMEVENT* ev, int param)
+bool HfpSm::SetPcsoundPrefFlag (SMEVENT* ev, int param)
 {
-	if (WasPcsoundChanged(ev))	{
-		// There is another callback for InCall states
-		if (State_next!=STATE_InCall)
-			UserCallback.HedasetOnOff();
+	if (WasPcsoundPrefChanged(ev))	{
+		ScoAppObj->SetIncomingReadiness (PublicParams.PcSoundPref);
+		if (State_next!=STATE_InCall) // there is another callback for InCall state
+			UserCallback.PcSoundOnOff();
 	}
+	return true;
+}
+
+
+bool HfpSm::SwitchVoiceOnOff (SMEVENT* ev, int param)
+{
+	if (WasPcsoundPrefChanged(ev))	{
+		if (PublicParams.PcSound = PublicParams.PcSoundPref)
+			StartVoiceHlp(false);
+		else
+			StopVoiceHlp(false);
+		UserCallback.PcSoundOnOff (DIALAPP_FLAG_PCSOUND);
+	}
+	return true;
+}
+
+
+bool HfpSm::SwitchedVoiceOnOff (SMEVENT* ev, int param)
+{
+	if (ev->Param.PcSound == PublicParams.PcSound) {
+		// Event bringing PcSound state that is already set
+		LogMsg ("WARNING: Acquiring PcSound state is already set, do nothing");
+		return true;
+	}
+
+	if (PublicParams.PcSound = PublicParams.PcSoundPref = ev->Param.PcSound)
+		StartVoiceHlp(true);
+	else
+		StopVoiceHlp(true);
+	UserCallback.PcSoundOnOff (DIALAPP_FLAG_PCSOUND);
 	return true;
 }
 
@@ -377,20 +428,22 @@ bool HfpSm::SelectDevice (SMEVENT* ev, int param)
 		LogMsg ("Failure to select device: %llX", addr);
 		if (State == STATE_Idle)
 			PutEvent_ForgetDevice();	// In order to jump back then to STATE_Idle (may be changed to Choice)
-		UserCallback.DeviceUnknown ();
+		UserCallback.DeviceUnknown();
 		goto end_func;
 	}
 
 	if (State > STATE_Disconnected)
-		InHand::Disconnect ();
+		InHand::Disconnect();
 
 	LogMsg ("Selected device: %llX, %s", addr, dev->Name);
 	PublicParams.CurDevice = dev;
-	UserCallback.DevicePresent ();
+	UserCallback.DevicePresent();
 	MyTimer.Start(TIMEOUT_CONNECTION_POLLING,true);
 	PutEvent_ConnectStart(addr);
 
 	end_func:
+	if (State >= STATE_HfpConnected)
+		ScoAppObj->StopServer();
 	return true;
 }
 
@@ -398,33 +451,46 @@ bool HfpSm::SelectDevice (SMEVENT* ev, int param)
 bool HfpSm::ForgetDevice (SMEVENT* ev, int param)
 {
 	MyTimer.Stop();	
-	if (State > STATE_Disconnected)
-		InHand::Disconnect ();
-	void * prevdev = PublicParams.CurDevice;
+	void* prevdev = PublicParams.CurDevice;
 	PublicParams.CurDevice = 0;
-	// Report about forgot device in the case it was present before, 
+	// Disconnect and Report about forgot device in the case it was present before, 
 	// otherwise it may be the case of failure in HfpSm::SelectDevice in Idle state
-	if (prevdev)
+	if (prevdev) {
+		if (State >= STATE_HfpConnected)
+			ScoAppObj->StopServer();
+		if (State > STATE_Disconnected)
+			InHand::Disconnect();
 		UserCallback.DeviceForgot();
+	}
 	return true;
 }
 
 
 bool HfpSm::Disconnect (SMEVENT* ev, int param)
 {
+	if (State >= STATE_HfpConnected)
+		ScoAppObj->StopServer();
 	if (State > STATE_Disconnected)
-		InHand::Disconnect ();
-	MyTimer.Start(TIMEOUT_CONNECTION_POLLING,true);
-	UserCallback.DevicePresent (0);
+		InHand::Disconnect();
+	MyTimer.Start (TIMEOUT_CONNECTION_POLLING, true);
+	if (ev->Param.ReportError)
+		UserCallback.NotifyFailure (ev->Param.ReportError);
+	else
+		UserCallback.DevicePresent (0);
 	ClearAllCallInfo();
+
+	if (State == STATE_InCall) {
+		// After leaving InCall state need return PcSoundPref to the SCO driver
+		ScoAppObj->SetIncomingReadiness (PublicParams.PcSoundPref);
+	}
 	return true;
 }
 
 
 bool HfpSm::Connect (SMEVENT* ev, int param)
 {
-	MyTimer.Start(TIMEOUT_CONNECTION_POLLING,true);
-	InHand::BeginConnect(PublicParams.CurDevice->Address);
+	MyTimer.Start (TIMEOUT_CONNECTION_POLLING, true);
+	InHand::BeginConnect (PublicParams.CurDevice->Address);
 	return true;
 }
 
@@ -456,7 +522,18 @@ bool HfpSm::HfpConnected (SMEVENT* ev, int param)
 {
 	if (ev->Ev != SMEV_Timeout)
 		MyTimer.Stop();
-	UserCallback.HfpConnected();
+
+	try
+	{
+		ScoAppObj->StartServer (PublicParams.CurDevice->Address, PublicParams.PcSoundPref);
+		UserCallback.HfpConnected();
+	}
+	catch (int err)
+	{
+		LogMsg("EXCEPTION %d", err);
+		HfpSm::PutEvent_Disconnect(DialAppError_ServiceConnectFailure);
+	}
+
 	return true;
 }
 
@@ -464,7 +541,7 @@ bool HfpSm::HfpConnected (SMEVENT* ev, int param)
 bool HfpSm::ConnectFailure (SMEVENT* ev, int param)
 {
 	MyTimer.Start(TIMEOUT_CONNECTION_POLLING,true);
-	UserCallback.ConnectFailure();
+	UserCallback.NotifyFailure (DialAppError_ConnectFailure);
 	return true;
 }
 
@@ -474,7 +551,7 @@ bool HfpSm::ServiceConnectFailure (SMEVENT* ev, int param)
 	InHand::Disconnect ();
 	// Here must return to Disconnected state 
 	MyTimer.Start(TIMEOUT_CONNECTION_POLLING,true);
-	UserCallback.ServiceConnectFailure();
+	UserCallback.NotifyFailure (DialAppError_ServiceConnectFailure);
 	return true;
 }
 
@@ -483,10 +560,12 @@ bool HfpSm::EndCall (SMEVENT* ev, int param)
 {
 	LogMsg ("Ending call...");
 	InHand::EndCall();
-	if (PublicParams.PcSoundNowOn)
-		StopVoiceHlp ();
-	if (ev->Ev == SMEV_Failure)
-		UserCallback.CallFailure();
+	if (PublicParams.PcSound)
+		StopVoiceHlp(false);
+	if (ev->Param.ReportError)
+		UserCallback.NotifyFailure (ev->Param.ReportError);
+	else if (ev->Ev == SMEV_Failure)
+		UserCallback.NotifyFailure (DialAppError_CallFailure);
 	else
 		UserCallback.CallEnded();
 	ClearAllCallInfo();
@@ -505,13 +584,14 @@ bool HfpSm::StartCallEnding (SMEVENT* ev, int param)
 bool HfpSm::FinalizeCallEnding (SMEVENT* ev, int param)
 {
 	LogMsg ("Current call ended...");
-	if (PublicParams.PcSoundNowOn)
-		StopVoiceHlp ();
+	if (PublicParams.PcSound)
+		StopVoiceHlp(false);
 	if (ev->Ev == SMEV_Failure)
-		UserCallback.CallFailure();
+		UserCallback.NotifyFailure (DialAppError_CallFailure);
 	else
 		UserCallback.CallEnded();
 	ClearAllCallInfo();
+	ScoAppObj->SetIncomingReadiness (PublicParams.PcSoundPref);
 	return true;
 }
 
@@ -519,7 +599,7 @@ bool HfpSm::FinalizeCallEnding (SMEVENT* ev, int param)
 bool HfpSm::IncorrectState4Call (SMEVENT* ev, int param)
 {
 	LogMsg ("IncorrectState4Call !!");
-	UserCallback.OutgoingIncorrectState();
+	UserCallback.NotifyFailure (DialAppError_IncorrectState4Call);
 	return true;
 }
 
@@ -536,8 +616,7 @@ bool HfpSm::StartOutgoingCall (SMEVENT* ev, int param)
 
 bool HfpSm::OutgoingCall (SMEVENT* ev, int param)
 {
-	if (PublicParams.PcSound)
-		StartVoiceHlp();
+	LogMsg ("PublicParams: PcSoundPref = %d, PcSound = %d", PublicParams.PcSoundPref, PublicParams.PcSound);
 	InHand::ListCurrentCalls();
 	return true;
 }
@@ -562,6 +641,10 @@ bool HfpSm::Answer (SMEVENT* ev, int param)
 bool HfpSm::StartCall (SMEVENT* ev, int param)
 {
 	UserCallback.InCall();
+	// When we are InCall - always to receive Connect requests
+	ScoAppObj->SetIncomingReadiness (true);
+	// In the case we don't want to switch PC sound on automatically - save the current timestamp
+	IncallStartTime = (PublicParams.PcSoundPref)  ?  0 : Timer::GetCurMilli();
 	return true;
 }
 
@@ -570,33 +653,39 @@ bool HfpSm::EndCallVoiceFailure (SMEVENT* ev, int param)
 {
 	LogMsg ("Ending call because of voice channel problem");
 	bool res = EndCall (ev, param);  // TODO: what will happens in 3-way call???
-	if (ev->Param.ReportFailure)
-		UserCallback.CallEndedVoiceFailure();
+	if (ev->Param.ReportError)
+		UserCallback.NotifyFailure(ev->Param.ReportError);
 	// else it may be normal case of closing channel, so do not report
 	ClearAllCallInfo();
 	return res;
 }
 
 
-bool HfpSm::SwitchVoiceOnOff (SMEVENT* ev, int param)
+bool HfpSm::StopVoice (SMEVENT* ev, int param)
 {
-	if (WasPcsoundChanged(ev))	{
-		if (PublicParams.PcSound)
-			StartVoiceHlp();
-		else
-			StopVoiceHlp();
-		UserCallback.InCallHeadsetOnOff();
+	// For now this is the response to Failure (probably SCO read/write) in InCall state
+	if (PublicParams.PcSound) {
+		// the PublicParams.PcSoundPref is unchanged here
+		StopVoiceHlp(false);
+		UserCallback.PcSoundOff();
 	}
+	return true;
+}
+
+
+bool HfpSm::RejectVoice (SMEVENT* ev, int param)
+{
+	// This func is for InCall state only
+	LogMsg("Reject Incoming voice because PcSoundPref = 0");
+	ScoAppObj->CloseScoLowLevel();
 	return true;
 }
 
 
 bool HfpSm::Ringing (SMEVENT* ev, int param)
 {
-	if (PublicParams.PcSound)
-		StartVoiceHlp();
-	UserCallback.Ring ();
 	InHand::ListCurrentCalls();
+	UserCallback.Ring();
 	return true;
 }
 
@@ -605,7 +694,7 @@ bool HfpSm::IncomingWaitingCall (SMEVENT* ev, int param)
 {
 	if (ev->Param.AtResponse == SMEV_AtResponse_CallWaiting_Ringing) {
 		LogMsg("IncomingWaitingCall: Ringing");
-		SetCallInfo4WaitingCall(ev->Param.InfoCh);
+		SetCallInfo4WaitingCall (ev->Param.InfoCh);
 	}
 	else {
 		// SMEV_AtResponse_CallWaiting_Stopped
@@ -645,7 +734,7 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 				if (HfpIndicators)
 					HfpSm::PutEvent_HfpConnected();
 				else
-					HfpSm::PutEvent_Failure();
+					HfpSm::PutEvent_Failure(DialAppError_ServiceConnectFailure);
 			}
 			break;
 
@@ -758,3 +847,15 @@ int HfpSm::ChoiceCallSetup (SMEVENT* ev)
 	return 2;	// stay in STATE_Calling, call AtProcessing
 }
 
+
+int HfpSm::ChoiceIncomingVoice (SMEVENT* ev)
+{
+	if (IncallStartTime  &&  (int(Timer::GetCurMilli() - IncallStartTime) < TIMEOUT_SCO_TREATED_AS_INCOMING))
+		return 0; // Going to reject the incoming SCO
+
+	// if to be very accurate, IncallStartTime 0 value shroud not be used here as a no-value flag, 
+	// because of this Windows counter may be wrapped around, but it is unreal... KS
+	IncallStartTime = 0;
+
+	return 1; // Normal situation 
+}

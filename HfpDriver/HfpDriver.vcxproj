@@ -56,10 +56,6 @@
     </ClCompile>
     <ClCompile Include="sdp.c" />
     <ClCompile Include="server.c" />
-    <ClCompile Include="serve_.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <Inf Include=".\HfpDriver.inx">
       <Architecture>$(InfArch)</Architecture>
       <SpecifyArchitecture>true</SpecifyArchitecture>
@@ -78,7 +74,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <TreatWarningAsError>true</TreatWarningAsError>
+      <TreatWarningAsError>false</TreatWarningAsError>
       <WarningLevel>Level4</WarningLevel>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);..\..\common\inc</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WIN64; _AMD64_; AMD64; WIN32_LEAN_AND_MEAN=1; _WIN32_WINNT=0x0601; WINVER=0x0601; WINNT=1; NTDDI_VERSION=0x06010000; DBG</PreprocessorDefinitions>

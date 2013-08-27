@@ -10,8 +10,10 @@ Environment:
     Kernel mode only
 --*/
 
-#include "clisrv.h"
+#include "driver.h"
 #include "device.h"
+#include "connection.h"
+#include "clisrv.h"
 #include "client.h"
 
 #define INITGUID
@@ -34,10 +36,10 @@ NTSTATUS HfpBthQueryInterfaces(_In_ HFPDEVICE_CONTEXT* devCtx)
     PAGED_CODE();
 
     status = WdfFdoQueryForInterface(
-        devCtx->Header.Device,
+        devCtx->Device,
         &GUID_BTHDDI_PROFILE_DRIVER_INTERFACE, 
-        (PINTERFACE) (&devCtx->Header.ProfileDrvInterface),
-        sizeof(devCtx->Header.ProfileDrvInterface), 
+        (PINTERFACE) (&devCtx->ProfileDrvInterface),
+        sizeof(devCtx->ProfileDrvInterface), 
         BTHDDI_PROFILE_DRIVER_INTERFACE_VERSION_FOR_QI, 
         NULL
         );
@@ -64,44 +66,39 @@ void HfpIndicationCallback (_In_ PVOID Context, _In_ SCO_INDICATION_CODE Indicat
     {
         // We don't add/release reference to anything because our connection is scoped within file object lifetime
         case ScoIndicationAddReference:
-			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "ScoIndicationAddReference\n");
+			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "HfpIndicationCallback - AddReference");
             break;
 
         case ScoIndicationReleaseReference:
-			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "ScoIndicationReleaseReference\n");
+			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "HfpIndicationCallback - ReleaseReference");
             break;
 
         case ScoIndicationRemoteConnect:
             // We don't expect connection
-			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Remote Connect indication: UNEXPECTED\n");
+			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "HfpIndicationCallback - Connect (UNEXPECTED)");
             break;
 
-        case IndicationRemoteDisconnect:
+        case ScoIndicationRemoteDisconnect:
             // This is an indication that server has disconnected. In response we disconnect from our end
-			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Remote Disconnect indication\n");
-            HfpConnectionObjectRemoteDisconnect (connection->DevCtxHdr, connection);
+			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "HfpIndicationCallback - Disconnect");
+			if (connection->DevCtx->KevScoDisconnect)
+				KeSetEvent(connection->DevCtx->KevScoDisconnect,0,FALSE);
+            HfpConnectionObjectRemoteDisconnect (connection->DevCtx, connection);
             break;
     }
 }
 
 
 
-void HfpRemoteConnectCompletion (_In_ WDFREQUEST  Request, _In_ WDFIOTARGET Target, _In_ PWDF_REQUEST_COMPLETION_PARAMS  Params, _In_ WDFCONTEXT  Context)
+void HfpRemoteConnectCompletion (_In_ WDFREQUEST Request, _In_ WDFIOTARGET Target, _In_ PWDF_REQUEST_COMPLETION_PARAMS Params, _In_ WDFCONTEXT Context)
 {
-    NTSTATUS status;
-    struct _BRB_SCO_OPEN_CHANNEL *brb;    
-    HFPDEVICE_CONTEXT* devCtx;
-    HFP_CONNECTION* connection;
+    NTSTATUS					  status	 = Params->IoStatus.Status;
+    struct _BRB_SCO_OPEN_CHANNEL* brb		 = (struct _BRB_SCO_OPEN_CHANNEL*) Context;
+    HFP_CONNECTION*				  connection = (HFP_CONNECTION*) brb->Hdr.ClientContext[0];
     
-    devCtx = GetClientDeviceContext(WdfIoTargetGetDevice(Target));
-
-    status = Params->IoStatus.Status;
-
-    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Connection completion, status: %X\n", status);
-
-    brb = (struct _BRB_SCO_OPEN_CHANNEL*) Context;
-
-    connection = (HFP_CONNECTION*) brb->Hdr.ClientContext[0];
+    UNREFERENCED_PARAMETER(Target);
+    
+    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Outgoing Connection completion, Status %X", status);
 
     // In the client we don't check for ConnectionStateDisconnecting state because only file close generates disconnect 
 	// which cannot happen before create completes. And we complete Create only after we process this completion.
@@ -112,12 +109,11 @@ void HfpRemoteConnectCompletion (_In_ WDFREQUEST  Request, _In_ WDFIOTARGET Targ
         connection->RemoteAddress   = brb->BtAddress;
         connection->ConnectionState = ConnectionStateConnected;
 
-        TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Connection established to server\n");
-
         // Set the file context to the connection passed in
 		GetFileContext(WdfRequestGetFileObject(Request))->Connection = connection;
+
         // If such post processing here fails we may disconnect:
-        // HfpConnectionObjectRemoteDisconnect (&(devCtx->Header), connection);
+        // HfpConnectionObjectRemoteDisconnect (devCtx, connection);
     }
     else {
         connection->ConnectionState = ConnectionStateConnectFailed;
@@ -131,63 +127,63 @@ void HfpRemoteConnectCompletion (_In_ WDFREQUEST  Request, _In_ WDFIOTARGET Targ
 
 
 _IRQL_requires_same_
-NTSTATUS HfpOpenRemoteConnection (_In_ HFPDEVICE_CONTEXT* devCtx, _In_ WDFFILEOBJECT FileObject, _In_ WDFREQUEST Request)
+NTSTATUS HfpOpenRemoteConnection (_In_ HFPDEVICE_CONTEXT* devCtx, _In_ WDFFILEOBJECT fileObject, _In_ WDFREQUEST Request)
 {
-    NTSTATUS status;
-    WDFOBJECT connectionObject;    
-    struct _BRB_SCO_OPEN_CHANNEL *brb = NULL;
-    HFP_CONNECTION* connection = NULL;
-    //HFP_FILE_CONTEXT* fileCtx = GetFileContext(FileObject); KS - no need, was needed in L2CAP
+    NTSTATUS						status;
+    WDFOBJECT						connectionObject;    
+    HFP_CONNECTION*					connection = 0;
+    struct _BRB_SCO_OPEN_CHANNEL*	brb;
 
-    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Connect request\n");
+
+    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Outgoing SCO connect request");
 
     // Create the connection object that would store information about the open channel
     // Set file object as the parent for this connection object
-    status = HfpConnectionObjectCreate (&devCtx->Header,FileObject/*parent*/, &connectionObject);
+    status = HfpConnectionObjectCreate (devCtx, fileObject/*parent*/, &connectionObject);
     if (!NT_SUCCESS(status))
         goto exit;
 
     connection = GetConnectionObjectContext(connectionObject);
     connection->ConnectionState = ConnectionStateConnecting;
 
-    // Get the BRB from request context and initialize it as BRB_SCO_OPEN_CHANNEL BRB
-    brb = (struct _BRB_SCO_OPEN_CHANNEL *)GetRequestContext(Request);
+    // Get the BRB from request context and initialize it as BRB_SCO_OPEN_CHANNEL
+    brb = (struct _BRB_SCO_OPEN_CHANNEL*) GetRequestContext(Request);
 
-    devCtx->Header.ProfileDrvInterface.BthReuseBrb((PBRB)brb, BRB_SCO_OPEN_CHANNEL);
+    devCtx->ProfileDrvInterface.BthReuseBrb((PBRB)brb, BRB_SCO_OPEN_CHANNEL);
     
     brb->Hdr.ClientContext[0] = connection;
 
-    brb->BtAddress			= devCtx->ServerBthAddress;
+    brb->BtAddress			= devCtx->RemoteBthAddress;
 	brb->TransmitBandwidth	= 
 	brb->ReceiveBandwidth	= 8000;  // 64Kb/s
 	brb->MaxLatency			= 0xF;
 	brb->PacketType			= SCO_PKT_ALL;
-	brb->ContentFormat		= SCO_VS_IN_CODING_ALAW | SCO_VS_IN_SAMPLE_SIZE_8BIT | SCO_VS_AIR_CODING_FORMAT_CVSD;
+	brb->ContentFormat		= SCO_VS_IN_CODING_LINEAR | SCO_VS_IN_SAMPLE_SIZE_16BIT | SCO_VS_AIR_CODING_FORMAT_CVSD;
 	brb->RetransmissionEffort= SCO_RETRANSMISSION_NONE;
     brb->ChannelFlags		= SCO_CF_LINK_SUPPRESS_PIN;
     brb->CallbackFlags		= SCO_CALLBACK_DISCONNECT;	// Get notification about remote disconnect 
     brb->Callback			= &HfpIndicationCallback;
     brb->CallbackContext	= connection;
-    brb->ReferenceObject	= (PVOID) WdfDeviceWdmGetDeviceObject(devCtx->Header.Device);
+    brb->ReferenceObject	= (PVOID) WdfDeviceWdmGetDeviceObject(devCtx->Device);
 
-    status = HfpSharedSendBrbAsync(devCtx->Header.IoTarget, Request, (PBRB)brb, sizeof(*brb), HfpRemoteConnectCompletion, brb/*Context*/);
+    status = HfpSharedSendBrbAsync(devCtx->IoTarget, Request, (PBRB)brb, sizeof(*brb), HfpRemoteConnectCompletion, brb/*Context*/);
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "Sending brb for opening connection failed, returning status code %d\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "Sending BRB for opening connection failed, Status %X", status);
         goto exit;
     }            
 
 	exit:
     if (!NT_SUCCESS(status)) {
-        if (connection) {
-            // Set the right state to facilitate debugging
-            connection->ConnectionState = ConnectionStateConnectFailed;            
-        }
+        if (connection)
+            connection->ConnectionState = ConnectionStateConnectFailed;    // to facilitate debugging
+
         // In case of failure of this routine we will fail Create which will delete file object 
 		// and since connection object is child of the file object, it will be deleted too
-		// KS: TODO, since I'm moving this routine call from file creation to DeviceIoControl, this situation should be cared 
+		// KS TODO: since I'm moving this routine call from the file creation to DeviceIoControl, this situation 
+		// should be cared: despite it is still fileObject's child, now it doesn't fail CreateFile, and this object
+		// will be remained till next CloseFile.
     }
     
     return status;
 }
-
 

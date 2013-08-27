@@ -12,43 +12,7 @@ Environment:
 
 #pragma once
 
-#include <ntddk.h>
-#include <wdf.h>
-#include <initguid.h> 
-#include <ntstrsafe.h>
-#include <bthdef.h>
-#include <ntintsafe.h>
-#include <bthguid.h>
-#include <bthioctl.h>
-#include <sdpnode.h>
-#include <bthddi.h>
-#include <bthsdpddi.h>
-#include <bthsdpdef.h>
 
-#include "trace.h"
-#include "hfppublic.h"
-
-#define POOLTAG_HFPDRIVER 'htbw'
-
-
-/*
-  Device context common to both client and the server
-*/
-typedef struct
-{
-    WDFDEVICE						Device;					// Framework device this context is associated with
-    WDFIOTARGET						IoTarget;				// Default I/O target
-    BTH_PROFILE_DRIVER_INTERFACE	ProfileDrvInterface;	// Profile driver interface which contains profile driver DDI
-    BTH_ADDR						LocalBthAddr;			// Local Bluetooth Address
-#if (NTDDI_VERSION >= NTDDI_WIN8)
-    BTH_HOST_FEATURE_MASK			LocalFeatures;			// Features supported by the local stack
-#endif
-    WDFREQUEST						Request;				// Preallocated request to be reused during initialization/deinitialzation phase, access to this request is not synchronized
-} HFPDEVICE_CONTEXT_HEADER;
-
-
-
-#include "connection.h"
 
 
 
@@ -63,7 +27,7 @@ typedef struct
     NTSTATUS Status code.
 */
 _IRQL_requires_max_(DISPATCH_LEVEL)
-NTSTATUS HfpSharedDeviceContextHeaderInit(HFPDEVICE_CONTEXT_HEADER* header, WDFDEVICE Device);
+NTSTATUS HfpSharedDeviceContextInit(HFPDEVICE_CONTEXT* devCtx, WDFDEVICE Device);
 
 
 /*
@@ -77,7 +41,7 @@ NTSTATUS HfpSharedDeviceContextHeaderInit(HFPDEVICE_CONTEXT_HEADER* header, WDFD
     NTSTATUS Status code.
 */
 _IRQL_requires_max_(PASSIVE_LEVEL)
-NTSTATUS HfpSharedRetrieveLocalInfo(_In_ HFPDEVICE_CONTEXT_HEADER* DevCtxHdr);
+NTSTATUS HfpSharedRetrieveLocalInfo(_In_ HFPDEVICE_CONTEXT * devCtx);
 
 
 #if (NTDDI_VERSION >= NTDDI_WIN8)
@@ -92,7 +56,7 @@ NTSTATUS HfpSharedRetrieveLocalInfo(_In_ HFPDEVICE_CONTEXT_HEADER* DevCtxHdr);
     NTSTATUS Status code.
 */
 _IRQL_requires_max_(PASSIVE_LEVEL)
-NTSTATUS HfpSharedGetHostSupportedFeatures(_In_ HFPDEVICE_CONTEXT_HEADER* DevCtxHdr);
+NTSTATUS HfpSharedGetHostSupportedFeatures(_In_ HFPDEVICE_CONTEXT * devCtx);
 
 #endif
 

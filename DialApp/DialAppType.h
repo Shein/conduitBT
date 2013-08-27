@@ -109,8 +109,8 @@ struct DialAppAbonent
  *************************************************************************************
  */
 #define DIALAPP_FLAG_CURDEV				0x01	// DialAppParam.CurDevice was changed
-#define DIALAPP_FLAG_PCSOUND			0x02	// DialAppParam.PcSound was changed
-#define DIALAPP_FLAG_PCSOUNDON			0x04	// DialAppParam.PcSoundNowOn was changed
+#define DIALAPP_FLAG_PCSOUND_PREFERENCE	0x02	// DialAppParam.PcSoundPref was changed
+#define DIALAPP_FLAG_PCSOUND			0x04	// DialAppParam.PcSound was changed
 #define DIALAPP_FLAG_ABONENT_CURRENT	0x08	// DialAppParam.AbonentCurrent was set
 #define DIALAPP_FLAG_ABONENT_WAITING	0x10	// DialAppParam.AbonentWaiting was set (for incoming 3-way call)
 #define DIALAPP_FLAG_ABONENT_HELD		0x20	// DialAppParam.AbonentHeld was set (call is placed on hold or active/held calls swapped)
@@ -127,8 +127,8 @@ struct DialAppAbonent
  */
 struct DialAppParam
 {
-	bool			PcSound;		// PcSound = On/Off: readiness to use PS sound devices for phone conversations (DIALAPP_FLAG_PCSOUND flag)
-	bool			PcSoundNowOn;	// It's true when PC sound devices is working now (may be activated only if PcSound is true; DIALAPP_FLAG_PCSOUNDON flag)
+	bool			PcSoundPref;	// PcSoundPref (PcSound User's Preference)= On/Off: readiness to use PS sound devices for phone conversations (DIALAPP_FLAG_PCSOUND_PREFERENCE flag)
+	bool			PcSound;		// It's true when PC sound is currently On (may be activated only if PcSoundPref is true; DIALAPP_FLAG_PCSOUNDON flag)
 	DialAppBthDev  *CurDevice;		// Device address (DIALAPP_FLAG_CURDEV flag)
 	DialAppAbonent *AbonentCurrent;	// Currently in call abonent information (DIALAPP_FLAG_ABONENT_CURRENT flag)
 	DialAppAbonent *AbonentWaiting;	// Waiting abonent information (DIALAPP_FLAG_ABONENT_WAITING flag)

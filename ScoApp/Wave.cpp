@@ -185,7 +185,7 @@ void WaveOut::Open ()
 void Wave::ReportVoiceStreamFailure()
 {
 	ErrorRaised = true;
-	HfpSm::PutEvent_Failure();
+	HfpSm::PutEvent_Failure (DialAppError_ReadWriteScoError);
 }
 
 

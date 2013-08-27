@@ -6,6 +6,9 @@
 #include "Wave.h"
 
 
+typedef void (*ScoAppCb) ();
+
+
 /*
  ************************************************************************************************
  C++ class for working with HFP Driver.
@@ -21,46 +24,65 @@
  4. Call OpenSco() after the high level applications has already established a control connection
  ************************************************************************************************
  */
-class ScoApp : public DebLog
+class ScoApp : public DebLog, public Thread
 {
   public:
     HANDLE  hDevice;	// May be tested for detecting the object constructing state
-	UINT64	DestAddr;	// Address of a Destination Bluetooth device 
 
   public:
 	static void Init ();
 	static void End  ();
 
   public:
-	ScoApp() : DebLog("ScoApp "), hDevice(0), DestAddr(0)
-	{}
+	ScoApp(ScoAppCb connect_cb, ScoAppCb disconnect_cb) : DebLog("ScoApp "), Thread("ScoApp"), hDevice(0)
+	{
+		Construct(connect_cb, disconnect_cb);
+	}
 
 	~ScoApp()
 	{
 		Destruct();
 	}
 
-	void Construct ();
+	void Construct (ScoAppCb connect_cb, ScoAppCb disconnect_cb);
 	void Destruct  () throw();
-	void OpenSco   (uint64 destaddr);
-	void CloseSco  ();
+
+	void StartServer (uint64 destaddr, bool readiness);
+	void StopServer  ();
+
+	void OpenSco   (bool waveonly = false);
+	void CloseSco  (bool waveonly = false);
+	void CloseScoLowLevel ();
 
 	void VoiceStart ();
 
+	void SetIncomingReadiness (bool readiness);
+
 	bool IsConstructed()	{ return (hDevice!=0);	}
-	bool IsOpen ()			{ return (DestAddr!=0); }
+	bool IsStarted ()		{ return (DestAddr!=0); }
+	bool IsOpen ()			{ return Open; }
 
   protected:
 	void  OpenDriver ();
 	void  ReopenDriver ();
 
   protected:
+	// Separate Thread for waiting on EventScoConnect & EventScoDisconnect
+    virtual void Run();
+
+  protected:
     static PSP_DEVICE_INTERFACE_DETAIL_DATA  DeviceInterfaceDetailData;
 
   protected:
-	bool	 InCall;
-	WaveOut	*WaveOutDev;
-	WaveIn	*WaveInDev;
+	UINT64		DestAddr;	// Address of a Destination Bluetooth device, it's also started server indication
+	bool		Open;
+	WaveOut	   *WaveOutDev;
+	WaveIn	   *WaveInDev;
+	Event		EventScoConnect;
+	Event		EventScoDisconnect;
+    bool		Destructing;
+	ScoAppCb	ConnectCb;
+	ScoAppCb	DisconnectCb;
 };
 
 

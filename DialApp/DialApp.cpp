@@ -109,6 +109,7 @@ static void dialappCb (DialAppState state, DialAppError status, uint32 flags, Di
 		}
 	}
 
+	LogMsg ("dialappUserCb: state=%d, status=%d, flags=%X", state, status, flags);
 	dialappUserCb(state, status, flags, param);
 }
 
@@ -130,7 +131,7 @@ void dialappInit (DialAppCb cb, bool pcsound)
 	HfpSm::Init(dialappCb);
 
 	// At init phase we can directly access SM's parameters
-	HfpSmObj.PublicParams.PcSound = pcsound;
+	HfpSmObj.PublicParams.PcSoundPref = pcsound;
 
 	uint64 addr = dialappRestoreDevAddr();
 	if (InHand::FindDevice(addr))

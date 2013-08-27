@@ -41,8 +41,12 @@ class Timer : protected Timer_os
 {
   friend class Timer_os;
 
+  // General Time functions
   public:
+    static unsigned GetCurSec   ();
+    static unsigned GetCurMilli ();
 
+  public:
     static bool Init ();
     static bool End ();
 	 
@@ -101,3 +105,15 @@ inline void Timer::Stop ()
     Timer_os::Stop ();
 }
 
+//static 
+inline unsigned Timer::GetCurSec ()
+{
+    return GetTickCount() / 1000;
+}
+
+
+//static 
+inline unsigned Timer::GetCurMilli ()
+{
+    return GetTickCount();
+}

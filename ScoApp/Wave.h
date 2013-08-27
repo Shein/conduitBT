@@ -18,12 +18,12 @@ class Wave : public DebLog, public Thread
 		//
 		// Note: the following voice configuration is also duplicated in the SCO driver!
 		//
-		VoiceFormat		  = WAVE_FORMAT_ALAW,		// Voice PCM format
+		VoiceFormat		  = WAVE_FORMAT_PCM,		// Voice PCM format
 		VoiceSampleRate	  = 8000,					// Voice Rate samples/sec
 		VoiceNchan		  = 1,						// Number of channels (1-mono,2-stereo)
-		VoiceBitPerSample = 8,						// Bits per sample
+		VoiceBitPerSample = 16,						// Bits per sample
 
-		ChunkSize = 2048,							// Size of one chunk for read and write operation 
+		ChunkSize = 4096,							// Size of one chunk for read and write operation 
 		ChunkTime = ChunkSize * 1000 / (VoiceSampleRate * VoiceBitPerSample/8),	// Send time of one chunk in milliseconds
 		ChunkTime4Wait = ChunkTime + ChunkTime/10	// When waiting on event/semaphore to use this value
 	};

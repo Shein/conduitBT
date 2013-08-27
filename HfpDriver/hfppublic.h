@@ -9,6 +9,10 @@ Abstract:
 
 #pragma once
 
+
+#define POOLTAG_HFPDRIVER 'htbw'
+
+
 /*
   Device interface exposed by our bth client device
 */
@@ -33,5 +37,18 @@ extern __declspec(selectany) const PWSTR BthHfpDriverName = L"HfpDriver";
 #define FILE_DEVICE_TRANSPORT   0x21
 #endif
 
-#define IOCTL_HFP_OPEN_SCO		CTL_CODE (FILE_DEVICE_TRANSPORT, 2048, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_HFP_CLOSE_SCO		CTL_CODE (FILE_DEVICE_TRANSPORT, 2049, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+typedef struct
+{
+	UINT64		DestAddr;				// Destination Bluetooth device
+	HANDLE		EvHandleScoConnect;		// User-mode Event handle for SCO Connect
+	HANDLE		EvHandleScoDisconnect;	// User-mode Event handle for SCO Disconnect
+	BOOLEAN		ConnectReadiness;		// HFPDEVICE_CONTEXT::ConnectReadiness init value
+} HFP_REG_SERVER;
+
+
+#define IOCTL_HFP_REG_SERVER			CTL_CODE (FILE_DEVICE_TRANSPORT, 2048, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_HFP_UNREG_SERVER			CTL_CODE (FILE_DEVICE_TRANSPORT, 2049, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_HFP_OPEN_SCO				CTL_CODE (FILE_DEVICE_TRANSPORT, 2050, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_HFP_CLOSE_SCO				CTL_CODE (FILE_DEVICE_TRANSPORT, 2051, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_HFP_INCOMING_READINESS	CTL_CODE (FILE_DEVICE_TRANSPORT, 2052, METHOD_BUFFERED, FILE_ANY_ACCESS)

@@ -38,7 +38,8 @@
     ENUM_ENTRY (SMEV, CallEnd				),	\
     ENUM_ENTRY (SMEV, CallStart				),	\
     ENUM_ENTRY (SMEV, CallEnded				),	\
-    ENUM_ENTRY (SMEV, Headset				),	\
+    ENUM_ENTRY (SMEV, SwitchHeadset			),	\
+    ENUM_ENTRY (SMEV, SwitchVoice			),	\
     ENUM_ENTRY (SMEV, SendDtmf				),	\
 	ENUM_ENTRY (SMEV, PutOnHold				),	\
 	ENUM_ENTRY (SMEV, CallWaiting			),	\
@@ -77,20 +78,24 @@ DECL_ENUM (SMEV, SMEV_LIST)
 
 template<class T> class CallInfo;
 
-union SMEV_PAR
+struct SMEV_PAR
 {
-    uint64					BthAddr;
-    bool					ReportFailure;
-    bool					HeadsetOn;
-	char					Dtmf;
-	CallInfo<char>		   *CallNumber;
+	union {
+		uint64					BthAddr;
+		bool					PcSound;
+		char					Dtmf;
+		CallInfo<char>*			CallNumber;
+	};
+
 	struct {
-		SMEV_ATRESPONSE		AtResponse;
+		SMEV_ATRESPONSE			AtResponse;
 		union {
-		  CallInfo<wchar>  *InfoWch;
-		  CallInfo<char>   *InfoCh;
+		  CallInfo<wchar>*		InfoWch;
+		  CallInfo<char>*		InfoCh;
 		};
 	};
+
+    int							ReportError;
 };
 
 

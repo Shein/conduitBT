@@ -36,25 +36,6 @@ void ScoApp::Init ()
 
     bres = SetupDiEnumDeviceInterfaces(HardwareDeviceInfo, 0, &HFP_DEVICE_INTERFACE, 0, &DeviceInterfaceData);
     if (!bres) 	{
-        /*
-		KS: To think do we need it? May be to use FormatMessage for formatting all GetLastError?
-		LPVOID lpMsgBuf = 0;
-
-        if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                          FORMAT_MESSAGE_FROM_SYSTEM |
-                          FORMAT_MESSAGE_IGNORE_INSERTS,
-                          0,
-                          GetLastError(),
-                          MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                          (LPSTR) &lpMsgBuf,
-                          0,
-                          0
-                          )) {
-
-            printf("Error: %s", (LPSTR)lpMsgBuf);
-            LocalFree(lpMsgBuf);
-        }*/
-
         SetupDiDestroyDeviceInfoList (HardwareDeviceInfo);
 		throw ::IntException (DialAppError_InitDriverError, "SetupDiEnumDeviceInterfaces failed");
     }
@@ -71,22 +52,6 @@ void ScoApp::Init ()
 
     bres = SetupDiGetDeviceInterfaceDetail (HardwareDeviceInfo, &DeviceInterfaceData, DeviceInterfaceDetailData, len, &reqlen, 0);
     if (!bres) {
-		/*
-        LPVOID lpMsgBuf = 0;
-
-        if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                         FORMAT_MESSAGE_FROM_SYSTEM |
-                         FORMAT_MESSAGE_IGNORE_INSERTS,
-                         0,
-                         GetLastError(),
-                         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                         (LPSTR) &lpMsgBuf,
-                         0,
-                         0)) {
-            MessageBox(0, (LPCTSTR) lpMsgBuf, "Error", MB_OK);
-            LocalFree(lpMsgBuf);
-        }*/
-        
         SetupDiDestroyDeviceInfoList(HardwareDeviceInfo);       
         LocalFree(DeviceInterfaceDetailData);
         DeviceInterfaceDetailData = 0;
@@ -113,7 +78,6 @@ void ScoApp::End ()
 \***********************************************************************************************/
 
 
-
 void ScoApp::OpenDriver()
 {
     hDevice = CreateFile(DeviceInterfaceDetailData->DevicePath,
@@ -138,16 +102,60 @@ void ScoApp::ReopenDriver ()
 }
 
 
+// virtual from Thread
+void ScoApp::Run()
+{
+	enum { NumEvents = 2 };
+	HANDLE    waithandles[NumEvents] = { HANDLE(EventScoConnect.GetWaitHandle()), HANDLE(EventScoDisconnect.GetWaitHandle()) };
+	ScoAppCb  callbacks  [NumEvents] = { ConnectCb, DisconnectCb };
+ 
+ 	EventScoConnect.Reset();
+	EventScoDisconnect.Reset();
+
+	LogMsg("Task started...");
+
+	for (;;)
+	{
+		DWORD ret = WaitForMultipleObjects (NumEvents, waithandles, FALSE, INFINITE);
+		if (Destructing)
+			break;
+		switch (ret)
+		{
+			case WAIT_OBJECT_0:
+			case WAIT_OBJECT_0 + 1:
+				callbacks [ret - WAIT_OBJECT_0] ();
+				break;
+			default:
+				LogMsg("WaitForMultipleObjects returned %X", ret);
+		}
+	}
+}
+
 
 /***********************************************************************************************\
 									Public ScoApp methods
 \***********************************************************************************************/
 
-void ScoApp::Construct()
+void ScoApp::Construct (ScoAppCb connect_cb, ScoAppCb disconnect_cb)
 {
-    InCall = false;
     LogMsg("HFP Device path: %s", DeviceInterfaceDetailData->DevicePath);
+
+    DestAddr	 = 0;
+	Open		 = false;
+	Destructing  = false;
+	ConnectCb	 = connect_cb;
+	DisconnectCb = disconnect_cb;
+
 	OpenDriver();
+
+	EventScoConnect.Reset();
+	EventScoDisconnect.Reset();
+
+	Thread::Construct();
+	Thread::Execute();
+
+	LogMsg("Thread ID = %d", Thread::GetThreadId());
+
 	WaveOutDev = new WaveOut(this);
 	WaveInDev  = new WaveIn(this);
 }
@@ -160,12 +168,48 @@ void ScoApp::Destruct()
 	hDevice = 0;
 	delete WaveOutDev;
 	delete WaveInDev;
+
+	Destructing = true;
+	EventScoConnect.Signal();	// no matter which event to signal
+	Thread::WaitEnding();
+	LogMsg("Destructed");
 }
 
 
-void ScoApp::OpenSco (uint64 destaddr)
+void ScoApp::StartServer (uint64 destaddr, bool readiness)
 {
-	LogMsg("About to open SCO channel");
+	LogMsg("About to Start SCO server");
+
+	if (!destaddr)
+		throw IntException (DialAppError_InternalError, "Destination address cannot be null");
+
+	HFP_REG_SERVER params = { destaddr, HANDLE(EventScoConnect.GetWaitHandle()), HANDLE(EventScoDisconnect.GetWaitHandle()), BOOL(readiness) };
+	unsigned long nbytes;
+    if (!DeviceIoControl (hDevice, IOCTL_HFP_REG_SERVER, &params, sizeof(params), 0, 0, &nbytes, 0))
+		throw IntException (DialAppError_OpenScoFailure, "Register SCO Server FAILED, GetLastError %d", GetLastError());
+
+	DestAddr = destaddr;
+}
+
+
+void ScoApp::StopServer ()
+{
+	if (IsStarted()) {
+		LogMsg("About to Stop SCO server");
+		unsigned long nbytes;
+		if (!DeviceIoControl (hDevice, IOCTL_HFP_UNREG_SERVER, 0, 0, 0, 0, &nbytes, 0)) {
+			// Do not throw exceptions on stop server
+			LogMsg ("Unregister SCO Server FAILED, GetLastError %d", GetLastError());
+		}
+
+		DestAddr = 0;
+	}
+}
+
+
+void ScoApp::OpenSco (bool waveonly)
+{
+	LogMsg("About to Open SCO channel (waveonly=%d)", waveonly);
 
 	if (!IsConstructed())
 		throw IntException (DialAppError_InternalError, "ScoApp::Construct was not called");
@@ -173,40 +217,53 @@ void ScoApp::OpenSco (uint64 destaddr)
 	if (IsOpen())
 		throw IntException (DialAppError_InternalError, "ScoApp::CloseSco was not called");
 
-	if (!destaddr)
-		throw IntException (DialAppError_InternalError, "Destination address cannot be null");
-
-	unsigned long nbytes;
-    if (!DeviceIoControl (hDevice, IOCTL_HFP_OPEN_SCO, &destaddr, sizeof(destaddr), 0, 0, &nbytes, NULL))
-		throw IntException (DialAppError_OpenScoFailure, "Failed to open SCO, GetLastError %d", GetLastError());
-
-	DestAddr = destaddr;
+	if (!waveonly) {
+		unsigned long nbytes;
+		if (!DeviceIoControl (hDevice, IOCTL_HFP_OPEN_SCO, 0, 0, 0, 0, &nbytes, 0))
+			throw IntException (DialAppError_OpenScoFailure, "Failed to open SCO, GetLastError %d", GetLastError());
+	}
 
 	WaveOutDev->Open();
 	WaveInDev->Open();
+	Open = true;
 }
 
 
-void ScoApp::CloseSco ()
+void ScoApp::CloseSco (bool waveonly)
 {
-	LogMsg("About to close SCO channel");
-
 	if (IsOpen()) {
+		LogMsg("About to Close SCO channel (waveonly=%d)", waveonly);
 		WaveOutDev->Close();
 		WaveInDev->Close();
-		ReopenDriver();
-		InCall = false;
+		if (!waveonly)
+			ReopenDriver();
+		Open = false;
 		DestAddr = 0;
 	}
 }
 
+void ScoApp::CloseScoLowLevel ()
+{
+	unsigned long nbytes;
+	DeviceIoControl (hDevice, IOCTL_HFP_CLOSE_SCO, 0, 0, 0, 0, &nbytes, 0);
+}
 
 void ScoApp::VoiceStart ()
 {
 	LogMsg("About to start passing voice");
-    InCall = true;
 	WaveOutDev->Play();
 	WaveInDev->Play();
+}
+
+
+void ScoApp::SetIncomingReadiness (bool readiness)
+{
+	LogMsg("SetIncomingReadiness = %d", readiness);
+
+	BOOLEAN params = (BOOLEAN) readiness;
+	unsigned long nbytes;
+	if (!DeviceIoControl (hDevice, IOCTL_HFP_INCOMING_READINESS, &params, sizeof(params), 0, 0, &nbytes, 0))
+		throw IntException (DialAppError_OpenScoFailure, "DeviceIoControl failed, GetLastError %d", GetLastError());
 }
 
 

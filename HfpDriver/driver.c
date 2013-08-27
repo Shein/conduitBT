@@ -10,8 +10,8 @@ Environment:
     Kernel mode only
 --*/
 
-#include "clisrv.h"
 #include "driver.h"
+#include "device.h"
 
 #if defined(EVENT_TRACING)
 // The trace message header (.tmh) file must be included in a source file before any WPP macro calls and after defining a WPP_CONTROL_GUIDS

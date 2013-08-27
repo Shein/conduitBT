@@ -38,8 +38,8 @@ enum DialAppDebug
  Initializes the DialApp application and Bluetooth HFP driver.
  Parameters:
 	cb		- Callback function pointer (see DialAppCb description).
-	pcsound - boolean flag for PC sound. This is initial state for the desired sound 
-			  device. Further switch is performed via dialappPcSound func.
+	pcsound - boolean flag for user's PC Sound switch initial preference (wish to use 
+	          PS sound devices for voice). Further switch is performed via dialappPcSound func.
  Exceptions: 
     throw int exception if an error happened.
  *************************************************************************************
@@ -201,16 +201,18 @@ void  dialappEndCall () throw();
 
 /*
  *************************************************************************************
- Switch sound of the current or next call(s) to PC or Phone.
+ Set user's preference to use or not PC Sound devices for future voice conversations. 
+ If the phone is currently in conversation (in the DialAppState_InCall state), it also 
+ immediately switches the current sound to the desired mode.
  Parameters:
-	pcsound - boolean flag for PC sound. May be chosen when needed.
+	pcsound - PC Sound devices usage preference, boolean.
  Exceptions: 
     No exceptions.
  Callback:
-	After switching to the desired mode the DialAppCb will be called with 
-	current state and DialAppParam param->PcSound value set. In the case a current state 
-	permits to switch the PC sound on right now (e.g. when staying in DialAppState_InCall),
-	the DialAppParam param->PcSoundNowOn will be also set.
+	After switching to the desired mode the DialAppCb will be called for current state 
+	and DialAppParam param->PcSoundPref value set. In the case a current state permits 
+	to switch the PC sound on right now (DialAppState_InCall), and the switch succeeded,
+	the DialAppParam param->PcSoundNow will be also set.
 	In the case of error the callback with correspondent state and error code 
 	DialAppError will be called.
  *************************************************************************************

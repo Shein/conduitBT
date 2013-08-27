@@ -36,20 +36,16 @@ class HfpSmCb
 
   public:
 	void InitialCallback		();
-	void HedasetOnOff			();
 	void DevicePresent			(uint32 addflag = DIALAPP_FLAG_CURDEV);
 	void DeviceUnknown			();
 	void DeviceForgot			();
+	void NotifyFailure			(int error);
 	void HfpConnected			();
-	void OutgoingIncorrectState	();
 	void Calling				();
-	void InCallHeadsetOnOff		();
+	void PcSoundOnOff			(uint32 addflag = 0);
+	void PcSoundOff				();
 	void InCall					();
 	void CallEnded				();
-	void ConnectFailure			();
-	void ServiceConnectFailure	();
-	void CallFailure			();
-	void CallEndedVoiceFailure	();
 	void Ring					();
 	void CallCurrentInfo		();
 	void CallWaitingInfo		();
@@ -68,9 +64,10 @@ class HfpSm: public SMT<HfpSm>
   public:
 	enum {
 		// Timeouts in milliseconds
-		TIMEOUT_CONNECTION_POLLING	= 5000,
-		TIMEOUT_HFP_NEGOTIATION		=  500,
-		TIMEOUT_WAITING_HOLD_SWITCH	=   20,
+		TIMEOUT_CONNECTION_POLLING		= 5000,
+		TIMEOUT_HFP_NEGOTIATION			=  500,
+		TIMEOUT_WAITING_HOLD_SWITCH		=   20,
+		TIMEOUT_SCO_TREATED_AS_INCOMING	=  750,	// The Max observed value is at HTC Diamond = 0.62 sec
 	};
 
   public:
@@ -98,22 +95,17 @@ class HfpSm: public SMT<HfpSm>
 	int			AtResponsesCnt;
 	int			AtResponsesNum;
 	bool		HfpIndicators;
+	unsigned    IncallStartTime;
 
 	CallInfo<char>   *CallInfoCurrent;		// Set in InCall state after the abonent information is present
 	CallInfo<char>   *CallInfoHeld;			// Set in InCall state when the Current call is turned to Held, it is indication about Held call presence
 	CallInfo<char>   *CallInfoWaiting;		// Set in InCall state after incoming waiting call received, it is indication about Waiting call presence
 
   public:
-	static void PutEvent_Failure ()
+	static void PutEvent_Failure (int error = 0)
 	{
 		SMEVENT Event = {SM_HFP, SMEV_Failure};
-		SmBase::PutEvent (&Event, SMQ_HIGH);
-	}
-
-	static void PutEvent_Failure2Report ()
-	{
-		SMEVENT Event = {SM_HFP, SMEV_Failure};
-		Event.Param.ReportFailure = true;
+		Event.Param.ReportError = error;
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
@@ -137,9 +129,10 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
-	static void PutEvent_Disconnect ()
+	static void PutEvent_Disconnect (int error = 0)
 	{
 		SMEVENT Event = {SM_HFP, SMEV_Disconnect};
+		Event.Param.ReportError = error;
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
@@ -163,8 +156,8 @@ class HfpSm: public SMT<HfpSm>
 
 	static void PutEvent_Headset (bool headset_on)
 	{
-		SMEVENT Event = {SM_HFP, SMEV_Headset};
-		Event.Param.HeadsetOn = headset_on;
+		SMEVENT Event = {SM_HFP, SMEV_SwitchHeadset};
+		Event.Param.PcSound = headset_on;
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
@@ -257,12 +250,17 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 	
+  // SCO App callbacks
+  private:
+	static void ScoConnectCallback ();
+	static void ScoDisconnectCallback ();
+
   // Help functions
   private:
 	bool ParseAndSetAtIndicators (char* services);
-	bool WasPcsoundChanged (SMEVENT* ev);
-	void StartVoiceHlp	();
-	void StopVoiceHlp	();
+	bool WasPcsoundPrefChanged (SMEVENT* ev);
+	void StartVoiceHlp	(bool waveonly = true);
+	void StopVoiceHlp	(bool waveonly = true);
 	void SetCallInfo4CurrentCall (CallInfo<char> *info);
 	void SetCallInfo4WaitingCall (CallInfo<char> *info);
 	void SetCallInfo4HeldCall    (SMEV_ATRESPONSE heldstatus);
@@ -270,7 +268,7 @@ class HfpSm: public SMT<HfpSm>
 
   // Transitions
   private:
-	bool SetHeadsetFlag		  (SMEVENT* ev, int param);
+	bool SetPcsoundPrefFlag	  (SMEVENT* ev, int param);
 	bool ForgetDevice		  (SMEVENT* ev, int param);
 	bool SelectDevice		  (SMEVENT* ev, int param);
 	bool Disconnect			  (SMEVENT* ev, int param);
@@ -290,6 +288,9 @@ class HfpSm: public SMT<HfpSm>
 	bool StartCallEnding	  (SMEVENT* ev, int param);
 	bool FinalizeCallEnding	  (SMEVENT* ev, int param);
 	bool SwitchVoiceOnOff	  (SMEVENT* ev, int param);
+	bool SwitchedVoiceOnOff	  (SMEVENT* ev, int param);
+	bool StopVoice			  (SMEVENT* ev, int param);
+	bool RejectVoice		  (SMEVENT* ev, int param);
 	bool ConnectFailure		  (SMEVENT* ev, int param);
 	bool ServiceConnectFailure(SMEVENT* ev, int param);
 	bool EndCallVoiceFailure  (SMEVENT* ev, int param);
@@ -306,6 +307,7 @@ class HfpSm: public SMT<HfpSm>
 	int  ChoiceCallSetup	(SMEVENT* ev);
 	int  ToRingingOrCalling	(SMEVENT* ev);
 	int  ChoiceFromRinging	(SMEVENT* ev);
+	int  ChoiceIncomingVoice(SMEVENT* ev);
 };
 
 
@@ -317,12 +319,6 @@ inline void HfpSmCb::InitialCallback ()
 	CbFunc (DialAppState_IdleNoDevice, DialAppError_Ok, DIALAPP_FLAG_INITSTATE|DIALAPP_FLAG_CURDEV, &HfpSmObj.PublicParams);
 }
 
-
-inline void HfpSmCb::HedasetOnOff ()
-{
-	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
-	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, DIALAPP_FLAG_PCSOUND|flag, &HfpSmObj.PublicParams);
-}
 
 inline void HfpSmCb::DevicePresent (uint32 addflag)
 {
@@ -342,56 +338,40 @@ inline void HfpSmCb::DeviceForgot ()
 	CbFunc (DialAppState_IdleNoDevice, DialAppError_Ok, DIALAPP_FLAG_CURDEV|flag, &HfpSmObj.PublicParams);
 }
 
+inline void HfpSmCb::NotifyFailure (int error)
+{
+	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
+	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError(error), flag, &HfpSmObj.PublicParams);
+	LogMsg ("ERROR %d Reported To User", error);
+}
+
 inline void HfpSmCb::HfpConnected ()
 {
 	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
 	CbFunc (DialAppState_ServiceConnected, DialAppError_Ok, flag, &HfpSmObj.PublicParams);
 }
 
-inline void HfpSmCb::OutgoingIncorrectState ()
-{
-	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
-	CbFunc (DialAppState(HfpSmObj.State), DialAppError_IncorrectState4Call, flag, 0);
-}
-
 inline void HfpSmCb::InCall()
 {
-	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, DIALAPP_FLAG_NEWSTATE|DIALAPP_FLAG_PCSOUNDON, &HfpSmObj.PublicParams);
+	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, DIALAPP_FLAG_NEWSTATE|DIALAPP_FLAG_PCSOUND, &HfpSmObj.PublicParams);
 }
 
-inline void HfpSmCb::InCallHeadsetOnOff()
+inline void HfpSmCb::PcSoundOnOff(uint32 addflag)
 {
-	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, DIALAPP_FLAG_PCSOUND|DIALAPP_FLAG_PCSOUNDON, &HfpSmObj.PublicParams);
+	// DIALAPP_FLAG_NEWSTATE in this case is impossible
+	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, DIALAPP_FLAG_PCSOUND_PREFERENCE|addflag, &HfpSmObj.PublicParams);
 }
 
-inline void HfpSmCb::CallEndedVoiceFailure()
+inline void HfpSmCb::PcSoundOff()
 {
-	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
-	CbFunc (DialAppState_ServiceConnected, DialAppError_ReadWriteScoError, flag, 0);
-}
-
-inline void HfpSmCb::ConnectFailure()
-{
-	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
-	CbFunc (DialAppState_DisconnectedDevicePresent, DialAppError_ConnectFailure, flag, &HfpSmObj.PublicParams);
+	// DIALAPP_FLAG_NEWSTATE in this case is impossible
+	CbFunc (DialAppState(HfpSmObj.State_next), DialAppError_Ok, DIALAPP_FLAG_PCSOUND, &HfpSmObj.PublicParams);
 }
 
 inline void HfpSmCb::CallEnded()
 {
 	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
 	CbFunc (DialAppState_ServiceConnected, DialAppError_Ok, flag, &HfpSmObj.PublicParams);
-}
-
-inline void HfpSmCb::ServiceConnectFailure	()
-{
-	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
-	CbFunc (DialAppState_Connected, DialAppError_ServiceConnectFailure, flag, 0);
-}
-
-inline void HfpSmCb::CallFailure ()
-{
-	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
-	CbFunc (DialAppState_ServiceConnected, DialAppError_CallFailure, flag, 0);
 }
 
 inline void HfpSmCb::Calling ()
@@ -403,11 +383,10 @@ inline void HfpSmCb::Calling ()
 inline void HfpSmCb::Ring ()
 {
 	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
-	if (HfpSmObj.PublicParams.PcSoundNowOn)
-		flag |= DIALAPP_FLAG_PCSOUNDON;
+	if (HfpSmObj.PublicParams.PcSound)
+		flag |= DIALAPP_FLAG_PCSOUND;
 	CbFunc (DialAppState_Ringing, DialAppError_Ok, flag, &HfpSmObj.PublicParams);
 }
-
 
 inline void HfpSmCb::CallCurrentInfo ()
 {
@@ -415,14 +394,12 @@ inline void HfpSmCb::CallCurrentInfo ()
 	CbFunc (DialAppState(HfpSmObj.State), DialAppError_Ok, DIALAPP_FLAG_ABONENT_CURRENT|flag, &HfpSmObj.PublicParams);
 }
 
-
 inline void HfpSmCb::CallWaitingInfo ()
 {
 	uint32 flag = (HfpSmObj.State_next != HfpSmObj.State) ? DIALAPP_FLAG_NEWSTATE:0;
 	flag |= DIALAPP_FLAG_ABONENT_WAITING;
 	CbFunc (DialAppState(HfpSmObj.State), DialAppError_Ok, flag, &HfpSmObj.PublicParams);
 }
-
 
 inline void HfpSmCb::CallHeldInfo (uint32 addflag)
 {

@@ -10,7 +10,8 @@ Environment:
     Kernel mode only
 --*/
 
-#include "clisrv.h"
+#include "driver.h"
+#include "device.h"
 #include "sdp.h"
 
 #if defined(EVENT_TRACING)
@@ -72,7 +73,7 @@ AddSeqAttribute(
     
     if (!seq) {
         status = STATUS_INSUFFICIENT_RESOURCES;
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "Creating sequence failed, returning status code %d\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "Creating sequence failed, Status %X", status);
         goto exit;
     }
 
@@ -103,7 +104,7 @@ AppendSeqNode(
     node = SdpNodeInterface->SdpCreateNodeSequence(POOLTAG_HFPDRIVER);
     if(!node) {
         status = STATUS_INSUFFICIENT_RESOURCES;
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "SdpCreateNodeSequence failed, returning status code %d\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "SdpCreateNodeSequence failed, Status %X", status);
         goto exit;
     }
     
@@ -132,14 +133,14 @@ AppendNodeUint16(
     node = SdpNodeInterface->SdpCreateNodeUint16(Value, POOLTAG_HFPDRIVER);
     if(!node) {
         status = STATUS_INSUFFICIENT_RESOURCES;
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "Creating NodeUint16 failed, returning status code %d\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "Creating NodeUint16 failed, Status %X", status);
         goto exit;
     }
 
     status = SdpNodeInterface->SdpAppendNodeToContainerNode(ContainerNode, node);
 
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "SdpAppendNodeToContainerNode failed, returning status code %d\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "SdpAppendNodeToContainerNode failed, Status %X", status);
         ExFreePool(node);
         node = NULL;
         goto exit;
@@ -165,13 +166,13 @@ AppendNodeUuid128(
     node = SdpNodeInterface->SdpCreateNodeUuid128(Value, POOLTAG_HFPDRIVER);
     if(!node) {
         status = STATUS_INSUFFICIENT_RESOURCES;
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "Creating NodeUuid128 failed, returning status code %d\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "Creating NodeUuid128 failed, Status %X", status);
         goto exit;
     }
 
     status = SdpNodeInterface->SdpAppendNodeToContainerNode (ContainerNode, node);
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "SdpAppendNodeToContainerNode failed, returning status code %d\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "SdpAppendNodeToContainerNode failed, Status %X", status);
         ExFreePool(node);
         node = NULL;
         goto exit;
@@ -197,13 +198,13 @@ AppendNodeUuid16(
     node = SdpNodeInterface->SdpCreateNodeUuid16(Value, POOLTAG_HFPDRIVER);
     if(!node) {
         status = STATUS_INSUFFICIENT_RESOURCES;
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "Creating NodeUuid16 failed, returning status code %d\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "Creating NodeUuid16 failed, Status %X", status);
         goto exit;
     }
 
     status = SdpNodeInterface->SdpAppendNodeToContainerNode (ContainerNode, node);
     if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "SdpAppendNodeToContainerNode failed, returning status code %d\n", status);
+        TraceEvents(TRACE_LEVEL_ERROR, DBG_SDP, "SdpAppendNodeToContainerNode failed, Status %X", status);
         ExFreePool(node);
         node = NULL;
         goto exit;

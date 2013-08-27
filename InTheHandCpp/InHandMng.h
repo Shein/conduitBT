@@ -375,7 +375,7 @@ void InHandMng::BeginConnect (BluetoothAddress^ bthaddr)
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure(DialAppError_ConnectFailure);
 	}
 }
 
@@ -397,7 +397,7 @@ void InHandMng::ConnectCallback (IAsyncResult ^ar)
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure(DialAppError_ConnectFailure);
 	}
 }
 
@@ -416,11 +416,11 @@ int InHandMng::BeginHfpConnect ()
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure (DialAppError_ServiceConnectFailure);
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure (DialAppError_ServiceConnectFailure);
 	}
 	return 0;
 }
@@ -442,7 +442,7 @@ void InHandMng::Disconnect ()
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
 		//Do not generate Failure event when disconnecting - the client can be already disconnected
-		//HfpSm::PutEvent_Failure();
+		//HfpSm::PutEvent_Failure (DialAppError_ConnectFailure);
 	}
 
 	try	{
@@ -451,7 +451,7 @@ void InHandMng::Disconnect ()
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure (DialAppError_InternalError);
 	}
 }
 
@@ -468,7 +468,7 @@ void InHandMng::StartCall(String^ number)
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure (DialAppError_CallFailure);
 	}
 }
 
@@ -484,7 +484,7 @@ void InHandMng::SendDtmf(String^ dialchar)
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure (DialAppError_ConnectFailure);
 	}
 }
 
@@ -500,7 +500,7 @@ void InHandMng::Answer()
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure (DialAppError_ConnectFailure);
 	}
 }
 
@@ -517,7 +517,7 @@ void InHandMng::EndCall()
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure (DialAppError_ConnectFailure);
 	}
 }
 
@@ -555,6 +555,6 @@ void InHandMng::ListCurrentCalls()
 	}
 	catch (Exception ^ex) {
 		LogMsg(ex->Message);
-		HfpSm::PutEvent_Failure();
+		HfpSm::PutEvent_Failure (DialAppError_ConnectFailure);
 	}
 }

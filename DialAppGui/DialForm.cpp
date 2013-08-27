@@ -65,18 +65,24 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 	if (flags & DIALAPP_FLAG_NEWSTATE) {
 		if (status == DialAppError_Ok) {
 			String^ sparam = nullptr;
-			if (flags & DIALAPP_FLAG_PCSOUNDON)
-				sparam = (param->PcSoundNowOn) ? " (PC Sound On)":" (PC Sound Off)";
+			if (flags & DIALAPP_FLAG_PCSOUND)
+				sparam = (param->PcSound) ? " (PC Sound On)":" (PC Sound Off)";
 			DialForm::This->SetStateName (%System::String(DialAppStateString[state]), sparam);
 		}
 		else {
 			DialForm::This->SetError (%System::String(DialAppStateString[state]), %System::String(DialAppErrorString[status]));
 		}
 	}
+	else {
+		if (flags & DIALAPP_FLAG_PCSOUND) {
+			// if state was not changed, check whether the current PC Sound state changed (it may be in InCall state)
+			DialForm::This->AddInfoMessage ("(Current call PC Sound " + (param->PcSound ? "On)":"Off)"));
+		}
+	}
 
 	// Show Parameters
-	if (flags & DIALAPP_FLAG_PCSOUND) {
-		DialForm::This->SetHeadsetButtonName (param->PcSound);
+	if (flags & DIALAPP_FLAG_PCSOUND_PREFERENCE) {
+		DialForm::This->SetHeadsetButtonName (param->PcSoundPref);
 	}
 	if (flags & DIALAPP_FLAG_CURDEV) {
 		array<String^>^ items = DialForm::This->InitDevicesCombo();

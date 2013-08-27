@@ -8,6 +8,13 @@
 #pragma managed(push, off)
 
 
+enum { 
+	WAIT_FOREVER = INFINITE		// Our platform independent INFINITE redefinition
+};
+
+typedef void* MxHandle;
+
+
 class Mutex_os
 {
   public:
@@ -25,7 +32,7 @@ class Event_os
     Event_os()   { hWinEvent = CreateEvent (0, FALSE, FALSE, 0); }
     ~Event_os()  { CloseHandle (hWinEvent);  }
 
-    int GetWaitHandle() { return int(hWinEvent); }
+    MxHandle GetWaitHandle() { return MxHandle(hWinEvent); }
 
   protected:
     HANDLE   hWinEvent;
@@ -35,13 +42,10 @@ class Event_os
 class Semaph_os
 {
   public:
-    enum { WAIT_FOREVER = INFINITE };   
-
-  public:
     Semaph_os()  { hWinSemaph = CreateSemaphore (NULL, 0/*InitCount*/, LONG_MAX, NULL); }
     ~Semaph_os() { CloseHandle (hWinSemaph); }
 
-    int GetWaitHandle() { return int(hWinSemaph); }
+    MxHandle GetWaitHandle() { return MxHandle(hWinSemaph); }
 
   protected:
     HANDLE  hWinSemaph;
@@ -60,9 +64,9 @@ class Event : protected Event_os
 {
   public:
     void Signal();
-    void Wait (unsigned timeout = INFINITE);
+    void Wait (unsigned timeout = WAIT_FOREVER);
 	void Reset();
-    int  GetWaitHandle() { return Event_os::GetWaitHandle(); }
+    MxHandle GetWaitHandle() { return Event_os::GetWaitHandle(); }
 };
 
 
@@ -70,9 +74,9 @@ class Semaph : protected Semaph_os
 {
   public:
     void Signal ();
-    bool Take (unsigned timeout = WAIT_FOREVER);  // WAIT_FOREVER is defined in Semaph_os
+    bool Take (unsigned timeout = WAIT_FOREVER);
     void Reset () { while (Take(0)); }
-    int  GetWaitHandle() { return Semaph::GetWaitHandle(); }
+    MxHandle GetWaitHandle() { return Semaph_os::GetWaitHandle(); }
 };
 
 
