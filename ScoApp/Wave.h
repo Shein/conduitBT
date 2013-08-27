@@ -2,6 +2,8 @@
 #pragma managed(push, off)
 
 
+#include <wmcodecdsp.h> // IMediaBuffer
+
 #include "def.h"
 #include "deblog.h"
 #include "thread.h"
@@ -9,7 +11,87 @@
 #include "DialAppType.h"
 
 
+// Enable DirectX Media Objects for Voice input instead of WaveIn API
+#define DMO_ENABLED
+
+
 class ScoApp;
+
+class MediaBuffer : public IMediaBuffer
+{
+  public:
+
+	MediaBuffer (DWORD maxLength) :
+		m_ref(0),
+		m_maxLength(maxLength),
+		m_length(0),
+		m_data(NULL){}
+
+	HRESULT SetLength (DWORD cbLength)
+	{
+		if (cbLength > m_maxLength) {
+			return E_INVALIDARG;
+		} else {
+			m_length = cbLength;
+			return S_OK;
+		}
+	}
+
+	HRESULT GetMaxLength (DWORD *maxLength)
+	{
+		if (maxLength == NULL) {
+			return E_POINTER;
+		}
+		*maxLength = m_maxLength;
+		return S_OK;
+	}
+
+	HRESULT GetBufferAndLength (BYTE **buffer, DWORD *length)
+	{
+		if (buffer == NULL || length == NULL) {
+			return E_POINTER;
+		}
+		*buffer = m_data;
+		*length = m_length;
+		return S_OK;
+	}
+
+	HRESULT QueryInterface (REFIID riid, void **iface)
+	{
+		if (iface == NULL) {
+			return E_POINTER;
+		}
+		if (riid == IID_IMediaBuffer || riid == IID_IUnknown) {
+			*iface = static_cast<IMediaBuffer *>(this);
+			AddRef();
+			return S_OK;
+		}
+		*iface = NULL;
+		return E_NOINTERFACE;
+	}
+
+	ULONG AddRef()
+	{
+		return InterlockedIncrement(&m_ref);
+	}
+
+	ULONG Release()
+	{
+		LONG lRef = InterlockedDecrement(&m_ref);
+		if (lRef == 0) {
+			delete this;
+		}
+		return lRef;
+	}
+
+  public:
+	DWORD        m_length;
+	const DWORD  m_maxLength;
+	LONG         m_ref;
+	BYTE         *m_data;
+};
+
+
 
 class Wave : public DebLog, public Thread
 {
@@ -25,7 +107,11 @@ class Wave : public DebLog, public Thread
 
 		ChunkSize = 4096,							// Size of one chunk for read and write operation 
 		ChunkTime = ChunkSize * 1000 / (VoiceSampleRate * VoiceBitPerSample/8),	// Send time of one chunk in milliseconds
-		ChunkTime4Wait = ChunkTime + ChunkTime/10	// When waiting on event/semaphore to use this value
+		#ifndef DMO_ENABLED
+		ChunkTime4Wait = (ChunkTime + ChunkTime/10)	// When waiting on event/semaphore to use this value
+		#else
+		ChunkTime4Wait = 100 
+		#endif
 	};
 
 	struct WAVEBLOCK {
@@ -96,6 +182,7 @@ class Wave : public DebLog, public Thread
 	Mutex			ReleaseMutex;
 
 	FIFO_ALLOC<WAVEBLOCK,8>	DataBlocks;
+	bool firstIter; // for jitter buffer
 };
 
 
@@ -115,10 +202,22 @@ class WaveIn : public Wave
 {
   public:
 	WaveIn (ScoApp *parent);
+
+	~WaveIn()
+	{
+		mediaObject->FreeStreamingResources();
+		mediaObject->Release();
+	}
+
 	void Open();
+
+	IMediaObject	*mediaObject;
+	MediaBuffer		mediaBuffer;
+	DMO_OUTPUT_DATA_BUFFER dataBuffer;
 
   protected:
     virtual void RunBody (WAVEBLOCK * wblock);
+	void DmoInit();
 };
 
 
