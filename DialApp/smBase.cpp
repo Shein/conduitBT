@@ -6,12 +6,9 @@
 
 #include "def.h"
 #include "str.h"
+#include "stralloc.h"
 #include "smBase.h"
-#include "enums_impl.h"
 
-
-IMPL_ENUM (SMID, SM_LIST)
-IMPL_ENUM (SMEV, SMEV_LIST)
 
 
 /***********************************************************************************************\
@@ -39,7 +36,6 @@ bool SM::Execute (SMEVENT *pEv)
 {
     SMEVSTATE   *pEvState;
     int			 StatParam;
-	cchar       *sevent;
 	// Workaround for C2440 error:
 	union {
 		FTRANSITION  FuncTran;
@@ -49,17 +45,7 @@ bool SM::Execute (SMEVENT *pEv)
 
     ASSERT_f (this == SmBase::SmGlobalArray[SmId]);
 
-	if (pEv->Ev == SMEV_Failure) {
-		// Detail the failure event (it's common for all SMs)
-		STRB str (strallocCyclicBuffer.FetchNext()->str);
-		str.Sprintf ("%s (Error #%d)", enumTable_SMEV[pEv->Ev], pEv->Param.ReportError);
-		sevent = (char*) str;
-	}
-	else {
-		sevent = enumTable_SMEV[pEv->Ev];
-	}
-
-	LogMsg ("[ %6s:%-14s ] < - - - - - - - - '%s'\n", enumTable_SMID[SmId],  aStateNames[State],  sevent);
+	LogMsg ("[ %6s:%-14s ] < - - - - - - - - '%s'\n", enumTable_SMID[SmId], aStateNames[State], smidFormatEventName(pEv));
     //prnEventPrint (pEv);
 
     pEvState = & aStates[State][pEv->Ev];

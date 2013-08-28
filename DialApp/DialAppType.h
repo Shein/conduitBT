@@ -50,6 +50,7 @@ enum DialAppError
 
 	// Audio channel errors
 	DialAppError_OpenScoFailure				,
+	DialAppError_CoseScoFailure				,
 	DialAppError_ReadScoError				,
 	DialAppError_WriteScoError				,
 	DialAppError_WaveApiError				,

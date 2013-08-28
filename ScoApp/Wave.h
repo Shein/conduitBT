@@ -1,3 +1,8 @@
+/*******************************************************************\
+ Filename    :  Wave.h
+ Purpose     :  Input and Output Wave API 
+\*******************************************************************/
+
 #pragma once
 #pragma managed(push, off)
 
@@ -149,19 +154,19 @@ class Wave : public DebLog, public Thread
 	WaveUnprepare	waveUnprepare;
 
   protected:
-	void CheckMmres (MMRESULT res) {
+	void CheckMmres (MMRESULT res, cchar * file, int line) {
 		if (res != MMSYSERR_NOERROR)
-			throw IntException (DialAppError_WaveApiError, "ERROR: MMRESULT = %d", res);
+			throw IntException (DialAppError_WaveApiError, "ERROR [%s:%d]: MMRESULT = %d", file, line, res);
 	}
 
-	void CheckHresult (HRESULT res) {
+	void CheckHresult (HRESULT res, cchar * file, int line) {
 		if (FAILED(res))
-			throw IntException (DialAppError_InitMediaDeviceError, "ERROR: HRESULT = %d", res);
+			throw IntException (DialAppError_InitMediaDeviceError, "ERROR [%s:%d]: HRESULT = %d", file, line, res);
 	}
 
-	void CheckState (STATE expected) {
+	void CheckState (STATE expected, cchar * file, int line) {
 		if (State != expected)
-			throw IntException (DialAppError_InternalError, "Wave object unexpected state (%d != %d)", State, expected);
+			throw IntException (DialAppError_InternalError, "ERROR [%s:%d]: Wave object unexpected state (%d != %d)", file, line, State, expected);
 	}
 
   protected:
@@ -226,6 +231,14 @@ class WaveIn : public Wave
 	void DmoInit();
 };
 
+
+/*******************************************************************\
+					Error Codes Check Macros
+\*******************************************************************/
+
+#define CHECK_MMRES(res)		CheckMmres (res,__FUNCTION__,__LINE__)
+#define CHECK_HRESULT(res)		CheckHresult(res,__FUNCTION__,__LINE__)
+#define CHECK_STATE(state)		CheckState(state,__FUNCTION__,__LINE__)
 
 
 #pragma managed(pop)

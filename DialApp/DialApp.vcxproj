@@ -93,6 +93,7 @@
     </ClCompile>
     <ClCompile Include="HfpSm.cpp" />
     <ClCompile Include="smBase.cpp" />
+    <ClCompile Include="smId.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CallInfo.h" />

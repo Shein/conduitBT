@@ -257,7 +257,7 @@ void HfpSm::StopVoiceHlp (bool waveonly)
 	catch (int err)
 	{
 		LogMsg("EXCEPTION %d", err);
-		HfpSm::PutEvent_Failure();	// if we have an error when stopping voice, we should not to notice, it may be the normal case
+		HfpSm::PutEvent_Failure(DialAppError_CoseScoFailure);	// if we have an error when stopping voice, we should not to notice, it may be the normal case
 	}
 	PublicParams.PcSound = false;
 }

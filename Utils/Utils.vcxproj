@@ -17,11 +17,13 @@
     <ClInclude Include="fifo_cse.h" />
     <ClInclude Include="mutex.h" />
     <ClInclude Include="str.h" />
+    <ClInclude Include="stralloc.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="deblog.h" />
     <ClInclude Include="timer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="stralloc.cpp" />
     <ClCompile Include="thread.cpp" />
     <ClCompile Include="deblog.cpp" />
     <ClCompile Include="timer.cpp" />

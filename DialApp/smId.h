@@ -1,5 +1,5 @@
 /*******************************************************************\
- Filename    :  smID.h
+ Filename    :  smId.h
  Purpose     :  Global SMs enumerators and types
 \*******************************************************************/
 
@@ -45,31 +45,31 @@
 	ENUM_ENTRY (SMEV, CallWaiting			),	\
 	ENUM_ENTRY (SMEV, CallHeld				)
 
+
 /*
    SMEV_AtResponse event extension (SMEV_PAR, AtResponse field)
  */
-enum SMEV_ATRESPONSE
-{
-	SMEV_AtResponse_Ok						,
-	SMEV_AtResponse_Error					,
-	SMEV_AtResponse_CurrentPhoneIndicators	,
-	SMEV_AtResponse_CallSetup_None			,
-	SMEV_AtResponse_CallSetup_Incoming		,
-	SMEV_AtResponse_CallSetup_Outgoing		,
-	SMEV_AtResponse_CallSetup_RemoteAlert	,
-	SMEV_AtResponse_CallHeld_None			,
-	SMEV_AtResponse_CallHeld_HeldAndActive	,
-	SMEV_AtResponse_CallHeld_HeldOnly		,
-	SMEV_AtResponse_CallWaiting_Ringing		,
-	SMEV_AtResponse_CallWaiting_Stopped		,
-	SMEV_AtResponse_ListCurrentCalls
-};
+#define SMEV_ATRESPONSE_LIST	\
+	ENUM_ENTRY (SMEV_AtResponse,  Ok						),	\
+	ENUM_ENTRY (SMEV_AtResponse,  Error						),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CurrentPhoneIndicators	),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallSetup_None			),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallSetup_Incoming		),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallSetup_Outgoing		),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallSetup_RemoteAlert		),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallHeld_None				),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallHeld_HeldAndActive	),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallHeld_HeldOnly			),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallWaiting_Ringing		),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallWaiting_Stopped		),	\
+	ENUM_ENTRY (SMEV_AtResponse,  ListCurrentCalls			)
 
 
 
 DECL_ENUM (SMID, SM_LIST)
 DECL_ENUM (SMEV, SMEV_LIST)
 
+DECL_ENUM (SMEV_ATRESPONSE, SMEV_ATRESPONSE_LIST)
 
 
 /* 
@@ -98,6 +98,11 @@ struct SMEV_PAR
     int							ReportError;
 };
 
+
+struct SMEVENT;
+
+
+cchar * smidFormatEventName (SMEVENT *pEv);
 
 
 #endif // _SMID_H

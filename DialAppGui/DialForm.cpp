@@ -39,6 +39,7 @@ cchar* DialAppErrorString[] =
 
 	// Audio channel errors
 	"OpenScoFailure",
+	"CloseScoFailure",
 	"ReadScoError",
 	"WriteScoError",
 	"WaveApiError",
