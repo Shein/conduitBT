@@ -87,13 +87,14 @@ void Wave::Play()
 void Wave::Stop()
 {
 	CHECK_STATE (STATE_PLAYING);
-	LogMsg("%s: Stopping playback", Name);
+	LogMsg("Stopping playback");
 	State = STATE_READY;
 	EventDataReady.Signal();
 
 	RunMutex.Lock();
 	if (hWave) {
 		CHECK_MMRES (waveReset(hWave));
+		LogMsg("Stopping playback", Name);
 		ReleaseCompletedBlocks(true);
 	}
 	RunMutex.Unlock();
@@ -199,6 +200,7 @@ void WaveOut::Open ()
 {
 	CHECK_STATE (STATE_IDLE);
 	CHECK_MMRES (waveOpen (&hWave, WAVE_MAPPER, &Format, 0, (DWORD_PTR)this, CALLBACK_NULL));
+	LogMsg("Open hWave = %X", hWave);
 	State = STATE_READY;
 }
 
@@ -220,7 +222,6 @@ void WaveOut::RunBody (WAVEBLOCK * wblock)
 	res = ReadFile (Parent->hDevice, wblock->Data, ChunkSize, &nbytes, &ScoOverlapped);
 	if (!res) {
 		if (GetLastError() == ERROR_IO_PENDING) {
-			LogMsg("Read from SCO pended...");
 			res = GetOverlappedResult (Parent->hDevice, &ScoOverlapped, &nbytes, TRUE);
 		}
 	}

@@ -156,7 +156,7 @@ class Wave : public DebLog, public Thread
   protected:
 	void CheckMmres (MMRESULT res, cchar * file, int line) {
 		if (res != MMSYSERR_NOERROR)
-			throw IntException (DialAppError_WaveApiError, "ERROR [%s:%d]: MMRESULT = %d", file, line, res);
+			throw IntException (DialAppError_WaveApiError, "ERROR [%s:%d]: MMRESULT = %d (hWave = %X)", file, line, res, hWave);
 	}
 
 	void CheckHresult (HRESULT res, cchar * file, int line) {
