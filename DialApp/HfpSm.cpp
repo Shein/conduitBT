@@ -811,10 +811,10 @@ int HfpSm::ToRingingOrCalling (SMEVENT* ev)
 	switch (ev->Param.AtResponse)
 	{
 		case SMEV_AtResponse_CallSetup_Incoming:
-			LogMsg("CallSetup_Incoming");
+			LogMsg("CallSetup_Incoming (PcSoundPref = %d)", PublicParams.PcSoundPref);
 			return 1; // to STATE_Ringing
 		case SMEV_AtResponse_CallSetup_Outgoing:
-			LogMsg("CallSetup_Outgoing");
+			LogMsg("CallSetup_Outgoing (PcSoundPref = %d)", PublicParams.PcSoundPref);
 			return 2; // to STATE_Ringing
 	}
 	return 0; // call AtProcessing
@@ -826,7 +826,7 @@ int HfpSm::ChoiceFromRinging (SMEVENT* ev)
 	switch (ev->Param.AtResponse)
 	{
 		case SMEV_AtResponse_CallSetup_None:
-			LogMsg("CallSetup_None");
+			LogMsg("CallSetup_None (PcSoundPref = %d)", PublicParams.PcSoundPref);
 			return 0;	// back to STATE_HfpConnected
 	}
 	return 1; // stay in STATE_Ringing, call AtProcessing
@@ -841,7 +841,7 @@ int HfpSm::ChoiceCallSetup (SMEVENT* ev)
 		case SMEV_AtResponse_CallSetup_None:
 			return 0;	// call failure or call terminated - back to STATE_HfpConnected
 		case SMEV_AtResponse_CallSetup_Outgoing:
-			LogMsg("CallSetup_Outgoing");
+			LogMsg("CallSetup_Outgoing (PcSoundPref = %d)", PublicParams.PcSoundPref);
 			return 1;	// OutgoingCall
 	}
 	return 2;	// stay in STATE_Calling, call AtProcessing
