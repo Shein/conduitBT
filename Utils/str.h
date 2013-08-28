@@ -396,4 +396,15 @@ inline int STRB::Vsprintf (cchar * sformat, va_list arglist)
 }
 
 
+// Temporary taken from str.cpp
+inline int STRB::Sprintf (cchar * sformat, ...)
+{
+	va_list  argptr;
+	va_start (argptr, sformat);
+	int ret = vsprintf (Str, sformat, argptr);
+	va_end (argptr);
+	return (Len = ret);
+}
+
+
 #endif // _STR_H

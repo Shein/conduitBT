@@ -39,6 +39,7 @@ enum DialAppError
 	// Init errors
 	DialAppError_InitBluetoothRadioError	,
 	DialAppError_InitDriverError			,
+	DialAppError_InitMediaDeviceError		,
 
 	// HFP API errors
 	DialAppError_UnknownDevice				,
@@ -49,8 +50,11 @@ enum DialAppError
 
 	// Audio channel errors
 	DialAppError_OpenScoFailure				,
-	DialAppError_ReadWriteScoError			,
+	DialAppError_ReadScoError				,
+	DialAppError_WriteScoError				,
 	DialAppError_WaveApiError				,
+	DialAppError_WaveInError				,
+	DialAppError_WaveBuffersError			,
 };
 
 

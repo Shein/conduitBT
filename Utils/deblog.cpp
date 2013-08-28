@@ -9,7 +9,6 @@
 
 #include "def.h"
 #include "deblog.h"
-#include "fifo_cse.h"
 
 
 /***********************************************************************************************\
@@ -17,13 +16,7 @@
 \***********************************************************************************************/
 DebLog  DebLog::GlobalObj("-------");
 
-struct STRBUF
-{
-    char str[DebLog::MsgMaxSize+1];
-};
-
 FIFO_SIMPLE_ALLOC<STRBUF,DebLog::MsgMaxNum>  strallocCyclicBuffer;
-
 
 
 

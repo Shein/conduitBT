@@ -104,6 +104,7 @@ class HfpSm: public SMT<HfpSm>
   public:
 	static void PutEvent_Failure (int error = 0)
 	{
+		::LogMsg ("Putting Failure Event #%d", error);
 		SMEVENT Event = {SM_HFP, SMEV_Failure};
 		Event.Param.ReportError = error;
 		SmBase::PutEvent (&Event, SMQ_HIGH);

@@ -6,15 +6,11 @@
 #include "HfpSm.h"
 
 // DMO
-#include <dsound.h> // required for "DSUtil.h"
-#include <wmcodecdsp.h> // IMediaBuffer
 #include <uuids.h>
-#include <Dmort.h>
-#include <Propsys.h>
+#include <dmort.h>
+#include <propsys.h>
 
 
-#pragma comment(lib, "ole32.lib")
-#pragma comment(lib, "uuid.lib")
 
 /****************************************************************************************\
 									Class Wave 
@@ -90,17 +86,18 @@ void Wave::Stop()
 	State = STATE_READY;
 	EventDataReady.Signal();
 
-	if(hWave) {
+	RunMutex.Lock();
+	if (hWave) {
 		CheckMmres (waveReset(hWave));
 		ReleaseCompletedBlocks(true);
 	}
+	RunMutex.Unlock();
 }
 
 
 void Wave::UnprepareHeader (WAVEHDR * whdr)
 {
 	try {
-		LogMsg ("UnprepareHeader %X", whdr);
 		CheckMmres (waveUnprepare(hWave, whdr, sizeof(WAVEHDR)));
 	}
 	catch (...) {
@@ -119,12 +116,14 @@ void Wave::Run()
 		EventStart.Wait();
 		LogMsg("Task running...");
 
+		RunMutex.Lock();
 		while (State == STATE_PLAYING)
 		{
 			WAVEBLOCK * wblock = DataBlocks.FetchNext ();
+			LogMsg ("WAVEBLOCK Fetched:  %X", wblock);
 			if (!wblock) {
 				LogMsg("CRITICAL ERROR: No free buffers for %s", this->Name);
-				ReportVoiceStreamFailure();
+				ReportVoiceStreamFailure (DialAppError_WaveBuffersError);
 				break;
 			}
 			if (ErrorRaised) {
@@ -133,6 +132,7 @@ void Wave::Run()
 			}
 			RunBody(wblock);	// WaveIn or WaveOut running part
 		}
+		RunMutex.Unlock();
 	}
 }
 
@@ -141,7 +141,7 @@ void Wave::ReleaseCompletedBlocks (bool clean_all)
 {
 	// This Release function may be called from 2 tasks: Run() & Wave::Stop()
 	// So, to lock this code
-	MUTEXLOCK(ReleaseMutex);
+	// For now it is locked in Stop/Run
 
 	// Release all blocks with the WHDR_DONE flag set
 	while (WAVEBLOCK* wblock = DataBlocks.GetFirst()) 
@@ -151,6 +151,7 @@ void Wave::ReleaseCompletedBlocks (bool clean_all)
 		UnprepareHeader (&wblock->Hdr);
 		wblock->Hdr.dwFlags = 0;
 		DataBlocks.ReleaseFirst();
+		LogMsg ("WAVEBLOCK Released: %X", wblock);
 	}
 }
 
@@ -163,6 +164,7 @@ Wave::WAVEBLOCK*  Wave::GetCompletedBlock()
 			UnprepareHeader (&wblock->Hdr);
 			wblock->Hdr.dwFlags = 0;
 			DataBlocks.ReleaseFirst();
+			LogMsg ("WAVEBLOCK Released: %X", wblock);
 			return wblock;
 		}
 	}
@@ -196,10 +198,10 @@ void WaveOut::Open ()
 }
 
 
-void Wave::ReportVoiceStreamFailure()
+void Wave::ReportVoiceStreamFailure (int error)
 {
 	ErrorRaised = true;
-	HfpSm::PutEvent_Failure (DialAppError_ReadWriteScoError);
+	HfpSm::PutEvent_Failure (error);
 }
 
 
@@ -223,8 +225,9 @@ void WaveOut::RunBody (WAVEBLOCK * wblock)
 	}
 	else {
 		LogMsg("Read from SCO failed: GetLastError %d", GetLastError());
-		ReportVoiceStreamFailure();
-		goto endfunc;	// try to continue
+		ReportVoiceStreamFailure (DialAppError_ReadScoError);
+		wblock->Hdr.dwFlags = WHDR_DONE;	// try to continue, mark the buffer as done
+		goto endfunc;
 	}
 
 	if (State != STATE_PLAYING)
@@ -237,10 +240,7 @@ void WaveOut::RunBody (WAVEBLOCK * wblock)
 		CheckMmres (waveOutWrite(HWAVEOUT(hWave), &wblock->Hdr, sizeof(WAVEHDR)));
 	}
 	catch (...) {
-		// try to continue
-		if (wblock->Hdr.dwFlags & WHDR_PREPARED)
-			UnprepareHeader (&wblock->Hdr);
-		wblock->Hdr.dwFlags = 0;
+		wblock->Hdr.dwFlags = WHDR_DONE;	// try to continue, mark the buffer as done
 	}
 
 	endfunc:
@@ -270,18 +270,18 @@ WaveIn::WaveIn (ScoApp *parent) :
 }
 
 
-
 void WaveIn::Open ()
 {
 	CheckState (STATE_IDLE);
 
-#ifndef DMO_ENABLED
+	#ifndef DMO_ENABLED
 	CheckMmres (waveOpen (&hWave, WAVE_MAPPER, &Format, (DWORD_PTR)EventDataReady.GetWaitHandle(), (DWORD_PTR)this, CALLBACK_EVENT));
-#else
+	#else
 	DmoInit();
-#endif
+	#endif
 	State = STATE_READY;
 }
+
 
 // virtual from Wave
 void WaveIn::RunBody (WAVEBLOCK * wblock)
@@ -303,7 +303,6 @@ void WaveIn::RunBody (WAVEBLOCK * wblock)
 		wblock->Hdr.dwFlags = 0;
 	}
 
-
 	// Try to get another block filled by microphone
 	LogMsg("Waiting data from Microphone...");
 	n = 0;
@@ -312,7 +311,7 @@ void WaveIn::RunBody (WAVEBLOCK * wblock)
 			return;
 		if (++n == 4) {
 			LogMsg("CRITICAL ERROR: Microphone got stuck");
-			ReportVoiceStreamFailure();
+			ReportVoiceStreamFailure(DialAppError_WaveInError);
 			return;
 		}
 		EventDataReady.Wait(ChunkTime4Wait);
@@ -332,8 +331,10 @@ void WaveIn::RunBody (WAVEBLOCK * wblock)
 #else
 	DWORD dwStatus;
 	HRESULT hr;
+
 	mediaBuffer.m_data = wblock->Data;
 	mediaBuffer.m_length = 0;
+
 	hr = mediaObject->ProcessOutput(0, 1, &dataBuffer, &dwStatus);
 	if (hr == S_OK)
 	{
@@ -369,40 +370,18 @@ void WaveIn::RunBody (WAVEBLOCK * wblock)
 #endif // USE_DMO
 }
 
+
 void WaveIn::DmoInit()
 {
-	DWORD			dwStatus=0;
-	HRESULT         hr;	
 	DMO_MEDIA_TYPE  mediaType;
-	WAVEFORMATEX	*pwav;
+	WAVEFORMATEX*	pwav;
 
 	mediaObject = NULL;
-
-	hr = CoInitializeEx( NULL, COINIT_APARTMENTTHREADED );
-	if(FAILED(hr))
-	{
-		LogMsg("CRITICAL ERROR: CoInitializeEx Failed");
-		ReportVoiceStreamFailure();
-		return;
-	}
-	
-	hr = CoCreateInstance(CLSID_CWMAudioAEC, NULL, CLSCTX_INPROC_SERVER, IID_IMediaObject, (void**) &mediaObject);
-	if(FAILED(hr))
-	{
-		LogMsg("CRITICAL ERROR: CoCreateInstance Failed");
-		ReportVoiceStreamFailure();
-		return;
-	}
-
 	memset(&mediaType, 0, sizeof(mediaType));
 
-	hr = MoInitMediaType(&mediaType, sizeof(WAVEFORMATEX));
-	if(FAILED(hr))
-	{
-		LogMsg("CRITICAL ERROR: MoInitMediaType Failed");
-		ReportVoiceStreamFailure();
-		return;
-	}
+	CheckHresult (CoInitializeEx (NULL, COINIT_APARTMENTTHREADED));
+	CheckHresult (CoCreateInstance(CLSID_CWMAudioAEC, NULL, CLSCTX_INPROC_SERVER, IID_IMediaObject, (void**) &mediaObject));
+	CheckHresult (MoInitMediaType(&mediaType, sizeof(WAVEFORMATEX)));
 
 	mediaType.majortype = MEDIATYPE_Audio;
 	mediaType.subtype = MEDIASUBTYPE_PCM;
@@ -410,36 +389,21 @@ void WaveIn::DmoInit()
 	mediaType.bFixedSizeSamples = TRUE;
 	mediaType.bTemporalCompression = FALSE;
 	mediaType.formattype = FORMAT_WaveFormatEx;
+
 	pwav = (WAVEFORMATEX*)mediaType.pbFormat;
 	memcpy(pwav, &Format, sizeof(Format));
 
-	hr = mediaObject->SetOutputType(0, &mediaType, 0);
-	if(FAILED(hr))
-	{
-		LogMsg("CRITICAL ERROR: SetOutputType() Failed");
-		ReportVoiceStreamFailure();
-		return;
-	}
+	CheckHresult (mediaObject->SetOutputType(0, &mediaType, 0));
 
 	IPropertyStore *props;
-	PROPVARIANT propvar ={0};
-	hr = mediaObject->QueryInterface(IID_IPropertyStore, (void**)&props);
-	if(FAILED(hr))
-	{
-		LogMsg("CRITICAL ERROR: QueryInterface() Failed");
-		ReportVoiceStreamFailure();
-		return;
-	}
+	PROPVARIANT propvar = {0};
+
+	CheckHresult (mediaObject->QueryInterface(IID_IPropertyStore, (void**)&props));
 
 	propvar.vt = VT_I4;
 	propvar.lVal = 0; // System Mode - SINGLE_CHANNEL_AEC
-	hr = props->SetValue(MFPKEY_WMAAECMA_SYSTEM_MODE, propvar);
-	if(FAILED(hr))
-	{
-		LogMsg("CRITICAL ERROR: SetValue() Failed");
-		ReportVoiceStreamFailure();
-		return;
-	}
+	CheckHresult (props->SetValue(MFPKEY_WMAAECMA_SYSTEM_MODE, propvar));
+
 	dataBuffer.dwStatus = 0;
 	dataBuffer.pBuffer = &mediaBuffer;
 

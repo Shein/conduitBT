@@ -10,6 +10,7 @@
 
 
 #include "def.h"
+#include "fifo_cse.h"
 
 
 /*
@@ -83,5 +84,14 @@ inline int IntException (int error, char * msg, ...)
 	DebLog::GlobalObj.LogMsgHelper(msg, argptr);
 	return error;
 }
+
+
+struct STRBUF
+{
+    char str[DebLog::MsgMaxSize+1];
+};
+
+extern FIFO_SIMPLE_ALLOC<STRBUF,DebLog::MsgMaxNum>  strallocCyclicBuffer;
+
 
 #pragma managed(pop)

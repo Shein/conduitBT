@@ -28,6 +28,7 @@ cchar* DialAppErrorString[] =
 	// Init errors
 	"InitBluetoothRadioError",
 	"InitDriverError",
+	"InitMediaDeviceError",
 
 	// HFP API errors
 	"UnknownDevice",
@@ -38,8 +39,11 @@ cchar* DialAppErrorString[] =
 
 	// Audio channel errors
 	"OpenScoFailure",
-	"ReadWriteScoError",
+	"ReadScoError",
+	"WriteScoError",
 	"WaveApiError",
+	"WaveInError",
+	"WaveBuffersError",
 };
 
 

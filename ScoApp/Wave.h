@@ -154,6 +154,11 @@ class Wave : public DebLog, public Thread
 			throw IntException (DialAppError_WaveApiError, "ERROR: MMRESULT = %d", res);
 	}
 
+	void CheckHresult (HRESULT res) {
+		if (FAILED(res))
+			throw IntException (DialAppError_InitMediaDeviceError, "ERROR: HRESULT = %d", res);
+	}
+
 	void CheckState (STATE expected) {
 		if (State != expected)
 			throw IntException (DialAppError_InternalError, "Wave object unexpected state (%d != %d)", State, expected);
@@ -163,7 +168,7 @@ class Wave : public DebLog, public Thread
 	void UnprepareHeader (WAVEHDR * whdr);
     void ReleaseCompletedBlocks (bool clean_all = false);
 	WAVEBLOCK* GetCompletedBlock();
-	void ReportVoiceStreamFailure();
+	void ReportVoiceStreamFailure(int error);
 
     virtual void Run();
 
@@ -179,7 +184,7 @@ class Wave : public DebLog, public Thread
 	Event			EventStart;
 	Event			EventDataReady;
 	OVERLAPPED		ScoOverlapped;
-	Mutex			ReleaseMutex;
+	Mutex			RunMutex;
 
 	FIFO_ALLOC<WAVEBLOCK,8>	DataBlocks;
 	bool firstIter; // for jitter buffer
@@ -196,6 +201,7 @@ class WaveOut : public Wave
   protected:
     virtual void RunBody (WAVEBLOCK * wblock);
 };
+
 
 
 class WaveIn : public Wave
