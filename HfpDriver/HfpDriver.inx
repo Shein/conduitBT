@@ -15,7 +15,7 @@ Class=Bluetooth
 ClassGuid={e0cbf06c-cd8b-4647-bb8a-263b43f0f974}
 Provider=%CNDT%
 DriverVer=08/14/2013,1.1.0.
-CatalogFile=KmdfSamples.cat
+CatalogFile=HfpDriver.cat
 
 [DestinationDirs]
 DefaultDestDir = 12
