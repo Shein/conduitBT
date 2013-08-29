@@ -69,8 +69,10 @@ void Wave::Close()
 	if (State == STATE_PLAYING)
 		Stop();
 	CHECK_STATE (STATE_READY);
-	if(hWave)
+	if(hWave) {
 		CHECK_MMRES (waveClose(hWave));
+		hWave = 0;
+	}
 	State = STATE_IDLE;
 }
 
@@ -78,7 +80,7 @@ void Wave::Close()
 void Wave::Play()
 {
 	CHECK_STATE (STATE_READY);
-	ErrorRaised = false;
+	ErrorRaised = 0;
 	State = STATE_PLAYING;
 	EventStart.Signal();	// Wake up the thread's run() and start playback
 }
@@ -87,17 +89,14 @@ void Wave::Play()
 void Wave::Stop()
 {
 	CHECK_STATE (STATE_PLAYING);
-	LogMsg("Stopping playback");
+	LogMsg("Wave::Stop: started to stop playback");
 	State = STATE_READY;
 	EventDataReady.Signal();
 
 	RunMutex.Lock();
-	if (hWave) {
-		CHECK_MMRES (waveReset(hWave));
-		LogMsg("Stopping playback", Name);
-		ReleaseCompletedBlocks(true);
-	}
+	// Here Run task should complete all current buffers and jump to sleep on EventStart.Wait()
 	RunMutex.Unlock();
+	LogMsg("Wave::Stop: playback stoped");
 }
 
 
@@ -122,6 +121,9 @@ void Wave::Run()
 		EventStart.Wait();
 		LogMsg("Task running...");
 
+		if (State == STATE_DESTROYING)
+			break;
+
 		RunMutex.Lock();
 		while (State == STATE_PLAYING)
 		{
@@ -130,13 +132,32 @@ void Wave::Run()
 			if (!wblock) {
 				LogMsg("ERROR: No free buffers for %s", this->Name);
 				ReportVoiceStreamFailure (DialAppError_WaveBuffersError);
+				break; // ErrorRaised
+			}
+
+			RunBody(wblock);	// WaveIn or WaveOut running part
+
+			if (ErrorRaised) {
+				// Stop this playing, waiting close...
+				// The State is still STATE_PLAYING!
 				break;
 			}
-			if (ErrorRaised) {
-				Sleep (0);
-				continue;
+		}
+
+		// We are stopping: complete possible currently paying buffers 
+		LogMsg("Wave::Run: State(%d)!=STATE_PLAYING, going to sleep...", State);
+		if (hWave) {
+			/*
+			KS: Do not use waveReset() at all! It is very problematic...
+			    We will poll WHDR_DONE in ReleaseCompletedBlocks(true)
+			try {
+				CHECK_MMRES (waveReset(hWave));
 			}
-			RunBody(wblock);	// WaveIn or WaveOut running part
+			catch (...) {
+				ReportVoiceStreamFailure (DialAppError_WaveApiError);
+			}
+			*/
+			ReleaseCompletedBlocks(true);
 		}
 		RunMutex.Unlock();
 	}
@@ -145,15 +166,26 @@ void Wave::Run()
 
 void Wave::ReleaseCompletedBlocks (bool clean_all)
 {
-	// This Release function may be called from 2 tasks: Run() & Wave::Stop()
-	// So, to lock this code
-	// For now it is locked in Stop/Run
+	// If clean_all = false - to release 1st blocks with WHDR_DONE=1
+	// If clean_all = true  - to release all blocks: with WHDR_DONE=1 and WHDR_DONE=0 after waiting 
 
-	// Release all blocks with the WHDR_DONE flag set
+	int i = 0;
+
 	while (WAVEBLOCK* wblock = DataBlocks.GetFirst()) 
 	{
 		if (!clean_all && ((wblock->Hdr.dwFlags & WHDR_DONE) == 0))
 			return;
+
+		while ((wblock->Hdr.dwFlags & WHDR_DONE) == 0) {
+			if (i++ == 0)
+				LogMsg ("ReleaseCompletedBlocks: Poling %X ...", wblock);
+			Sleep(0);
+		}
+		if (i) {
+			LogMsg ("ReleaseCompletedBlocks: Poling finished (%d iterations)", i);
+			i = 0;
+		}
+
 		UnprepareHeader (&wblock->Hdr);
 		wblock->Hdr.dwFlags = 0;
 		DataBlocks.ReleaseFirst();
@@ -207,7 +239,7 @@ void WaveOut::Open ()
 
 void Wave::ReportVoiceStreamFailure (int error)
 {
-	ErrorRaised = true;
+	ErrorRaised = error;
 	HfpSm::PutEvent_Failure (error);
 }
 
@@ -222,6 +254,7 @@ void WaveOut::RunBody (WAVEBLOCK * wblock)
 	res = ReadFile (Parent->hDevice, wblock->Data, ChunkSize, &nbytes, &ScoOverlapped);
 	if (!res) {
 		if (GetLastError() == ERROR_IO_PENDING) {
+			LogMsg("Read from SCO pended...");
 			res = GetOverlappedResult (Parent->hDevice, &ScoOverlapped, &nbytes, TRUE);
 		}
 	}
@@ -236,8 +269,10 @@ void WaveOut::RunBody (WAVEBLOCK * wblock)
 		goto endfunc;
 	}
 
-	if (State != STATE_PLAYING)
+	if (State != STATE_PLAYING) {
+		wblock->Hdr.dwFlags = WHDR_DONE;	// mark the buffer as done
 		goto endfunc;
+	}
 
 	// Send wblock to the speaker device
 	wblock->Hdr.dwBufferLength = nbytes;

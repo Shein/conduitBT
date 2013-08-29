@@ -185,7 +185,7 @@ class Wave : public DebLog, public Thread
 	ScoApp		   *Parent;
 	WAVEFORMATEX	Format;
 	STATE			State;
-	bool			ErrorRaised;
+	int				ErrorRaised;
 	Event			EventStart;
 	Event			EventDataReady;
 	OVERLAPPED		ScoOverlapped;
