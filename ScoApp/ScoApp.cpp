@@ -166,8 +166,10 @@ void ScoApp::Destruct()
     if (hDevice && hDevice!=INVALID_HANDLE_VALUE)
 		CloseHandle(hDevice);
 	hDevice = 0;
-	delete WaveOutDev;
-	delete WaveInDev;
+
+	// Call Destruct method instead of delete! Actually it deletes. See remarks at Destruct()
+	WaveOutDev->Destruct();
+	WaveInDev->Destruct();
 
 	Destructing = true;
 	EventScoConnect.Signal();	// no matter which event to signal
@@ -223,8 +225,6 @@ void ScoApp::OpenSco (bool waveonly)
 			throw IntException (DialAppError_OpenScoFailure, "Failed to open SCO, GetLastError %d", GetLastError());
 	}
 
-	WaveOutDev->Open();
-	WaveInDev->Open();
 	Open = true;
 }
 
@@ -233,8 +233,8 @@ void ScoApp::CloseSco (bool waveonly)
 {
 	if (IsOpen()) {
 		LogMsg("About to Close SCO channel (waveonly=%d)", waveonly);
-		WaveOutDev->Close();
-		WaveInDev->Close();
+		WaveOutDev->Stop();
+		WaveInDev->Stop();
 		if (!waveonly)
 			ReopenDriver();
 		Open = false;

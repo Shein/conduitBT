@@ -11,6 +11,7 @@
 #include "HfpSm.h"
 
 // DMO
+#include <wmcodecdsp.h>
 #include <uuids.h>
 #include <dmort.h>
 #include <propsys.h>
@@ -33,7 +34,6 @@ Wave::Wave (cchar * task, ScoApp *parent) :
 	}
 
 	int block = VoiceBitPerSample/8 * VoiceNchan;
-	firstIter = true; // for jitter buffer
 	Format.wFormatTag		= VoiceFormat;
 	Format.nChannels		= VoiceNchan;
 	Format.nSamplesPerSec	= VoiceSampleRate;
@@ -52,28 +52,15 @@ Wave::Wave (cchar * task, ScoApp *parent) :
 }
 
 
-Wave::~Wave ()
+void Wave::Destruct ()
 {
-	if (State != STATE_IDLE)
-		Close();
+	if (State == STATE_PLAYING)
+		Stop();
 	State = STATE_DESTROYING;
 	EventStart.Signal();
 	Thread::WaitEnding();
 	LogMsg("Destructed");
-}
-
-
-void Wave::Close()
-{
-	// Stop playback if necessary 
-	if (State == STATE_PLAYING)
-		Stop();
-	CHECK_STATE (STATE_READY);
-	if(hWave) {
-		CHECK_MMRES (waveClose(hWave));
-		hWave = 0;
-	}
-	State = STATE_IDLE;
+	delete this; // the destructor is empty!
 }
 
 
@@ -82,6 +69,7 @@ void Wave::Play()
 	CHECK_STATE (STATE_READY);
 	ErrorRaised = 0;
 	State = STATE_PLAYING;
+	LogMsg("Start playing");
 	EventStart.Signal();	// Wake up the thread's run() and start playback
 }
 
@@ -89,9 +77,8 @@ void Wave::Play()
 void Wave::Stop()
 {
 	CHECK_STATE (STATE_PLAYING);
-	LogMsg("Wave::Stop: started to stop playback");
+	LogMsg("Wave::Stop: starting to stop playback");
 	State = STATE_READY;
-	EventDataReady.Signal();
 
 	RunMutex.Lock();
 	// Here Run task should complete all current buffers and jump to sleep on EventStart.Wait()
@@ -116,15 +103,23 @@ void Wave::Run()
 {
 	LogMsg("Task started...");
 
+	State = STATE_IDLE;
+	RunInit();	// WaveIn or WaveOut Init running 
+	State = STATE_READY;
+
 	while (State != STATE_DESTROYING)
 	{
 		EventStart.Wait();
+		// EventStart may be signaled by Play() or Destruct()
+		// They set STATE_PLAYING or STATE_DESTROYING correspondingly.
 		LogMsg("Task running...");
 
 		if (State == STATE_DESTROYING)
 			break;
 
 		RunMutex.Lock();
+
+		RunStart();	// WaveIn or WaveOut Start running 
 		while (State == STATE_PLAYING)
 		{
 			WAVEBLOCK * wblock = DataBlocks.FetchNext ();
@@ -146,21 +141,13 @@ void Wave::Run()
 
 		// We are stopping: complete possible currently paying buffers 
 		LogMsg("Wave::Run: State(%d)!=STATE_PLAYING, going to sleep...", State);
-		if (hWave) {
-			/*
-			KS: Do not use waveReset() at all! It is very problematic...
-			    We will poll WHDR_DONE in ReleaseCompletedBlocks(true)
-			try {
-				CHECK_MMRES (waveReset(hWave));
-			}
-			catch (...) {
-				ReportVoiceStreamFailure (DialAppError_WaveApiError);
-			}
-			*/
-			ReleaseCompletedBlocks(true);
-		}
+
+		RunStop();	// WaveIn or WaveOut Stop running 
+
 		RunMutex.Unlock();
 	}
+
+	RunEnd();	// WaveIn or WaveOut End running
 }
 
 
@@ -210,6 +197,12 @@ Wave::WAVEBLOCK*  Wave::GetCompletedBlock()
 }
 
 
+void Wave::ReportVoiceStreamFailure (int error)
+{
+	ErrorRaised = error;
+	HfpSm::PutEvent_Failure (error);
+}
+
 
 /****************************************************************************************\
 									Class WaveOut
@@ -228,19 +221,38 @@ WaveOut::WaveOut (ScoApp *parent) :
 }
 
 
-void WaveOut::Open ()
+
+void WaveOut::RunInit ()
 {
-	CHECK_STATE (STATE_IDLE);
 	CHECK_MMRES (waveOpen (&hWave, WAVE_MAPPER, &Format, 0, (DWORD_PTR)this, CALLBACK_NULL));
 	LogMsg("Open hWave = %X", hWave);
-	State = STATE_READY;
 }
 
 
-void Wave::ReportVoiceStreamFailure (int error)
+void WaveOut::RunEnd ()
 {
-	ErrorRaised = error;
-	HfpSm::PutEvent_Failure (error);
+	CHECK_MMRES (waveClose(hWave));
+}
+
+
+void WaveOut::RunStart ()
+{
+}
+
+
+void WaveOut::RunStop ()
+{
+	/*
+	KS: Do not use waveReset() at all! It is very problematic...
+		We will poll WHDR_DONE in ReleaseCompletedBlocks(true)
+	try {
+		CHECK_MMRES (waveReset(hWave));
+	}
+	catch (...) {
+		ReportVoiceStreamFailure (DialAppError_WaveApiError);
+	}
+	*/
+	ReleaseCompletedBlocks(true);
 }
 
 
@@ -254,7 +266,7 @@ void WaveOut::RunBody (WAVEBLOCK * wblock)
 	res = ReadFile (Parent->hDevice, wblock->Data, ChunkSize, &nbytes, &ScoOverlapped);
 	if (!res) {
 		if (GetLastError() == ERROR_IO_PENDING) {
-			LogMsg("Read from SCO pended...");
+			//LogMsg("Read from SCO pended...");
 			res = GetOverlappedResult (Parent->hDevice, &ScoOverlapped, &nbytes, TRUE);
 		}
 	}
@@ -295,32 +307,83 @@ void WaveOut::RunBody (WAVEBLOCK * wblock)
 \****************************************************************************************/
 
 WaveIn::WaveIn (ScoApp *parent) :
-	Wave ("WaveIn ", parent), mediaBuffer(ChunkSize)
+	Wave ("WaveIn ", parent), MediaBuffer(ChunkSize)
 {
-#ifndef DMO_ENABLED
+	#ifndef DMO_ENABLED
 	waveOpen	  = WaveOpen(waveInOpen);
 	waveClose	  = WaveClose(waveInClose);
 	waveReset	  = WaveReset(waveInReset);
 	waveUnprepare = WaveUnprepare(waveInUnprepareHeader);
-#else
+
+	#else
 	waveOpen	  = 0;
 	waveClose	  = 0;
 	waveReset	  = 0;
 	waveUnprepare = 0;
-#endif
+	#endif
 }
 
 
-void WaveIn::Open ()
+void WaveIn::RunInit ()
 {
-	CHECK_STATE (STATE_IDLE);
+	DMO_MEDIA_TYPE  mediaType;
+	WAVEFORMATEX*	pwav;
 
-	#ifndef DMO_ENABLED
-	CHECK_MMRES (waveOpen (&hWave, WAVE_MAPPER, &Format, (DWORD_PTR)EventDataReady.GetWaitHandle(), (DWORD_PTR)this, CALLBACK_EVENT));
-	#else
-	DmoInit();
-	#endif
-	State = STATE_READY;
+	CHECK_HRESULT (CoInitializeEx (NULL, COINIT_APARTMENTTHREADED));
+
+	MediaObject = NULL;
+	memset(&mediaType, 0, sizeof(mediaType));
+
+	CHECK_HRESULT (CoCreateInstance(CLSID_CWMAudioAEC, NULL, CLSCTX_INPROC_SERVER, IID_IMediaObject, (void**) &MediaObject));
+	CHECK_HRESULT (MoInitMediaType(&mediaType, sizeof(WAVEFORMATEX)));
+
+	mediaType.majortype = MEDIATYPE_Audio;
+	mediaType.subtype = MEDIASUBTYPE_PCM;
+	mediaType.lSampleSize = 0;
+	mediaType.bFixedSizeSamples = TRUE;
+	mediaType.bTemporalCompression = FALSE;
+	mediaType.formattype = FORMAT_WaveFormatEx;
+
+	pwav = (WAVEFORMATEX*)mediaType.pbFormat;
+	memcpy(pwav, &Format, sizeof(Format));
+
+	CHECK_HRESULT (MediaObject->SetOutputType(0, &mediaType, 0));
+
+	IPropertyStore *props;
+	PROPVARIANT propvar = {0};
+
+	CHECK_HRESULT (MediaObject->QueryInterface(IID_IPropertyStore, (void**)&props));
+
+	propvar.vt = VT_I4;
+	propvar.lVal = 0; // System Mode - SINGLE_CHANNEL_AEC
+	CHECK_HRESULT (props->SetValue(MFPKEY_WMAAECMA_SYSTEM_MODE, propvar));
+
+	DataBuffer.dwStatus = 0;
+	DataBuffer.pBuffer = &MediaBuffer;
+
+	MoFreeMediaType(&mediaType);
+
+	LogMsg("MediaObject = %X", MediaObject);
+}
+
+
+void WaveIn::RunEnd ()
+{
+	MediaObject->Release();
+	CoUninitialize();
+}
+
+
+void WaveIn::RunStart ()
+{
+	MediaObject->AllocateStreamingResources();
+	FirstIter = true;
+}
+
+
+void WaveIn::RunStop ()
+{
+	MediaObject->FreeStreamingResources();
 }
 
 
@@ -370,85 +433,57 @@ void WaveIn::RunBody (WAVEBLOCK * wblock)
 	}
 
 #else
-	DWORD dwStatus;
+	DWORD	dwStatus;
 	HRESULT hr;
 
-	mediaBuffer.m_data = wblock->Data;
-	mediaBuffer.m_length = 0;
+	MediaBuffer.m_data   = wblock->Data;
+	MediaBuffer.m_length = 0;
 
-	hr = mediaObject->ProcessOutput(0, 1, &dataBuffer, &dwStatus);
-	if (hr == S_OK)
-	{
-		if (firstIter)
-			EventDataReady.Wait (ChunkTime4Wait/2);
+	hr = MediaObject->ProcessOutput(0, 1, &DataBuffer, &dwStatus);
+	LogMsg("IMediaObject::ProcessOutput completed, HRESULT %X", hr);
 
-		res = WriteFile (Parent->hDevice, mediaBuffer.m_data, mediaBuffer.m_length, &n, &ScoOverlapped);
+	if (hr == S_FALSE) // means nothing to process
+		goto finalize;
 
-		if (dataBuffer.dwStatus == DMO_OUTPUT_DATA_BUFFERF_INCOMPLETE)
-			LogMsg("ProcessOutput DMO_OUTPUT_DATA_BUFFERF_INCOMPLETE, size %d: ", mediaBuffer.m_length);
-
-		if (!res) {
-			if (GetLastError() == ERROR_IO_PENDING) 
-				LogMsg("Write to SCO pended: %d bytes", mediaBuffer.m_length);
-			else 
-				LogMsg("Write to SCO failed: GetLastError %d", GetLastError());
-		}
-	}
-	else if (hr != S_FALSE) // FALSE means nothing to process
-	{
-		LogMsg("ProcessOutput result: %x", hr);
-	}
-
-	DataBlocks.ReleaseFirst();
-	mediaBuffer.m_data = NULL;
-
-	if (firstIter && hr == S_OK) {
-		firstIter = false;
+	if (hr != S_OK) {
+		ReportVoiceStreamFailure (DialAppError_MediaObjectInError);
 		return;
 	}
 
-	EventDataReady.Wait (ChunkTime4Wait);
+	/*
+	  IMediaObject::ProcessOutput possible values (according to MSDN):
+		E_FAIL			Failure
+		E_INVALIDARG	Invalid argument
+		E_POINTER		NULL pointer argument
+		S_FALSE			No output was generated
+		S_OK			Success
+	*/
+ 
+	if (FirstIter)
+		EventDataReady.Wait (ChunkTime4Wait/2);
+
+	res = WriteFile (Parent->hDevice, MediaBuffer.m_data, MediaBuffer.m_length, &n, &ScoOverlapped);
+
+	if (DataBuffer.dwStatus == DMO_OUTPUT_DATA_BUFFERF_INCOMPLETE)
+		LogMsg("DMO_OUTPUT_DATA_BUFFERF_INCOMPLETE, size %d", MediaBuffer.m_length);
+
+	if (!res) {
+		if (GetLastError() == ERROR_IO_PENDING) 
+			LogMsg("Write to SCO pended: %d bytes", MediaBuffer.m_length);
+		else 
+			LogMsg("Write to SCO failed: GetLastError %d", GetLastError());
+	}
+
+	finalize:
+	DataBlocks.ReleaseFirst();
+	MediaBuffer.m_data = 0;
+
+	if (FirstIter)
+		FirstIter = false;
+	else 
+		EventDataReady.Wait (ChunkTime4Wait);
+
 #endif // USE_DMO
-}
-
-
-void WaveIn::DmoInit()
-{
-	DMO_MEDIA_TYPE  mediaType;
-	WAVEFORMATEX*	pwav;
-
-	mediaObject = NULL;
-	memset(&mediaType, 0, sizeof(mediaType));
-
-	CHECK_HRESULT (CoInitializeEx (NULL, COINIT_APARTMENTTHREADED));
-	CHECK_HRESULT (CoCreateInstance(CLSID_CWMAudioAEC, NULL, CLSCTX_INPROC_SERVER, IID_IMediaObject, (void**) &mediaObject));
-	CHECK_HRESULT (MoInitMediaType(&mediaType, sizeof(WAVEFORMATEX)));
-
-	mediaType.majortype = MEDIATYPE_Audio;
-	mediaType.subtype = MEDIASUBTYPE_PCM;
-	mediaType.lSampleSize = 0;
-	mediaType.bFixedSizeSamples = TRUE;
-	mediaType.bTemporalCompression = FALSE;
-	mediaType.formattype = FORMAT_WaveFormatEx;
-
-	pwav = (WAVEFORMATEX*)mediaType.pbFormat;
-	memcpy(pwav, &Format, sizeof(Format));
-
-	CHECK_HRESULT (mediaObject->SetOutputType(0, &mediaType, 0));
-
-	IPropertyStore *props;
-	PROPVARIANT propvar = {0};
-
-	CHECK_HRESULT (mediaObject->QueryInterface(IID_IPropertyStore, (void**)&props));
-
-	propvar.vt = VT_I4;
-	propvar.lVal = 0; // System Mode - SINGLE_CHANNEL_AEC
-	CHECK_HRESULT (props->SetValue(MFPKEY_WMAAECMA_SYSTEM_MODE, propvar));
-
-	dataBuffer.dwStatus = 0;
-	dataBuffer.pBuffer = &mediaBuffer;
-
-	MoFreeMediaType(&mediaType);
 }
 
 

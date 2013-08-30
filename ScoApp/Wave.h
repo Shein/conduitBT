@@ -7,7 +7,7 @@
 #pragma managed(push, off)
 
 
-#include <wmcodecdsp.h> // IMediaBuffer
+#include <Mediaobj.h>
 
 #include "def.h"
 #include "deblog.h"
@@ -30,13 +30,15 @@ class MediaBuffer : public IMediaBuffer
 		m_ref(0),
 		m_maxLength(maxLength),
 		m_length(0),
-		m_data(NULL){}
+		m_data(0)
+	{}
 
 	HRESULT SetLength (DWORD cbLength)
 	{
 		if (cbLength > m_maxLength) {
 			return E_INVALIDARG;
-		} else {
+		} 
+		else {
 			m_length = cbLength;
 			return S_OK;
 		}
@@ -44,18 +46,16 @@ class MediaBuffer : public IMediaBuffer
 
 	HRESULT GetMaxLength (DWORD *maxLength)
 	{
-		if (maxLength == NULL) {
+		if (!maxLength)
 			return E_POINTER;
-		}
 		*maxLength = m_maxLength;
 		return S_OK;
 	}
 
 	HRESULT GetBufferAndLength (BYTE **buffer, DWORD *length)
 	{
-		if (buffer == NULL || length == NULL) {
+		if (!buffer || !length)
 			return E_POINTER;
-		}
 		*buffer = m_data;
 		*length = m_length;
 		return S_OK;
@@ -63,15 +63,14 @@ class MediaBuffer : public IMediaBuffer
 
 	HRESULT QueryInterface (REFIID riid, void **iface)
 	{
-		if (iface == NULL) {
+		if (!iface)
 			return E_POINTER;
-		}
 		if (riid == IID_IMediaBuffer || riid == IID_IUnknown) {
 			*iface = static_cast<IMediaBuffer *>(this);
 			AddRef();
 			return S_OK;
 		}
-		*iface = NULL;
+		*iface = 0;
 		return E_NOINTERFACE;
 	}
 
@@ -83,9 +82,8 @@ class MediaBuffer : public IMediaBuffer
 	ULONG Release()
 	{
 		LONG lRef = InterlockedDecrement(&m_ref);
-		if (lRef == 0) {
+		if (!lRef)
 			delete this;
-		}
 		return lRef;
 	}
 
@@ -133,12 +131,8 @@ class Wave : public DebLog, public Thread
 
   public:
 	Wave (cchar * task, ScoApp *parent);
-	~Wave ();
+	void Destruct ();	// This is workaround for the C++ problem of calling virtual functions from destructor. So, user should call this method instead of delete!
 
-  public:
-	// Open is different in WaveIn & WaveOut
-	// void Open();
-	void Close();
 	void Play();
 	void Stop();
 
@@ -177,7 +171,11 @@ class Wave : public DebLog, public Thread
 
     virtual void Run();
 
-	// RunBody() will be implemented in WaveOut & WaveIn, will be called from Run
+	// RunXXX() funcs will be implemented in WaveOut & WaveIn, will be called from Run
+    virtual void RunInit () = 0;
+    virtual void RunEnd () = 0;
+    virtual void RunStart () = 0;
+    virtual void RunStop () = 0;
     virtual void RunBody (WAVEBLOCK * wblock) = 0;
 
   protected:
@@ -192,7 +190,6 @@ class Wave : public DebLog, public Thread
 	Mutex			RunMutex;
 
 	FIFO_ALLOC<WAVEBLOCK,8>	DataBlocks;
-	bool firstIter; // for jitter buffer
 };
 
 
@@ -201,9 +198,12 @@ class WaveOut : public Wave
 {
   public:
 	WaveOut (ScoApp *parent);
-	void Open();
 
   protected:
+    virtual void RunInit ();
+    virtual void RunEnd ();
+    virtual void RunStart ();
+    virtual void RunStop ();
     virtual void RunBody (WAVEBLOCK * wblock);
 };
 
@@ -214,22 +214,20 @@ class WaveIn : public Wave
   public:
 	WaveIn (ScoApp *parent);
 
-	~WaveIn()
-	{
-		mediaObject->FreeStreamingResources();
-		mediaObject->Release();
-	}
-
-	void Open();
-
-	IMediaObject	*mediaObject;
-	MediaBuffer		mediaBuffer;
-	DMO_OUTPUT_DATA_BUFFER dataBuffer;
+  protected:
+	IMediaObject*			MediaObject;
+	MediaBuffer				MediaBuffer;
+	DMO_OUTPUT_DATA_BUFFER	DataBuffer;
+	bool					FirstIter;	// For jitter
 
   protected:
+    virtual void RunInit ();
+    virtual void RunEnd ();
+    virtual void RunStart ();
+    virtual void RunStop ();
     virtual void RunBody (WAVEBLOCK * wblock);
-	void DmoInit();
 };
+
 
 
 /*******************************************************************\
@@ -242,4 +240,3 @@ class WaveIn : public Wave
 
 
 #pragma managed(pop)
-
