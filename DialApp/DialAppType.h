@@ -56,6 +56,7 @@ enum DialAppError
 	DialAppError_WaveApiError				,
 	DialAppError_WaveInError				,
 	DialAppError_WaveBuffersError			,
+	DialAppError_MediaObjectInError			,
 };
 
 

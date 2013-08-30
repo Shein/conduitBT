@@ -45,6 +45,7 @@ cchar* DialAppErrorString[] =
 	"WaveApiError",
 	"WaveInError",
 	"WaveBuffersError",
+	"MediaObjectInError",
 };
 
 
