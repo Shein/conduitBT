@@ -33,7 +33,7 @@ class MediaBuffer : public IMediaBuffer
 		m_data(0)
 	{}
 
-	HRESULT SetLength (DWORD cbLength)
+	HRESULT STDMETHODCALLTYPE SetLength (DWORD cbLength)
 	{
 		if (cbLength > m_maxLength) {
 			return E_INVALIDARG;
@@ -44,7 +44,7 @@ class MediaBuffer : public IMediaBuffer
 		}
 	}
 
-	HRESULT GetMaxLength (DWORD *maxLength)
+	HRESULT STDMETHODCALLTYPE GetMaxLength (DWORD *maxLength)
 	{
 		if (!maxLength)
 			return E_POINTER;
@@ -52,7 +52,7 @@ class MediaBuffer : public IMediaBuffer
 		return S_OK;
 	}
 
-	HRESULT GetBufferAndLength (BYTE **buffer, DWORD *length)
+	HRESULT STDMETHODCALLTYPE GetBufferAndLength (BYTE **buffer, DWORD *length)
 	{
 		if (!buffer || !length)
 			return E_POINTER;
@@ -61,7 +61,7 @@ class MediaBuffer : public IMediaBuffer
 		return S_OK;
 	}
 
-	HRESULT QueryInterface (REFIID riid, void **iface)
+	HRESULT STDMETHODCALLTYPE QueryInterface (REFIID riid, void **iface)
 	{
 		if (!iface)
 			return E_POINTER;
@@ -74,12 +74,12 @@ class MediaBuffer : public IMediaBuffer
 		return E_NOINTERFACE;
 	}
 
-	ULONG AddRef()
+	ULONG STDMETHODCALLTYPE AddRef()
 	{
 		return InterlockedIncrement(&m_ref);
 	}
 
-	ULONG Release()
+	ULONG STDMETHODCALLTYPE Release()
 	{
 		LONG lRef = InterlockedDecrement(&m_ref);
 		if (!lRef)

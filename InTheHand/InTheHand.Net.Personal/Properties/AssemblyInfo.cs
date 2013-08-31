@@ -62,6 +62,20 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 #endif
 
+// only sign on non-debug builds
+// KS: When Platform=x86 the FUCKED output path for some reason set under obj\x86\Release, but when Platform=x64 - under obj\Release !!!
+#if X86
+
+#if !DEBUG && !CODE_ANALYSIS && !NO_SIGNING
+[assembly: AssemblyDelaySign(false)]
+#pragma warning disable 1699
+[assembly: AssemblyKeyFile(@"..\..\..\..\InTheHand.Net.Personal\InTheHand.snk")]
+#pragma warning restore 1699
+[assembly: AssemblyKeyName("")]
+#endif
+
+#else
+
 //only sign on non-debug builds
 #if !DEBUG && !CODE_ANALYSIS && !NO_SIGNING
 [assembly: AssemblyDelaySign(false)]
@@ -70,6 +84,8 @@ using System.Runtime.InteropServices;
 #pragma warning restore 1699
 [assembly: AssemblyKeyName("")]
 #endif
+
+#endif //X86
 
 #if DEBUG // for unit-tests
 #if ! V1
