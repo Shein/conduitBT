@@ -182,13 +182,13 @@ NTSTATUS HfpSrvRegisterScoServer (_In_ HFPDEVICE_CONTEXT* devCtx, _In_ HFP_REG_S
 	if (devCtx->ScoServerHandle)
 		HfpSrvUnregisterScoServer (devCtx, regparams->DestAddr);
 
-	status = ObReferenceObjectByHandle(regparams->EvHandleScoConnect, EVENT_MODIFY_STATE, *ExEventObjectType, UserMode, (PVOID*)&kev1, 0);
+	status = ObReferenceObjectByHandle((HANDLE)regparams->EvHandleScoConnect, EVENT_MODIFY_STATE, *ExEventObjectType, UserMode, (PVOID*)&kev1, 0);
 	if (!NT_SUCCESS(status)) {
 		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "ObReferenceObjectByHandle failed, Status %X", status);
 		goto exit;
 	}
 
-	status = ObReferenceObjectByHandle(regparams->EvHandleScoDisconnect, EVENT_MODIFY_STATE, *ExEventObjectType, UserMode, (PVOID*)&kev2, 0);
+	status = ObReferenceObjectByHandle((HANDLE)regparams->EvHandleScoDisconnect, EVENT_MODIFY_STATE, *ExEventObjectType, UserMode, (PVOID*)&kev2, 0);
 	if (!NT_SUCCESS(status)) {
 		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "ObReferenceObjectByHandle failed, Status %X", status);
 		goto exit;

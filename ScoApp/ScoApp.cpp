@@ -185,7 +185,7 @@ void ScoApp::StartServer (uint64 destaddr, bool readiness)
 	if (!destaddr)
 		throw IntException (DialAppError_InternalError, "Destination address cannot be null");
 
-	HFP_REG_SERVER params = { destaddr, HANDLE(EventScoConnect.GetWaitHandle()), HANDLE(EventScoDisconnect.GetWaitHandle()), BOOL(readiness) };
+	HFP_REG_SERVER params = { destaddr, UINT64(EventScoConnect.GetWaitHandle()), UINT64(EventScoDisconnect.GetWaitHandle()), BOOL(readiness) };
 	unsigned long nbytes;
     if (!DeviceIoControl (hDevice, IOCTL_HFP_REG_SERVER, &params, sizeof(params), 0, 0, &nbytes, 0))
 		throw IntException (DialAppError_OpenScoFailure, "Register SCO Server FAILED, GetLastError %d", GetLastError());

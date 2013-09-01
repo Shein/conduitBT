@@ -41,8 +41,8 @@ extern __declspec(selectany) const PWSTR BthHfpDriverName = L"HfpDriver";
 typedef struct
 {
 	UINT64		DestAddr;				// Destination Bluetooth device
-	HANDLE		EvHandleScoConnect;		// User-mode Event handle for SCO Connect
-	HANDLE		EvHandleScoDisconnect;	// User-mode Event handle for SCO Disconnect
+	UINT64		EvHandleScoConnect;		// User-mode Event handle for SCO Connect
+	UINT64		EvHandleScoDisconnect;	// User-mode Event handle for SCO Disconnect
 	BOOLEAN		ConnectReadiness;		// HFPDEVICE_CONTEXT::ConnectReadiness init value
 } HFP_REG_SERVER;
 
