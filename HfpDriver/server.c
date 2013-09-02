@@ -324,8 +324,9 @@ void HfpSrvRemoteConnectCompletion (_In_ WDFREQUEST Request, _In_ WDFIOTARGET Ta
 			// GetFileContext(WdfRequestGetFileObject(Request))->Connection = connection;
 			// So, take our global file object from the Device context (TODO: this code must be locked)
 
-			NT_ASSERT (connection->FileObject);
-			GetFileContext(connection->FileObject)->Connection = connection;
+			// It was set in HfpSrvSendConnectResponse:
+			// NT_ASSERT (connection->FileObject);
+			// GetFileContext(connection->FileObject)->Connection = connection;
 
 			if (connection->DevCtx->ConnectReadiness)
 			{
@@ -352,10 +353,13 @@ void HfpSrvRemoteConnectCompletion (_In_ WDFREQUEST Request, _In_ WDFIOTARGET Ta
 
         if (discon)
             KeSetEvent (&connection->DisconnectEvent,0,FALSE);
+
+		NT_ASSERT (connection->FileObject);
+		GetFileContext(connection->FileObject)->Connection = 0;
+
+        WdfObjectDelete(connectionObject);        
     }
 
-    if (!NT_SUCCESS(status))
-        WdfObjectDelete(connectionObject);        
 
     return;
 }
@@ -377,14 +381,14 @@ NTSTATUS HfpSrvSendConnectResponse(_In_ HFPDEVICE_CONTEXT* devCtx, _In_ SCO_INDI
 	if (!devCtx->FileObject)	{
 		TraceEvents(TRACE_LEVEL_WARNING, DBG_CONNECT, "Application not ready");
 		status = STATUS_SUCCESS;
-		goto exit;
+		goto exit_ret;
 	}
 
 	fileCtx = GetFileContext(devCtx->FileObject);
 	if (fileCtx->Connection) {
 		TraceEvents(TRACE_LEVEL_WARNING, DBG_CONNECT, "Only one SCO connection supported, aborting");
 		status = STATUS_SUCCESS;
-		goto exit;
+		goto exit_ret;
 	}
 
     // We create the connection object as the first step so that if we receive 
@@ -412,8 +416,8 @@ NTSTATUS HfpSrvSendConnectResponse(_In_ HFPDEVICE_CONTEXT* devCtx, _In_ SCO_INDI
     brb->Response				= SCO_CONNECT_RSP_RESPONSE_SUCCESS;
 	brb->TransmitBandwidth		= 
 	brb->ReceiveBandwidth		= 8000;  // 64Kb/s
-	brb->MaxLatency				= 0xF;
-	brb->PacketType				= SCO_PKT_ALL;
+	brb->MaxLatency				= 50;
+	brb->PacketType				= devCtx->ScoPacketTypes;
 	brb->ContentFormat			= SCO_VS_IN_CODING_LINEAR | SCO_VS_IN_SAMPLE_SIZE_16BIT | SCO_VS_AIR_CODING_FORMAT_CVSD;
 	brb->RetransmissionEffort	= SCO_RETRANSMISSION_NONE;
     brb->ChannelFlags			= SCO_CF_LINK_SUPPRESS_PIN;
@@ -433,12 +437,16 @@ NTSTATUS HfpSrvSendConnectResponse(_In_ HFPDEVICE_CONTEXT* devCtx, _In_ SCO_INDI
         // Connection should not be NULL, if connectionObject is not NULL since first thing we do 
 		// after creating connectionObject is to get context which gives us connection
         NT_ASSERT (connection);
+        
+		//KS: this doesn't have a sense
+		//connection->ConnectionState = ConnectionStateConnectFailed;
 
-        if (connection)
-            connection->ConnectionState = ConnectionStateConnectFailed;
+		fileCtx->Connection = 0;
 
         WdfObjectDelete(connectionObject);
     }
+
+	exit_ret:
     return status;
 }
 

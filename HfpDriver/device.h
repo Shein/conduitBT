@@ -30,6 +30,7 @@ typedef struct
     SCO_SERVER_HANDLE				ScoServerHandle;		// Handle obtained by registering SCO server
     struct _BRB						RegisterUnregisterBrb;	// BRB used for server register
 	BOOLEAN							ConnectReadiness;		// To confirm incoming SCO connection only when this flag is true
+    USHORT							ScoPacketTypes;			// Supported (e)SCO packet types: taken from BT Radio and then passed when opening SCOs
 	PKEVENT							KevScoConnect;			// SCO Connect Event associated with correspondent User-mode Event
 	PKEVENT							KevScoDisconnect;		// SCO Disconnect Event associated with correspondent User-mode Event
 	#if (NTDDI_VERSION >= NTDDI_WIN8)

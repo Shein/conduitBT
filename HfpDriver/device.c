@@ -117,9 +117,10 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
         goto exit;       
     }
 
-	#if 1	// Get Bluetooth Radio System info
+	// Get Bluetooth Radio System info
 	{
 	struct _BRB_SCO_GET_SYSTEM_INFO* brb;
+
 	devCtx->ProfileDrvInterface.BthReuseBrb(&(devCtx->RegisterUnregisterBrb), BRB_SCO_GET_SYSTEM_INFO);
 	brb = (struct _BRB_SCO_GET_SYSTEM_INFO*) &(devCtx->RegisterUnregisterBrb);
 	status = HfpSharedSendBrbSynchronously (devCtx->IoTarget, devCtx->Request, (PBRB)brb, sizeof(*brb));
@@ -133,8 +134,9 @@ NTSTATUS HfpEvtDriverDeviceAdd (_In_ WDFDRIVER  Driver, _Inout_ PWDFDEVICE_INIT 
 	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, " TransferUnit = %X", brb->TransferUnit);
 	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, " PacketTypes = %X", brb->PacketTypes);
 	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, " DataFormats = %X", brb->DataFormats);
+
+	devCtx->ScoPacketTypes = brb->PacketTypes;
 	}
-	#endif
 
 	exit:
     // We don't need to worry about deleting any objects on failure because all the object created so far are parented to device and when

@@ -105,7 +105,7 @@
       <TreatWarningAsError>false</TreatWarningAsError>
       <WarningLevel>Level4</WarningLevel>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);..\..\common\inc</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);NTDDI_VERSION=0x06010000</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);NTDDI_VERSION=0x06010000;DBG</PreprocessorDefinitions>
       <ExceptionHandling>
       </ExceptionHandling>
     </ClCompile>
