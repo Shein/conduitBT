@@ -23,7 +23,7 @@
 \****************************************************************************************/
 
 Wave::Wave (cchar * task, ScoApp *parent) :
-	DebLog(task), Thread(task), Parent(parent), hWave(0), State(STATE_IDLE), ErrorRaised(false), EventStart(), EventDataReady()
+	DebLog(task), Thread(task), Parent(parent), hWave(0), State(STATE_IDLE), ErrorRaised(false), IoErrorsCnt(0), EventStart(), EventDataReady()
 {
 	memset (&Format, 0, sizeof(WAVEFORMATEX));
 
@@ -67,7 +67,7 @@ void Wave::Destruct ()
 void Wave::Play()
 {
 	CHECK_STATE (STATE_READY);
-	ErrorRaised = 0;
+	ErrorRaised = IoErrorsCnt = 0;
 	State = STATE_PLAYING;
 	LogMsg("Start playing");
 	EventStart.Signal();	// Wake up the thread's run() and start playback
@@ -276,7 +276,10 @@ void WaveOut::RunBody (WAVEBLOCK * wblock)
 	}
 	else {
 		LogMsg("Read from SCO failed: GetLastError %d", GetLastError());
-		ReportVoiceStreamFailure (DialAppError_ReadScoError);
+		if (++IoErrorsCnt > NumVoiceIoErrors2Report) {
+			ReportVoiceStreamFailure (DialAppError_ReadScoError);
+			IoErrorsCnt = 0;
+		}
 		wblock->Hdr.dwFlags = WHDR_DONE;	// try to continue, mark the buffer as done
 		goto endfunc;
 	}

@@ -66,7 +66,7 @@ class MediaBuffer : public IMediaBuffer
 		if (!iface)
 			return E_POINTER;
 		if (riid == IID_IMediaBuffer || riid == IID_IUnknown) {
-			*iface = static_cast<IMediaBuffer *>(this);
+			*iface = static_cast<IMediaBuffer*>(this);
 			AddRef();
 			return S_OK;
 		}
@@ -103,18 +103,20 @@ class Wave : public DebLog, public Thread
 		//
 		// Note: the following voice configuration is also duplicated in the SCO driver!
 		//
-		VoiceFormat		  = WAVE_FORMAT_PCM,		// Voice PCM format
-		VoiceSampleRate	  = 8000,					// Voice Rate samples/sec
-		VoiceNchan		  = 1,						// Number of channels (1-mono,2-stereo)
-		VoiceBitPerSample = 16,						// Bits per sample
+		VoiceFormat		  = WAVE_FORMAT_PCM,			// Voice PCM format
+		VoiceSampleRate	  = 8000,						// Voice Rate samples/sec
+		VoiceNchan		  = 1,							// Number of channels (1-mono,2-stereo)
+		VoiceBitPerSample = 16,							// Bits per sample
 
-		ChunkSize = 4096,							// Size of one chunk for read and write operation 
+		ChunkSize = 4096,								// Size of one chunk for read and write operation 
 		ChunkTime = ChunkSize * 1000 / (VoiceSampleRate * VoiceBitPerSample/8),	// Send time of one chunk in milliseconds
 		#ifndef DMO_ENABLED
-		ChunkTime4Wait = (ChunkTime + ChunkTime/10)	// When waiting on event/semaphore to use this value
+		ChunkTime4Wait = (ChunkTime + ChunkTime/10),	// When waiting on event/semaphore to use this value
 		#else
-		ChunkTime4Wait = 100 
+		ChunkTime4Wait = 100,
 		#endif
+
+		NumVoiceIoErrors2Report = 6						// Number of possible subsequent errors while Reading from/Writing to SCO, when greater - the failure event will be generated
 	};
 
 	struct WAVEBLOCK {
@@ -184,6 +186,7 @@ class Wave : public DebLog, public Thread
 	WAVEFORMATEX	Format;
 	STATE			State;
 	int				ErrorRaised;
+	int				IoErrorsCnt;
 	Event			EventStart;
 	Event			EventDataReady;
 	OVERLAPPED		ScoOverlapped;

@@ -266,10 +266,10 @@ class HfpSm: public SMT<HfpSm>
 	void SetCallInfo4WaitingCall (CallInfo<char> *info);
 	void SetCallInfo4HeldCall    (SMEV_ATRESPONSE heldstatus);
 	void ClearAllCallInfo ();
+	bool IsCurStateSupportingVoiceSwitch();
 
   // Transitions
   private:
-	bool SetPcsoundPrefFlag	  (SMEVENT* ev, int param);
 	bool ForgetDevice		  (SMEVENT* ev, int param);
 	bool SelectDevice		  (SMEVENT* ev, int param);
 	bool Disconnect			  (SMEVENT* ev, int param);
@@ -294,7 +294,6 @@ class HfpSm: public SMT<HfpSm>
 	bool RejectVoice		  (SMEVENT* ev, int param);
 	bool ConnectFailure		  (SMEVENT* ev, int param);
 	bool ServiceConnectFailure(SMEVENT* ev, int param);
-	bool EndCallVoiceFailure  (SMEVENT* ev, int param);
 	bool Ringing			  (SMEVENT* ev, int param);
 	bool SendDtmf			  (SMEVENT* ev, int param);
 	bool PutOnHold			  (SMEVENT* ev, int param);
