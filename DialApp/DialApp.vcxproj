@@ -170,6 +170,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="HfpHelper.cpp" />
     <ClCompile Include="HfpSm.cpp" />
     <ClCompile Include="smBase.cpp" />
     <ClCompile Include="smId.cpp" />
@@ -178,6 +179,7 @@
     <ClInclude Include="CallInfo.h" />
     <ClInclude Include="DialApp.h" />
     <ClInclude Include="DialAppType.h" />
+    <ClInclude Include="HfpHelper.h" />
     <ClInclude Include="HfpSm.h" />
     <ClInclude Include="smBase.h" />
     <ClInclude Include="smBody.h" />

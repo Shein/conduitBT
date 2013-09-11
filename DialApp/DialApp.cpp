@@ -222,12 +222,6 @@ void dialappEndCall ()
 }
 
 
-void dialappSendAT(char* at)
-{
-	InHand::SendAtCommand(at);
-}
-
-
 void dialappPcSound (bool pcsound)
 {
 	HfpSm::PutEvent_Headset(pcsound);

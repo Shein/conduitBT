@@ -29,7 +29,6 @@
     ENUM_ENTRY (SMEV, ConnectStart			),	\
     ENUM_ENTRY (SMEV, Connected				),	\
     ENUM_ENTRY (SMEV, HfpConnectStart		),	\
-    ENUM_ENTRY (SMEV, HfpConnected			),	\
     ENUM_ENTRY (SMEV, ServiceConnectStart	),	\
     ENUM_ENTRY (SMEV, ServiceConnected		),	\
     ENUM_ENTRY (SMEV, AtResponse			),	\
@@ -92,6 +91,7 @@ struct SMEV_PAR
 		union {
 		  CallInfo<wchar>*		InfoWch;
 		  CallInfo<char>*		InfoCh;
+		  int					IndicatorsState;	// actual when AtResponse = SMEV_AtResponse_CurrentPhoneIndicators
 		};
 	};
 

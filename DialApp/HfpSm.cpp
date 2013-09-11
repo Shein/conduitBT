@@ -5,7 +5,6 @@
 
 #include "def.h"
 #include "deblog.h"
-#include "str.h"
 #include "HfpSm.h"
 #include "smBody.h"
 
@@ -86,18 +85,23 @@ void HfpSm::Init (DialAppCb cb)
 	InitStateNode (STATE_Connected,			SMEV_SwitchHeadset,				STATE_Connected,		&SwitchVoiceOnOff);
 	/*-------------------------------------------------------------------------------------------------*/
 
+	// HfpConnecting is interesting state: when the application starts to run it may receive SMEV_SwitchVoice and other events 
 	/*---------------------------------- STATE: HfpConnecting   ---------------------------------------*/
 	InitStateNode (STATE_HfpConnecting,		SMEV_ForgetDevice,				STATE_Idle,				&ForgetDevice);
 	InitStateNode (STATE_HfpConnecting,		SMEV_SelectDevice,				STATE_Disconnected,		&SelectDevice);
 	InitStateNode (STATE_HfpConnecting,		SMEV_Disconnect,				STATE_Disconnected,		&Disconnect);
 	InitStateNode (STATE_HfpConnecting,		SMEV_Failure,					STATE_Disconnected,		&ServiceConnectFailure);
-	InitStateNode (STATE_HfpConnecting,		SMEV_HfpConnected,				STATE_HfpConnected,		&HfpConnected);
-	InitStateNode (STATE_HfpConnecting,		SMEV_Timeout,					&IsHfpConnected,		2);
-		InitChoice (0, STATE_HfpConnecting,	SMEV_Timeout,					STATE_Disconnected,		&ServiceConnectFailure);
-		InitChoice (1, STATE_HfpConnecting,	SMEV_Timeout,					STATE_HfpConnected,		&HfpConnected);
 	InitStateNode (STATE_HfpConnecting,		SMEV_StartOutgoingCall,			STATE_HfpConnecting,	&IncorrectState4Call);
-	InitStateNode (STATE_HfpConnecting,		SMEV_AtResponse,				STATE_HfpConnecting,	&AtProcessing);
 	InitStateNode (STATE_HfpConnecting,		SMEV_SwitchHeadset,				STATE_HfpConnecting,	&SwitchVoiceOnOff);
+	InitStateNode (STATE_HfpConnecting,		SMEV_SwitchVoice,				STATE_HfpConnecting,	&SwitchedVoiceOnOff);
+	InitStateNode (STATE_HfpConnecting,		SMEV_Timeout,					STATE_Disconnected,		&ServiceConnectFailure);
+	InitStateNode (STATE_HfpConnecting,		SMEV_AtResponse,				&IsHfpConnectLastCmd,	6);
+		InitChoice (0, STATE_HfpConnecting,	SMEV_AtResponse,				STATE_HfpConnecting,	&AtProcessing);
+		InitChoice (1, STATE_HfpConnecting,	SMEV_AtResponse,				STATE_Disconnected,		&ServiceConnectFailure);
+		InitChoice (2, STATE_HfpConnecting,	SMEV_AtResponse,				STATE_HfpConnected,		&HfpConnected);
+		InitChoice (3, STATE_HfpConnecting,	SMEV_AtResponse,				STATE_Calling,			&HfpConnected_CallFromPhone);
+		InitChoice (4, STATE_HfpConnecting,	SMEV_AtResponse,				STATE_Ringing,			&HfpConnected_Ringing);
+		InitChoice (5, STATE_HfpConnecting,	SMEV_AtResponse,				STATE_InCall,			&HfpConnected_StartCall);
 	/*------------------------------------------------------------------------------------------------*/
 
 	/*---------------------------------- STATE: HfpConnected   ----------------------------------------*/
@@ -174,49 +178,6 @@ void HfpSm::End ()
 /********************************************************************************\
 								SM Help functions
 \********************************************************************************/
-
-bool HfpSm::ParseAndSetAtIndicators (char* services)
-{
-	enum {
-		CALL,
-		CALLSETUP,
-		CALLHELD,
-		NumServices,
-		MaxServices = 10
-	};
-
-	static STRB servtable[NumServices] = { "call", "callsetup", "callheld" };
-
-	int   servnums [NumServices] = {0};
-	char* s1, *s2;
-	int   n = 0;
-
-	STRB str(services);
-
-	// 1st ScanCharNext instead ScanChar is ok because the first services char should be '('
-	for (int i = 0;  i < MaxServices;  i++)
-	{
-		if ( !(s1 = str.ScanCharNext('\"')) )
-			break;
-		if ( !(s2 = str.ScanCharNext('\"')) )
-			break;
-		*s2 = '\0';
-		for (int j = 0; j < NumServices; j++)
-			if (servtable[j] == (cchar*)(s1+1)) {
-				servnums[j] = i + 1;  // HFP indicator index starts from 1
-				n++;
-				break;
-			}
-	}
-
-	if (n != NumServices) {
-		LogMsg ("ParseAndSetAtIndicators failed");
-		return false;
-	}
-
-	InHand::SetIndicatorsNumbers(servnums[CALL],servnums[CALLSETUP],servnums[CALLHELD]);
-	return true;
-}
 
 
 bool HfpSm::WasPcsoundPrefChanged (SMEVENT* ev)
@@ -398,8 +359,8 @@ bool HfpSm::SwitchVoiceOnOff (SMEVENT* ev, int param)
 
 	// Here the PcSoundPref is switched 
 
-	if (IsCurStateSupportingVoiceSwitch()) {
-		// The voice channel is currently active
+	if (IsCurStateSupportingVoiceSwitch()) 
+	{
 		if (PublicParams.PcSoundPref)	// StartVoiceHlp/StopVoiceHlp set PublicParams.PcSound to the correspondent state
 			StartVoiceHlp(false);
 		else
@@ -425,10 +386,14 @@ bool HfpSm::SwitchedVoiceOnOff (SMEVENT* ev, int param)
 		return true;
 	}
 
-	if (PublicParams.PcSoundPref = ev->Param.PcSound)  // StartVoiceHlp/StopVoiceHlp set PublicParams.PcSound to the correspondent state
+	if (PublicParams.PcSoundPref = ev->Param.PcSound)  { 
+		// StartVoiceHlp/StopVoiceHlp set PublicParams.PcSound to the correspondent state
+		// The voice channel is currently active! Start Waves only
 		StartVoiceHlp(true);
-	else
+	}
+	else {
 		StopVoiceHlp(true);
+	}
 	UserCallback.PcSoundOnOff (DIALAPP_FLAG_PCSOUND);
 	return true;
 }
@@ -484,7 +449,7 @@ bool HfpSm::ForgetDevice (SMEVENT* ev, int param)
 
 bool HfpSm::Disconnect (SMEVENT* ev, int param)
 {
-	if (State >= STATE_HfpConnected)
+	if (State >= STATE_HfpConnecting)
 		ScoAppObj->StopServer();
 	if (State > STATE_Disconnected)
 		InHand::Disconnect();
@@ -525,29 +490,35 @@ bool HfpSm::HfpConnect (SMEVENT* ev, int param)
 {
 	// In the case HFP negotiation will not be completed in the given time,
 	// we assume that it's ok and will jump to the next state
-	HfpIndicators = false;
+	HfpIndicatorsState = -1;
 	InHand::ClearIndicatorsNumbers();
-	MyTimer.Start(TIMEOUT_HFP_NEGOTIATION,true);
-	AtResponsesCnt = 0;
-	AtResponsesNum = InHand::BeginHfpConnect();
+	try
+	{
+		ScoAppObj->StartServer (PublicParams.CurDevice->Address, PublicParams.PcSoundPref);
+		MyTimer.Start(TIMEOUT_HFP_NEGOTIATION,true);
+		InHand::BeginHfpConnect();
+	}
+	catch (int err)
+	{
+		LogMsg("EXCEPTION %d", err);
+		HfpSm::PutEvent_Disconnect(DialAppError_ServiceConnectFailure);
+	}
 	return true;
 }
 
 
 bool HfpSm::HfpConnected (SMEVENT* ev, int param)
 {
-	if (ev->Ev != SMEV_Timeout)
-		MyTimer.Stop();
+	MyTimer.Stop();
 
-	try
-	{
-		ScoAppObj->StartServer (PublicParams.CurDevice->Address, PublicParams.PcSoundPref);
+	// After STATE_HfpConnecting we can also jump to call states, they should have own callbacks
+	if (State_next == STATE_HfpConnected)
 		UserCallback.HfpConnected();
-	}
-	catch (int err)
-	{
-		LogMsg("EXCEPTION %d", err);
-		HfpSm::PutEvent_Disconnect(DialAppError_ServiceConnectFailure);
+
+	if (State_next == STATE_HfpConnected && PublicParams.PcSound) {
+		// The audio SCO was open during HFP negotiation, probably erroneously. We are closing it... 
+		StopVoiceHlp(false);
+		UserCallback.PcSoundOnOff (DIALAPP_FLAG_PCSOUND);
 	}
 
 	return true;
@@ -732,21 +703,7 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 	{
 		case SMEV_AtResponse_Ok:
 		case SMEV_AtResponse_Error:
-			// For STATE_HfpConnecting count the Ok response in order to generate Connected event
-			if (State == STATE_HfpConnecting && (++AtResponsesCnt == AtResponsesNum)) {
-				AtResponsesCnt = AtResponsesNum = 0;
-				if (HfpIndicators)
-					HfpSm::PutEvent_HfpConnected();
-				else
-					HfpSm::PutEvent_Failure(DialAppError_ServiceConnectFailure);
-			}
-			break;
-
-		case SMEV_AtResponse_CurrentPhoneIndicators:
-			// This command is expected in STATE_HfpConnecting state only
-			ASSERT__ (State == STATE_HfpConnecting);
-			HfpIndicators = ParseAndSetAtIndicators(ev->Param.InfoCh->Info);
-			delete ev->Param.InfoCh;
+			// These events not used already
 			break;
 
 		case SMEV_AtResponse_ListCurrentCalls:
@@ -761,6 +718,7 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 			}
 			break;
 	}
+
 	return true;
 }
 
@@ -799,16 +757,32 @@ bool HfpSm::Answer2Waiting(SMEVENT* ev, int param)
 }
 
 
+bool HfpSm::HfpConnected_CallFromPhone (SMEVENT* ev, int param)
+{
+	HfpConnected (ev, param);
+	return CallFromPhone (ev, param);
+}
+
+
+
+bool HfpSm::HfpConnected_Ringing (SMEVENT* ev, int param)
+{
+	HfpConnected (ev, param);
+	return Ringing (ev, param);
+}
+
+
+bool HfpSm::HfpConnected_StartCall (SMEVENT* ev, int param)
+{
+	HfpConnected (ev, param);
+	return StartCall (ev, param);
+}
+
+
+
 /********************************************************************************\
 								SM CHOICES
 \********************************************************************************/
-
-int HfpSm::IsHfpConnected (SMEVENT* ev)
-{
-	// if mandatory HFP Current Phone Indicators (+CIND:) was not received during HFP negotiation - go to 0
-	return (int) HfpIndicators;
-}
-
 
 int HfpSm::ToRingingOrCalling (SMEVENT* ev)
 {
@@ -862,4 +836,20 @@ int HfpSm::ChoiceIncomingVoice (SMEVENT* ev)
 	IncallStartTime = 0;
 
 	return 1; // Normal situation 
+}
+
+
+int HfpSm::IsHfpConnectLastCmd (SMEVENT* ev)
+{
+	ASSERT__ (State == STATE_HfpConnecting);
+
+	if (ev->Param.AtResponse != SMEV_AtResponse_CurrentPhoneIndicators)
+		return 0; // simply to call AtProcessing and to stay in STATE_HfpConnecting
+	
+	HfpIndicatorsState = ev->Param.IndicatorsState;
+	if (HfpIndicatorsState < 0)
+		return 1;	// go to STATE_Disconnected
+
+	// Now jump to 2..5 (STATE_HfpConnected..STATE_InCall)
+	return HfpIndicatorsState - STATE_HfpConnected + 2;
 }

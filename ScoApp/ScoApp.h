@@ -1,3 +1,8 @@
+/*******************************************************************\
+ Filename    :  ScoApp.h
+ Purpose     :  SCO driver and Wave In-Out object manager
+\*******************************************************************/
+
 #pragma once
 #pragma managed(push, off)
 

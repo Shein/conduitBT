@@ -341,8 +341,7 @@ void DialForm::button_star_Click(Object ^sender, EventArgs ^e)
 
 void DialForm::button_SendAT_Click(Object ^sender, EventArgs ^e)
 {
-	char* str = (char*)(void*)Marshal::StringToHGlobalAnsi(textBox_AT_command->Text);
-	dialappSendAT(str);
+	//char* str = (char*)(void*)Marshal::StringToHGlobalAnsi(textBox_AT_command->Text);
 }
 
 void DialForm::button_Hold_Click(Object ^sender, EventArgs ^e)

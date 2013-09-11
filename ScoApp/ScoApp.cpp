@@ -1,3 +1,8 @@
+/*******************************************************************\
+ Filename    :  ScoApp.cpp
+ Purpose     :  SCO driver and Wave In-Out object manager
+\*******************************************************************/
+
 #define INITGUID
 
 #pragma managed(push, off)

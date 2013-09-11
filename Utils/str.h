@@ -367,6 +367,16 @@ inline STRB & STRB::operator += (cchar ch)
     return * this;
 }
 
+
+inline STRB & STRB::operator = (int i)
+{
+    char s[20];
+    int32toa (i, s);
+    operator=(s);
+    return * this;
+}
+
+
 inline STRB & STRB::operator -= (int i)
 {
     if (Len >= unsigned(i))
@@ -396,7 +406,10 @@ inline int STRB::Vsprintf (cchar * sformat, va_list arglist)
 }
 
 
-// Temporary taken from str.cpp
+/**********************************************************************\
+					Temporary taken from str.cpp
+\**********************************************************************/
+
 inline int STRB::Sprintf (cchar * sformat, ...)
 {
 	va_list  argptr;
@@ -405,6 +418,38 @@ inline int STRB::Sprintf (cchar * sformat, ...)
 	va_end (argptr);
 	return (Len = ret);
 }
+
+
+inline int STRB::Copy (cchar * s)
+{
+    Len = 0;
+    if (s) {
+        for (; s[Len]; Len++) {
+            if (IsLenExceeded())
+                break;
+            Str[Len] = s[Len];
+        }
+    }
+    Str[Len] = '\0';
+    return Len;
+}
+
+
+inline char* STRB::SeekInt (int * x, cchar * sformat)
+{
+    // sformat must contain only one %d occurrence
+    if (sscanf(Spos, sformat, x) != 1) {
+        *x = 0;
+        return 0;
+    }
+    
+    // now calculate number of digits in *x
+    STR<16> s;
+    s = *x;
+
+    return Spos += strlen(sformat) - 2 /* %d */ + s.Strlen();
+}
+
 
 
 #endif // _STR_H

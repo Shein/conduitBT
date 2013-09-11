@@ -1,5 +1,11 @@
+/*******************************************************************\
+ Filename    :  InHand.cpp
+ Purpose     :  InTheHand.NET C++ unmanaged class wrapper
+\*******************************************************************/
+
 #include "InHand.h"
 #include "InHandMng.h"
+#include "HfpHelper.h"
 
 
 DebLog InHandLog("InHand ");
@@ -11,7 +17,7 @@ DebLog InHandLog("InHand ");
 
 DialAppBthDev  *InHand::Devices;
 int				InHand::NumDevices;
-
+HfpIndicators  *InHand::CurIndicators;
 
 
 /***********************************************************************************************\
@@ -119,13 +125,6 @@ void InHand::PutOnHold()
 {
 	InHandLog.LogMsg("About to PutOnHold");
 	InHandMng::PutOnHold();
-}
-
-
-void InHand::SendAtCommand( char* at )
-{
-	String^ clistr = gcnew String(at);
-	InHandMng::SendAtCommand(clistr);
 }
 
 

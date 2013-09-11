@@ -90,4 +90,21 @@ typedef unsigned char		uint8;
 #define ASSERT_f(x)     ASSERT(x,false)
 #define ASSERT_0(x)     ASSERT(x,0)
 
+
+
+/***********************************************************************\
+                        Some short standard functions
+\***********************************************************************/
+
+#define vsnprintf _vsnprintf
+#define snprintf  _snprintf
+
+inline int uint32toa (uint32 val, char *str)  { return sprintf(str,"%u",val);  }
+inline int uint16toa (uint16 val, char *str)  { return sprintf(str,"%u",val);  }
+inline int uint8toa  (uint8  val, char *str)  { return sprintf(str,"%u",val);  }
+inline int int32toa  (int32  val, char *str)  { return sprintf(str,"%d",val);  }
+inline int int16toa  (int16  val, char *str)  { return sprintf(str,"%d",val);  }
+inline int int8toa   (int8   val, char *str)  { return sprintf(str,"%d",val);  }
+
+
 #endif // _DEF_H

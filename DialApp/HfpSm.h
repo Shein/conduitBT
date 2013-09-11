@@ -65,7 +65,7 @@ class HfpSm: public SMT<HfpSm>
 	enum {
 		// Timeouts in milliseconds
 		TIMEOUT_CONNECTION_POLLING		= 5000,
-		TIMEOUT_HFP_NEGOTIATION			=  500,
+		TIMEOUT_HFP_NEGOTIATION			= 1500,
 		TIMEOUT_WAITING_HOLD_SWITCH		=   20,
 		TIMEOUT_SCO_TREATED_AS_INCOMING	=  750,	// The Max observed value is at HTC Diamond = 0.62 sec
 	};
@@ -92,9 +92,7 @@ class HfpSm: public SMT<HfpSm>
   public:
 	SmTimer		MyTimer;
 	ScoApp*		ScoAppObj;
-	int			AtResponsesCnt;
-	int			AtResponsesNum;
-	bool		HfpIndicators;
+	int			HfpIndicatorsState;			// its type is STATE or -1 meaning HfpConnected state is not achieved 
 	unsigned    IncallStartTime;
 
 	CallInfo<char>   *CallInfoCurrent;		// Set in InCall state after the abonent information is present
@@ -149,12 +147,6 @@ class HfpSm: public SMT<HfpSm>
 		SmBase::PutEvent (&Event, SMQ_LOW);
 	}
 
-	static void PutEvent_HfpConnected ()
-	{
-		SMEVENT Event = {SM_HFP, SMEV_HfpConnected};
-		SmBase::PutEvent (&Event, SMQ_LOW);
-	}
-
 	static void PutEvent_Headset (bool headset_on)
 	{
 		SMEVENT Event = {SM_HFP, SMEV_SwitchHeadset};
@@ -179,6 +171,14 @@ class HfpSm: public SMT<HfpSm>
 	{
 		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
 		Event.Param.AtResponse = resp;
+		SmBase::PutEvent (&Event, SMQ_HIGH);
+	}
+
+	static void PutEvent_AtResponse (SMEV_ATRESPONSE resp, int state)
+	{
+		SMEVENT Event = {SM_HFP, SMEV_AtResponse};
+		Event.Param.AtResponse = resp;
+		Event.Param.IndicatorsState = state;
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
 
@@ -258,7 +258,6 @@ class HfpSm: public SMT<HfpSm>
 
   // Help functions
   private:
-	bool ParseAndSetAtIndicators (char* services);
 	bool WasPcsoundPrefChanged (SMEVENT* ev);
 	void StartVoiceHlp	(bool waveonly = true);
 	void StopVoiceHlp	(bool waveonly = true);
@@ -270,44 +269,48 @@ class HfpSm: public SMT<HfpSm>
 
   // Transitions
   private:
-	bool ForgetDevice		  (SMEVENT* ev, int param);
-	bool SelectDevice		  (SMEVENT* ev, int param);
-	bool Disconnect			  (SMEVENT* ev, int param);
-	bool Connect			  (SMEVENT* ev, int param);
-	bool Connected			  (SMEVENT* ev, int param);
-	bool HfpConnect			  (SMEVENT* ev, int param);
-	bool HfpConnected		  (SMEVENT* ev, int param);
-	bool AtProcessing		  (SMEVENT* ev, int param);
-	bool IncorrectState4Call  (SMEVENT* ev, int param);
-	bool StartOutgoingCall	  (SMEVENT* ev, int param);
-	bool CallFromPhone		  (SMEVENT* ev, int param);
-	bool Answer				  (SMEVENT* ev, int param);
-	bool Answer2Waiting		  (SMEVENT* ev, int param);
-	bool OutgoingCall		  (SMEVENT* ev, int param);
-	bool StartCall			  (SMEVENT* ev, int param);
-	bool EndCall			  (SMEVENT* ev, int param);
-	bool StartCallEnding	  (SMEVENT* ev, int param);
-	bool FinalizeCallEnding	  (SMEVENT* ev, int param);
-	bool SwitchVoiceOnOff	  (SMEVENT* ev, int param);
-	bool SwitchedVoiceOnOff	  (SMEVENT* ev, int param);
-	bool StopVoice			  (SMEVENT* ev, int param);
-	bool RejectVoice		  (SMEVENT* ev, int param);
-	bool ConnectFailure		  (SMEVENT* ev, int param);
-	bool ServiceConnectFailure(SMEVENT* ev, int param);
-	bool Ringing			  (SMEVENT* ev, int param);
-	bool SendDtmf			  (SMEVENT* ev, int param);
-	bool PutOnHold			  (SMEVENT* ev, int param);
-	bool IncomingWaitingCall  (SMEVENT* ev, int param);
-	bool SendWaitingCallStop  (SMEVENT* ev, int param);
-	bool CallHeld		  	  (SMEVENT* ev, int param);
+	bool ForgetDevice				(SMEVENT* ev, int param);
+	bool SelectDevice				(SMEVENT* ev, int param);
+	bool Disconnect					(SMEVENT* ev, int param);
+	bool Connect					(SMEVENT* ev, int param);
+	bool Connected					(SMEVENT* ev, int param);
+	bool HfpConnect					(SMEVENT* ev, int param);
+	bool HfpConnected				(SMEVENT* ev, int param);
+	bool AtProcessing				(SMEVENT* ev, int param);
+	bool IncorrectState4Call		(SMEVENT* ev, int param);
+	bool StartOutgoingCall			(SMEVENT* ev, int param);
+	bool CallFromPhone				(SMEVENT* ev, int param);
+	bool Answer						(SMEVENT* ev, int param);
+	bool Answer2Waiting				(SMEVENT* ev, int param);
+	bool OutgoingCall				(SMEVENT* ev, int param);
+	bool StartCall					(SMEVENT* ev, int param);
+	bool EndCall					(SMEVENT* ev, int param);
+	bool StartCallEnding			(SMEVENT* ev, int param);
+	bool FinalizeCallEnding			(SMEVENT* ev, int param);
+	bool SwitchVoiceOnOff			(SMEVENT* ev, int param);
+	bool SwitchedVoiceOnOff			(SMEVENT* ev, int param);
+	bool StopVoice					(SMEVENT* ev, int param);
+	bool RejectVoice				(SMEVENT* ev, int param);
+	bool ConnectFailure				(SMEVENT* ev, int param);
+	bool ServiceConnectFailure		(SMEVENT* ev, int param);
+	bool Ringing					(SMEVENT* ev, int param);
+	bool SendDtmf					(SMEVENT* ev, int param);
+	bool PutOnHold					(SMEVENT* ev, int param);
+	bool IncomingWaitingCall		(SMEVENT* ev, int param);
+	bool SendWaitingCallStop		(SMEVENT* ev, int param);
+	bool CallHeld		  			(SMEVENT* ev, int param);
+	bool HfpConnected_CallFromPhone (SMEVENT* ev, int param);
+	bool HfpConnected_Ringing		(SMEVENT* ev, int param);
+	bool HfpConnected_StartCall		(SMEVENT* ev, int param);
+
 
   // Choices
   private:
-	int  IsHfpConnected		(SMEVENT* ev);
-	int  ChoiceCallSetup	(SMEVENT* ev);
-	int  ToRingingOrCalling	(SMEVENT* ev);
-	int  ChoiceFromRinging	(SMEVENT* ev);
-	int  ChoiceIncomingVoice(SMEVENT* ev);
+	int  ChoiceCallSetup	 (SMEVENT* ev);
+	int  ToRingingOrCalling	 (SMEVENT* ev);
+	int  ChoiceFromRinging	 (SMEVENT* ev);
+	int  ChoiceIncomingVoice (SMEVENT* ev);
+	int  IsHfpConnectLastCmd (SMEVENT* ev);
 };
 
 

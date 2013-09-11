@@ -555,6 +555,7 @@ namespace DialAppGui {
 			// 
 			// textBox_AT_command
 			// 
+			this->textBox_AT_command->Enabled = false;
 			this->textBox_AT_command->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 11.25F, System::Drawing::FontStyle::Regular, 
 				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(204)));
 			this->textBox_AT_command->Location = System::Drawing::Point(477, 94);
@@ -564,6 +565,7 @@ namespace DialAppGui {
 			// 
 			// button_SendAT
 			// 
+			this->button_SendAT->Enabled = false;
 			this->button_SendAT->Location = System::Drawing::Point(527, 124);
 			this->button_SendAT->Name = L"button_SendAT";
 			this->button_SendAT->Size = System::Drawing::Size(66, 23);

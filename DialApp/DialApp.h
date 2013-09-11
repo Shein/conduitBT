@@ -271,8 +271,5 @@ void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
 void dialappPutOnHold() throw();
 
 
-/* TODO: For debug only. Must be removed for release */
-void dialappSendAT(char *at);
-
 
 #endif // _DIALAPP_H

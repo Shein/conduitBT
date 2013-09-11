@@ -1,3 +1,8 @@
+/*******************************************************************\
+ Filename    :  InHand.h
+ Purpose     :  InTheHand.NET C++ unmanaged class wrapper
+\*******************************************************************/
+
 #pragma once
 #pragma managed(push, off)
 
@@ -8,6 +13,8 @@
 
 
 extern DebLog InHandLog;
+
+class HfpIndicators;
 
 
 /*
@@ -35,14 +42,15 @@ class InHand
 	static void SendDtmf		(cchar* dialchar);
 	static void Answer			();
 	static void EndCall			();
-	static void SendAtCommand   (char* at);
 	static void PutOnHold		();
 	static void ListCurrentCalls();
 
   public:
 	static DialAppBthDev  *Devices;
 	static int			   NumDevices;
+	static HfpIndicators  *CurIndicators;
 };
+
 
 
 #pragma managed(pop)
