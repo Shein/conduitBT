@@ -14,7 +14,6 @@
 
 #include <Bluetoothapis.h>
 
-#include "msg.h"
 #include "setup.h"
 
 
@@ -215,7 +214,7 @@ Return Value:
     inf = InfPath;
     flags |= INSTALLFLAG_FORCE;
 
-    FormatToStream(stdout,inf ? MSG_UPDATE_INF : MSG_UPDATE,hwid,inf);
+//    FormatToStream(stdout,inf ? MSG_UPDATE_INF : MSG_UPDATE,hwid,inf);
 
     if(/*!UpdateFn*/!UpdateDriverForPlugAndPlayDevices(NULL,hwid,inf,flags,&reboot)) {
 
@@ -223,7 +222,7 @@ Return Value:
         goto final;
     }
 
-    FormatToStream(stdout,MSG_UPDATE_OK);
+ //   FormatToStream(stdout,MSG_UPDATE_OK);
 
     failcode = reboot ? EXIT_REBOOT : EXIT_OK;
 
@@ -342,7 +341,7 @@ Return Value:
         goto final;
     }
 
-    FormatToStream(stdout,MSG_INSTALL_UPDATE);
+//    FormatToStream(stdout,MSG_INSTALL_UPDATE);
     //
     // update the driver for the device we just created
     //
