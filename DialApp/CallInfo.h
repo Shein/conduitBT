@@ -1,3 +1,8 @@
+/*************************************************************************\
+ Filename    :  CallInfo.h
+ Purpose     :  CallInfo class for represent caller Number & Name strings
+\*************************************************************************/
+
 #pragma once
 
 #include "def.h"
@@ -19,6 +24,8 @@ template<class T> class CallInfo
 	DialAppAbonent	InfoParsed;
 
 	DialAppAbonent* GetAbonent()  { return &InfoParsed; }
+
+	bool Compare (CallInfo * x);
 
   public:
     void* operator new (size_t nSize, T * info);
@@ -96,5 +103,30 @@ inline bool CallInfo<char>::Parse2NumberName ()
 		*s2 = '\0';	
 		InfoParsed.Name = s1 + 1;
 	}
+	return true;
+}
+
+
+// Help func for CallInfo<char>::Compare
+inline bool CompareStrings (char*s1, char*s2)
+{
+	if (s1 == s2)
+		return true;
+	if (!s1 || !s2)
+		return false;
+	return (strcmp(s1,s2) == 0);
+}
+
+
+template<>
+inline bool CallInfo<char>::Compare (CallInfo * x)
+{
+	if (!x)
+		return false;
+	if (!CompareStrings(InfoParsed.Number, x->InfoParsed.Number))
+		return false;
+	//KS: Don't take Name into account for now: the negative effect occurs when name is present and then absent 
+	//if (!CompareStrings(InfoParsed.Name, x->InfoParsed.Name))
+	//	return false;
 	return true;
 }

@@ -236,25 +236,32 @@ void HfpSm::ClearAllCallInfo ()
 		delete CallInfoWaiting;
 
 	CallInfoCurrent = CallInfoHeld = CallInfoWaiting = 0;
-	PublicParams.AbonentCurrent = PublicParams.AbonentWaiting = PublicParams.AbonentHeld = 0;
+	PublicParams.ClearAbonentCurrent();
+	PublicParams.ClearAbonentWaiting();
+	PublicParams.ClearAbonentHeld();
+	LogMsg("Set CallInfoCurrent=CallInfoHeld=CallInfoWaiting=0");
 }
 
 
 void HfpSm::SetCallInfo4CurrentCall (CallInfo<char> *info)
 {
-	if (CallInfoCurrent)
-		delete CallInfoCurrent;
+	CallInfo<char> *prev = (CallInfoCurrent) ? CallInfoCurrent : 0;
 
 	if (info) {
 		CallInfoCurrent = info;
 		CallInfoCurrent->Parse2NumberName ();
-		PublicParams.AbonentCurrent = CallInfoCurrent->GetAbonent();
+		PublicParams.SetAbonentCurrent(CallInfoCurrent);
 	}
 	else {
 		CallInfoCurrent = 0;
-		PublicParams.AbonentCurrent = 0;
+		PublicParams.ClearAbonentCurrent();
 	}
-	UserCallback.CallCurrentInfo();
+
+	if (!CallInfoCurrent || !CallInfoCurrent->Compare(prev))
+		UserCallback.CallCurrentInfo();
+
+	if (prev)
+		delete prev;
 }
 
 
@@ -266,11 +273,11 @@ void HfpSm::SetCallInfo4WaitingCall (CallInfo<char> *info)
 	if (info) {
 		CallInfoWaiting = info;
 		CallInfoWaiting->Parse2NumberName ();
-		PublicParams.AbonentWaiting = CallInfoWaiting->GetAbonent();
+		PublicParams.SetAbonentWaiting(CallInfoWaiting);
 	}
 	else {
 		CallInfoWaiting = 0;
-		PublicParams.AbonentWaiting = 0;
+		PublicParams.ClearAbonentWaiting();
 	}
 	UserCallback.CallWaitingInfo();
 }
@@ -293,10 +300,11 @@ void HfpSm::SetCallInfo4HeldCall (SMEV_ATRESPONSE heldstatus)
 			if (heldstatus == SMEV_AtResponse_CallHeld_None)
 				break;
 			CallInfoHeld = CallInfoCurrent;
-			PublicParams.AbonentHeld = CallInfoHeld->GetAbonent();
 			CallInfoCurrent = 0;
-			PublicParams.AbonentCurrent = 0;
+			PublicParams.SetAbonentHeld (CallInfoHeld);
+			PublicParams.ClearAbonentCurrent();
 			addflag = DIALAPP_FLAG_ABONENT_CURRENT;
+			LogMsg("Set CallInfoHeld=CallInfoCurrent(%X), CallInfoCurrent=0", CallInfoCurrent);
 			break;
 
 		case SMEV_AtResponse_CallHeld_HeldAndActive:	
@@ -308,9 +316,10 @@ void HfpSm::SetCallInfo4HeldCall (SMEV_ATRESPONSE heldstatus)
 					delete CallInfoHeld;
 				CallInfoHeld = CallInfoWaiting;
 				CallInfoWaiting = 0;
-				PublicParams.AbonentWaiting = 0;
-				PublicParams.AbonentHeld	= CallInfoHeld->GetAbonent();
+				PublicParams.SetAbonentHeld	(CallInfoHeld);
+				PublicParams.ClearAbonentWaiting ();
 				addflag = DIALAPP_FLAG_ABONENT_WAITING;
+				LogMsg("Set CallInfoHeld=CallInfoWaiting(%X), CallInfoWaiting=0", CallInfoWaiting);
 			}
 			else 
 			{
@@ -318,9 +327,10 @@ void HfpSm::SetCallInfo4HeldCall (SMEV_ATRESPONSE heldstatus)
 				CallInfo<char> *c = CallInfoHeld;
 				CallInfoHeld = CallInfoCurrent;
 				CallInfoCurrent = c;
-				PublicParams.AbonentCurrent = (CallInfoCurrent) ? CallInfoCurrent->GetAbonent() : 0;
-				PublicParams.AbonentHeld	= (CallInfoHeld)    ? CallInfoHeld->GetAbonent()    : 0;
+				PublicParams.SetAbonentCurrent (CallInfoCurrent);
+				PublicParams.SetAbonentHeld (CallInfoHeld);
 				addflag = DIALAPP_FLAG_ABONENT_CURRENT;
+				LogMsg("Switch CallInfoHeld<=>CallInfoCurrent(%X<=>%X)", CallInfoCurrent, CallInfoHeld);
 			}
 			break;
 
@@ -707,6 +717,7 @@ bool HfpSm::AtProcessing (SMEVENT* ev, int param)
 			break;
 
 		case SMEV_AtResponse_ListCurrentCalls:
+		case SMEV_AtResponse_CallingLineId:
 			SetCallInfo4CurrentCall (ev->Param.InfoCh);
 			break;
 

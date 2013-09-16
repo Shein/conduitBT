@@ -103,9 +103,9 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 	}
 	if (flags & DIALAPP_FLAG_ABONENT_WAITING) {
 		if (param->AbonentWaiting)
-			DialForm::This->AddInfoMessage ("Incoming waiting call: '" +  %System::String(param->AbonentWaiting->Name) +" " + %System::String(param->AbonentWaiting->Number) + "'");
+			DialForm::This->AddInfoMessage ("Waiting Call: '" +  %System::String(param->AbonentWaiting->Name) +" " + %System::String(param->AbonentWaiting->Number) + "'");
 		else
-			DialForm::This->AddInfoMessage ("Incoming waiting call: NO CALLS NOW");
+			DialForm::This->AddInfoMessage ("Waiting Call: NO CALLS NOW");
 	}
 	if (flags & DIALAPP_FLAG_ABONENT_HELD) {
 		if (param->AbonentHeld)

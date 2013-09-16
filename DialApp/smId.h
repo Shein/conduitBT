@@ -61,7 +61,8 @@
 	ENUM_ENTRY (SMEV_AtResponse,  CallHeld_HeldOnly			),	\
 	ENUM_ENTRY (SMEV_AtResponse,  CallWaiting_Ringing		),	\
 	ENUM_ENTRY (SMEV_AtResponse,  CallWaiting_Stopped		),	\
-	ENUM_ENTRY (SMEV_AtResponse,  ListCurrentCalls			)
+	ENUM_ENTRY (SMEV_AtResponse,  ListCurrentCalls			),	\
+	ENUM_ENTRY (SMEV_AtResponse,  CallingLineId				)
 
 
 

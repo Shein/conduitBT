@@ -75,7 +75,7 @@ public ref class InHandMng
 		6	Enhanced call control
 		7	Codec negotiation
 	*/
-	static UInt16 HandsfreeSupportedFeatures = 116;
+	static UInt16 HandsfreeSupportedFeatures = 102;
 
   protected:
 	static void AddSdp(Guid svc);
@@ -297,7 +297,10 @@ void InHandMng::RecvAtCommand (String ^str)
 	else if (str->IndexOf("+CCWA:") == 0) {
 		//3-way call notification event bringing participator's number
 		HfpSm::PutEvent_CallWaiting(sinfo+7);
-	} 
+	}
+	else if (str->IndexOf("+CLIP:") == 0) {
+		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_CallingLineId, sinfo+7);
+	}
 	else if (str->IndexOf("+CLCC:") == 0) {
 		HfpSm::PutEvent_AtResponse (SMEV_AtResponse_ListCurrentCalls, sinfo+7);
 	}
@@ -433,9 +436,9 @@ int InHandMng::BeginHfpConnect ()
 		SendAtCommand("AT+CMER=3,0,0,1");	// Indicators status update: 3,0,0,1 activates "indicator events reporting".
 		SendAtCommand("AT+CMEE=1");			// Enable the use of result code +CME ERROR
 		SendAtCommand("AT+CCWA=1");			// Call Waiting Notification Activation
-		//SendAtCommand("AT+CLIP=1");		// Calling Line Identification notification HF Spec 4.23 (sending incoming call info along with RING)
+		SendAtCommand("AT+CLIP=1");			// Calling Line Identification notification HF Spec 4.23 (sending incoming call info along with RING)
 		SendAtCommand("AT+CIND?");			// Get current indicators
-		return 6; // number of sent AT commands
+		return 7; // number of sent AT commands
 	}
 	catch (IOException ^ex) {
 		ProcessIoException (ex);

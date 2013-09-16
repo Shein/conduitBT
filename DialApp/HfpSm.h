@@ -56,6 +56,18 @@ class HfpSmCb
 };
 
 
+// class-style struct to help setting DialAppParam fields
+struct HfpPublicParam: public DialAppParam
+{
+	void SetAbonentCurrent	(CallInfo<char> * info) { AbonentCurrent = (info) ? info->GetAbonent():0; }
+	void SetAbonentWaiting	(CallInfo<char> * info) { AbonentWaiting = (info) ? info->GetAbonent():0; }
+	void SetAbonentHeld		(CallInfo<char> * info) { AbonentHeld	 = (info) ? info->GetAbonent():0; }
+
+	void ClearAbonentCurrent () { AbonentCurrent = 0; }
+	void ClearAbonentWaiting () { AbonentWaiting = 0; }
+	void ClearAbonentHeld	 () { AbonentHeld	 = 0; }
+};
+
 
 class HfpSm: public SMT<HfpSm>
 {
@@ -87,7 +99,7 @@ class HfpSm: public SMT<HfpSm>
 	void Destruct();
 
   public:
-	DialAppParam	PublicParams;
+	HfpPublicParam	 PublicParams;
 
   public:
 	SmTimer		MyTimer;
