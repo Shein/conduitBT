@@ -75,7 +75,7 @@ public ref class InHandMng
 		6	Enhanced call control
 		7	Codec negotiation
 	*/
-	static UInt16 HandsfreeSupportedFeatures = 102;
+	static UInt16 HandsfreeSupportedFeatures = 116;
 
   protected:
 	static void AddSdp(Guid svc);
