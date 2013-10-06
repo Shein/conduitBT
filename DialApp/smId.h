@@ -21,7 +21,7 @@
    List of all State Machines Events in the system
  */
 #define SMEV_LIST	\
-    ENUM_ENTRY (SMEV, Failure				),	\
+    ENUM_ENTRY (SMEV, Error					),	\
     ENUM_ENTRY (SMEV, Timeout				),	\
     ENUM_ENTRY (SMEV, SelectDevice			),	\
     ENUM_ENTRY (SMEV, ForgetDevice			),	\

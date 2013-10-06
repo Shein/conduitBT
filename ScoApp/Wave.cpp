@@ -103,51 +103,59 @@ void Wave::Run()
 {
 	LogMsg("Task started...");
 
-	State = STATE_IDLE;
-	RunInit();	// WaveIn or WaveOut Init running 
-	State = STATE_READY;
+	try {
+		State = STATE_IDLE;
+		RunInit();	// WaveIn or WaveOut Init running 
+		State = STATE_READY;
+		HfpSm::PutEvent_Ok ();	// Inform HFP SM that WaveIn/WaveOut object completed its init phase
 
-	while (State != STATE_DESTROYING)
-	{
-		EventStart.Wait();
-		// EventStart may be signaled by Play() or Destruct()
-		// They set STATE_PLAYING or STATE_DESTROYING correspondingly.
-		LogMsg("Task running...");
-
-		if (State == STATE_DESTROYING)
-			break;
-
-		RunMutex.Lock();
-
-		RunStart();	// WaveIn or WaveOut Start running 
-		while (State == STATE_PLAYING)
+		while (State != STATE_DESTROYING)
 		{
-			WAVEBLOCK * wblock = DataBlocks.FetchNext ();
-			LogMsg ("WAVEBLOCK Fetched:  %X", wblock);
-			if (!wblock) {
-				LogMsg("ERROR: No free buffers for %s", this->Name);
-				ReportVoiceStreamFailure (DialAppError_WaveBuffersError);
-				break; // ErrorRaised
-			}
+			EventStart.Wait();
+			// EventStart may be signaled by Play() or Destruct()
+			// They set STATE_PLAYING or STATE_DESTROYING correspondingly.
+			LogMsg("Task running...");
 
-			RunBody(wblock);	// WaveIn or WaveOut running part
-
-			if (ErrorRaised) {
-				// Stop this playing, waiting close...
-				// The State is still STATE_PLAYING!
+			if (State == STATE_DESTROYING)
 				break;
+
+			RunMutex.Lock();
+
+			RunStart();	// WaveIn or WaveOut Start running 
+			while (State == STATE_PLAYING)
+			{
+				WAVEBLOCK * wblock = DataBlocks.FetchNext ();
+				LogMsg ("WAVEBLOCK Fetched:  %X", wblock);
+				if (!wblock) {
+					LogMsg("ERROR: No free buffers for %s", this->Name);
+					ReportVoiceStreamFailure (DialAppError_WaveBuffersError);
+					break; // ErrorRaised
+				}
+
+				RunBody(wblock);	// WaveIn or WaveOut running part
+
+				if (ErrorRaised) {
+					// Stop this playing, waiting close...
+					// The State is still STATE_PLAYING!
+					break;
+				}
 			}
+
+			// We are stopping: complete possible currently paying buffers 
+			LogMsg("Wave::Run: State(%d)!=STATE_PLAYING, going to sleep...", State);
+
+			RunStop();	// WaveIn or WaveOut Stop running 
+
+			RunMutex.Unlock();
 		}
 
-		// We are stopping: complete possible currently paying buffers 
-		LogMsg("Wave::Run: State(%d)!=STATE_PLAYING, going to sleep...", State);
-
-		RunStop();	// WaveIn or WaveOut Stop running 
-
-		RunMutex.Unlock();
+		RunEnd();	// WaveIn or WaveOut End running
 	}
-
-	RunEnd();	// WaveIn or WaveOut End running
+	catch (int err)
+	{
+		LogMsg("EXCEPTION %d", err);
+		HfpSm::PutEvent_Failure(err);	// if we have an error when starting voice, we should to notice
+	}
 }
 
 

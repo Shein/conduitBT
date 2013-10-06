@@ -43,6 +43,7 @@ typedef struct
 	UINT64		DestAddr;				// Destination Bluetooth device
 	UINT64		EvHandleScoConnect;		// User-mode Event handle for SCO Connect
 	UINT64		EvHandleScoDisconnect;	// User-mode Event handle for SCO Disconnect
+	UINT64		EvHandleScoCritError;	// User-mode Event handle for SCO Critical error
 	BOOLEAN		ConnectReadiness;		// HFPDEVICE_CONTEXT::ConnectReadiness init value
 } HFP_REG_SERVER;
 

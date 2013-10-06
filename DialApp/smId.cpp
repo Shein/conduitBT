@@ -20,11 +20,11 @@ cchar* smidFormatEventName (SMEVENT *pEv)
 {
 	switch (pEv->Ev)
 	{
-		case SMEV_Failure:
+		case SMEV_Error:
 			{
 				// Detail the failure event (it's common for all SMs)
 				STRB str (strallocGet());
-				str.Sprintf ("%s (Error #%d)", enumTable_SMEV[pEv->Ev], pEv->Param.ReportError);
+				str.Sprintf ("%s (#%d)", enumTable_SMEV[pEv->Ev], pEv->Param.ReportError);
 				return (char*) str;
 			}
 

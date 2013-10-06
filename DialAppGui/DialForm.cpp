@@ -52,6 +52,7 @@ cchar* DialAppErrorString[] =
 // State names (should be identical to enum DialAppState)
 cchar* DialAppStateString[] = 
 {
+	"Init",
 	"IdleNoDevice",
 	"DisconnectedDevicePresent",
 	"Connecting",
@@ -75,9 +76,6 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 				sparam = (param->PcSound) ? " (PC Sound On)":" (PC Sound Off)";
 			DialForm::This->SetStateName (%System::String(DialAppStateString[state]), sparam);
 		}
-		else {
-			DialForm::This->SetError (%System::String(DialAppStateString[state]), %System::String(DialAppErrorString[status]));
-		}
 	}
 	else {
 		if (flags & DIALAPP_FLAG_PCSOUND) {
@@ -85,6 +83,10 @@ void DialAppCbFunc (DialAppState state, DialAppError status, uint32 flags, DialA
 			DialForm::This->AddInfoMessage ("(Current call PC Sound " + (param->PcSound ? "On)":"Off)"));
 		}
 	}
+
+	// Show Errors
+	if (status != DialAppError_Ok)
+		DialForm::This->SetError (%System::String(DialAppStateString[state]), %System::String(DialAppErrorString[status]));
 
 	// Show Parameters
 	if (flags & DIALAPP_FLAG_PCSOUND_PREFERENCE) {

@@ -346,7 +346,7 @@ namespace DialAppGui {
 			this->labelState->Name = L"labelState";
 			this->labelState->Size = System::Drawing::Size(219, 26);
 			this->labelState->TabIndex = 16;
-			this->labelState->Text = L"IdleNoDevice";
+			this->labelState->Text = L"Init";
 			// 
 			// tboxLog
 			// 

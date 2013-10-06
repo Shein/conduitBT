@@ -7,6 +7,7 @@
 #define _HFPSM_H_
 
 #include "DialAppType.h"
+#include "mutex.h"
 #include "smBase.h"
 #include "smTimer.h"
 #include "InHand.h"
@@ -15,6 +16,7 @@
 
 
 #define STATE_LIST_HFPSM	\
+    STATE (Init				),		\
     STATE (Idle				),		\
     STATE (Disconnected		),		\
     STATE (Connecting		),		\
@@ -69,8 +71,19 @@ struct HfpPublicParam: public DialAppParam
 };
 
 
+// Object passed to HfpSm::Init to receive result asynchronously
+struct HfpSmInitReturn
+{
+	Event	SignalEvent;
+	int		RetCode;
+};
+
+
+// Main HFP State Machine
 class HfpSm: public SMT<HfpSm>
 {
+	friend class HfpSmCb;
+
     DECL_STATES (STATE_LIST_HFPSM)
 
   public:
@@ -83,14 +96,15 @@ class HfpSm: public SMT<HfpSm>
 	};
 
   public:
-	static void Init(DialAppCb cb);
+	static void Init(DialAppCb cb, HfpSmInitReturn* initevent);
 	static void End();
 
   protected:
-	static HfpSmCb   UserCallback;
+	static HfpSmCb				UserCallback;
+	static HfpSmInitReturn *	InitEvent;
 
   public:
-	HfpSm(): SMT<HfpSm>("HfpSm  "), MyTimer(SM_HFP, SMEV_Timeout), ScoAppObj(0), CallInfoCurrent(0), CallInfoHeld(0), CallInfoWaiting(0)
+	HfpSm(): SMT<HfpSm>("HfpSm  "), MyTimer(SM_HFP, SMEV_Timeout), ScoAppObj(0), CallInfoCurrent(0), CallInfoHeld(0), CallInfoWaiting(0), InitEventsCnt(0)
 	{
 		memset (&PublicParams, 0, sizeof(DialAppParam));
 	}
@@ -106,16 +120,24 @@ class HfpSm: public SMT<HfpSm>
 	ScoApp*		ScoAppObj;
 	int			HfpIndicatorsState;			// its type is STATE or -1 meaning HfpConnected state is not achieved 
 	unsigned    IncallStartTime;
+	unsigned    InitEventsCnt;
 
 	CallInfo<char>   *CallInfoCurrent;		// Set in InCall state after the abonent information is present
 	CallInfo<char>   *CallInfoHeld;			// Set in InCall state when the Current call is turned to Held, it is indication about Held call presence
 	CallInfo<char>   *CallInfoWaiting;		// Set in InCall state after incoming waiting call received, it is indication about Waiting call presence
 
   public:
-	static void PutEvent_Failure (int error = 0)
+	static void PutEvent_Ok ()
+	{
+		SMEVENT Event = {SM_HFP, SMEV_Error};
+		Event.Param.ReportError = 0;
+		SmBase::PutEvent (&Event, SMQ_HIGH);
+	}
+
+	static void PutEvent_Failure (int error)
 	{
 		::LogMsg ("Putting Failure Event #%d", error);
-		SMEVENT Event = {SM_HFP, SMEV_Failure};
+		SMEVENT Event = {SM_HFP, SMEV_Error};
 		Event.Param.ReportError = error;
 		SmBase::PutEvent (&Event, SMQ_HIGH);
 	}
@@ -267,6 +289,7 @@ class HfpSm: public SMT<HfpSm>
   private:
 	static void ScoConnectCallback ();
 	static void ScoDisconnectCallback ();
+	static void ScoCritErrorCallback ();
 
   // Help functions
   private:
@@ -323,6 +346,7 @@ class HfpSm: public SMT<HfpSm>
 	int  ChoiceFromRinging	 (SMEVENT* ev);
 	int  ChoiceIncomingVoice (SMEVENT* ev);
 	int  IsHfpConnectLastCmd (SMEVENT* ev);
+	int  ChoiceProcessInit	 (SMEVENT* ev);
 };
 
 
@@ -331,9 +355,8 @@ extern HfpSm HfpSmObj;
 
 inline void HfpSmCb::InitialCallback ()
 {
-	CbFunc (DialAppState_IdleNoDevice, DialAppError_Ok, DIALAPP_FLAG_INITSTATE|DIALAPP_FLAG_CURDEV, &HfpSmObj.PublicParams);
+	CbFunc (DialAppState_IdleNoDevice, DialAppError_Ok, DIALAPP_FLAG_INITSTATE | DIALAPP_FLAG_NEWSTATE | DIALAPP_FLAG_CURDEV, &HfpSmObj.PublicParams);
 }
-
 
 inline void HfpSmCb::DevicePresent (uint32 addflag)
 {

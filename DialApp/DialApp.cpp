@@ -26,13 +26,15 @@
 										Static functions
 \***********************************************************************************************/
 
-static uint64 dialappCurStroredAddr;
+static uint64			 dialappCurStroredAddr;
+static HfpSmInitReturn*  dialappInitEvent;
+
 
 static uint64 dialappRestoreDevAddr()
 {
 	uint64 val;
 	DWORD  size = sizeof(val);
-	int ret = RegGetValue(HKEY_LOCAL_MACHINE, DIALAPP_REGPATH, DIALAPP_REGKEY_BTHDEV, RRF_RT_ANY, 0, (void*)&val, &size);
+	int ret = RegGetValue(HKEY_CURRENT_USER, DIALAPP_REGPATH, DIALAPP_REGKEY_BTHDEV, RRF_RT_ANY, 0, (void*)&val, &size);
 	if (ret != ERROR_SUCCESS)
 		return 0;
 	return (dialappCurStroredAddr = val);
@@ -45,7 +47,7 @@ static bool dialappStoreDevAddr (uint64 val)
 		return true;
 
 	HKEY hkey;
-	int ret = RegCreateKey(HKEY_LOCAL_MACHINE, DIALAPP_REGPATH, &hkey);
+	int ret = RegCreateKey(HKEY_CURRENT_USER, DIALAPP_REGPATH, &hkey);
 	if (ret == ERROR_SUCCESS) {
 		ret = RegSetValueEx(hkey, DIALAPP_REGKEY_BTHDEV, 0, RRF_RT_REG_QWORD, (BYTE*)&val, sizeof(val));
 		RegCloseKey(hkey);
@@ -121,14 +123,27 @@ static void dialappCb (DialAppState state, DialAppError status, uint32 flags, Di
 
 void dialappInit (DialAppCb cb, bool pcsound)
 {
+	DebLog::Init("DialApp");
+
+	LogMsg ("dialappInit: starting DialApp");
 	dialappUserCb = cb;
 
-	DebLog::Init("DialApp");
 	Timer::Init();
 	InHand::Init();
 	SmBase::Init();
 	ScoApp::Init();
-	HfpSm::Init(dialappCb);
+
+	// Because of some errors from HFP SM may be thrown in separate threads during init, 
+	// we need to implement here the mechanism to catch such asynchronous errors.
+	dialappInitEvent = new HfpSmInitReturn();
+	HfpSm::Init(dialappCb, dialappInitEvent);
+	dialappInitEvent->SignalEvent.Wait();
+	int err = dialappInitEvent->RetCode;
+	delete dialappInitEvent;
+	dialappInitEvent = 0;
+
+	if (err)
+		throw err;	// if the error exists it was already printed to the debug console
 
 	// At init phase we can directly access SM's parameters
 	HfpSmObj.PublicParams.PcSoundPref = pcsound;
@@ -141,6 +156,7 @@ void dialappInit (DialAppCb cb, bool pcsound)
 
 void dialappEnd ()
 {
+	LogMsg ("dialappEnd: stopping DialApp");
 	// TODO gracefully finalize the SM
 	// HfpSm::PutEvent_Disconnect();
 	HfpSm::End();

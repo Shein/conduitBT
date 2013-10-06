@@ -1,13 +1,13 @@
 /*++
 
 Module Name:
-    Server.c
+	Server.c
 
 Abstract:
-    Contains Bluetooth server functionality.
-    
+	Contains Bluetooth server functionality.
+	
 Environment:
-    Kernel mode only
+	Kernel mode only
 --*/
 
 
@@ -28,145 +28,145 @@ Environment:
 _IRQL_requires_max_(PASSIVE_LEVEL)
 NTSTATUS HfpSrvPublishSdpRecord (_In_ WDFDEVICE Device)
 {
-    NTSTATUS status, statusReuse;
-    WDF_MEMORY_DESCRIPTOR inMemDesc;
-    WDF_MEMORY_DESCRIPTOR outMemDesc;
-    WDF_REQUEST_REUSE_PARAMS ReuseParams;
-    HANDLE_SDP sdpRecordHandle;
-    HFPDEVICE_CONTEXT* devCtx = GetClientDeviceContext(Device);
+	NTSTATUS status, statusReuse;
+	WDF_MEMORY_DESCRIPTOR inMemDesc;
+	WDF_MEMORY_DESCRIPTOR outMemDesc;
+	WDF_REQUEST_REUSE_PARAMS ReuseParams;
+	HANDLE_SDP sdpRecordHandle;
+	HFPDEVICE_CONTEXT* devCtx = GetClientDeviceContext(Device);
 
 	// -----------------------------------------------------------------------------------------------
 	// Preparing sdpRecordStream, sdpRecordLength 
 
-    BTHDDI_SDP_NODE_INTERFACE  sdpNodeInterface;
-    BTHDDI_SDP_PARSE_INTERFACE sdpParseInterface;
-    UCHAR* sdpRecordStream = NULL;	// SDP record to publish
-    ULONG  sdpRecordLength = 0;		// SDP record length
+	BTHDDI_SDP_NODE_INTERFACE  sdpNodeInterface;
+	BTHDDI_SDP_PARSE_INTERFACE sdpParseInterface;
+	UCHAR* sdpRecordStream = NULL;	// SDP record to publish
+	ULONG  sdpRecordLength = 0;		// SDP record length
 
-    status = WdfFdoQueryForInterface(
-        Device,
-        &GUID_BTHDDI_SDP_PARSE_INTERFACE, 
-        (PINTERFACE) (&sdpParseInterface),
-        sizeof(sdpParseInterface), 
-        BTHDDI_SDP_PARSE_INTERFACE_VERSION_FOR_QI, 
-        NULL
-        );
-                
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "QueryInterface failed for Interface SDP parse, Status %X", status);
-        goto exit;
-    }
+	status = WdfFdoQueryForInterface(
+		Device,
+		&GUID_BTHDDI_SDP_PARSE_INTERFACE, 
+		(PINTERFACE) (&sdpParseInterface),
+		sizeof(sdpParseInterface), 
+		BTHDDI_SDP_PARSE_INTERFACE_VERSION_FOR_QI, 
+		NULL
+		);
+				
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "QueryInterface failed for Interface SDP parse, Status %X", status);
+		goto exit;
+	}
 
-    status = WdfFdoQueryForInterface(
-        Device,
-        &GUID_BTHDDI_SDP_NODE_INTERFACE, 
-        (PINTERFACE) (&sdpNodeInterface),
-        sizeof(sdpNodeInterface), 
-        BTHDDI_SDP_NODE_INTERFACE_VERSION_FOR_QI, 
-        NULL
-        );
-                
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "QueryInterface failed for Interface SDP node, Status %X", status);
-        goto exit;
-    }
+	status = WdfFdoQueryForInterface(
+		Device,
+		&GUID_BTHDDI_SDP_NODE_INTERFACE, 
+		(PINTERFACE) (&sdpNodeInterface),
+		sizeof(sdpNodeInterface), 
+		BTHDDI_SDP_NODE_INTERFACE_VERSION_FOR_QI, 
+		NULL
+		);
+				
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "QueryInterface failed for Interface SDP node, Status %X", status);
+		goto exit;
+	}
 
-    status = CreateSdpRecord(
-        &sdpNodeInterface,
-        &sdpParseInterface,
-        HFP_CLASS_ID,
-        BthHfpDriverName,
-        &sdpRecordStream,
-        &sdpRecordLength
-        );
+	status = CreateSdpRecord(
+		&sdpNodeInterface,
+		&sdpParseInterface,
+		HFP_CLASS_ID,
+		BthHfpDriverName,
+		&sdpRecordStream,
+		&sdpRecordLength
+		);
 
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "CreateSdpRecord failed, Status %X", status);
-        goto exit;
-    }
-    
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "CreateSdpRecord failed, Status %X", status);
+		goto exit;
+	}
+	
 	// -----------------------------------------------------------------------------------------------
 	// -----------------------------------------------------------------------------------------------
 
-    PAGED_CODE();
+	PAGED_CODE();
 
-    WDF_REQUEST_REUSE_PARAMS_INIT(&ReuseParams, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_NOT_SUPPORTED);
-    statusReuse = WdfRequestReuse(devCtx->Request, &ReuseParams);    
-    NT_ASSERT(NT_SUCCESS(statusReuse));
-    UNREFERENCED_PARAMETER(statusReuse);
+	WDF_REQUEST_REUSE_PARAMS_INIT(&ReuseParams, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_NOT_SUPPORTED);
+	statusReuse = WdfRequestReuse(devCtx->Request, &ReuseParams);    
+	NT_ASSERT(NT_SUCCESS(statusReuse));
+	UNREFERENCED_PARAMETER(statusReuse);
 
-    WDF_MEMORY_DESCRIPTOR_INIT_BUFFER (&inMemDesc, sdpRecordStream, sdpRecordLength);
-    RtlZeroMemory( &sdpRecordHandle, sizeof(HANDLE_SDP) );
-    
-    WDF_MEMORY_DESCRIPTOR_INIT_BUFFER (&outMemDesc, &sdpRecordHandle, sizeof(HANDLE_SDP));
+	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER (&inMemDesc, sdpRecordStream, sdpRecordLength);
+	RtlZeroMemory( &sdpRecordHandle, sizeof(HANDLE_SDP) );
+	
+	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER (&outMemDesc, &sdpRecordHandle, sizeof(HANDLE_SDP));
 
-    status = WdfIoTargetSendIoctlSynchronously(
-        devCtx->IoTarget,
-        devCtx->Request,
-        IOCTL_BTH_SDP_SUBMIT_RECORD,
-        &inMemDesc,
-        &outMemDesc,
-        NULL,   //sendOptions
-        NULL    //bytesReturned
-        );
+	status = WdfIoTargetSendIoctlSynchronously(
+		devCtx->IoTarget,
+		devCtx->Request,
+		IOCTL_BTH_SDP_SUBMIT_RECORD,
+		&inMemDesc,
+		&outMemDesc,
+		NULL,   //sendOptions
+		NULL    //bytesReturned
+		);
 
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP,  "IOCTL_BTH_SDP_SUBMIT_RECORD failed, Status=%X", status);
-        goto exit;
-    }
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP,  "IOCTL_BTH_SDP_SUBMIT_RECORD failed, Status=%X", status);
+		goto exit;
+	}
 
-    devCtx->SdpRecordHandle = sdpRecordHandle;
-    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "IOCTL_BTH_SDP_SUBMIT_RECORD completed, handle = %X", sdpRecordHandle);
+	devCtx->SdpRecordHandle = sdpRecordHandle;
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "IOCTL_BTH_SDP_SUBMIT_RECORD completed, handle = %X", sdpRecordHandle);
 
 	exit:
-    if (sdpRecordStream)
-        FreeSdpRecord(sdpRecordStream);
-    
-    return status;
+	if (sdpRecordStream)
+		FreeSdpRecord(sdpRecordStream);
+	
+	return status;
 }
 
 
 _IRQL_requires_max_(PASSIVE_LEVEL)
 void HfpSrvRemoveSdpRecord (_In_ HFPDEVICE_CONTEXT* devCtx)
 {
-    NTSTATUS status, statusReuse;
-    WDF_MEMORY_DESCRIPTOR inMemDesc;
-    WDF_REQUEST_REUSE_PARAMS ReuseParams;
-    HANDLE_SDP sdpRecordHandle;
+	NTSTATUS status, statusReuse;
+	WDF_MEMORY_DESCRIPTOR inMemDesc;
+	WDF_REQUEST_REUSE_PARAMS ReuseParams;
+	HANDLE_SDP sdpRecordHandle;
 
-    PAGED_CODE();
-    
-    WDF_REQUEST_REUSE_PARAMS_INIT(&ReuseParams, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_NOT_SUPPORTED);
-    statusReuse =  WdfRequestReuse(devCtx->Request, &ReuseParams);    
-    NT_ASSERT(NT_SUCCESS(statusReuse));
-    UNREFERENCED_PARAMETER(statusReuse);
+	PAGED_CODE();
+	
+	WDF_REQUEST_REUSE_PARAMS_INIT(&ReuseParams, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_NOT_SUPPORTED);
+	statusReuse =  WdfRequestReuse(devCtx->Request, &ReuseParams);    
+	NT_ASSERT(NT_SUCCESS(statusReuse));
+	UNREFERENCED_PARAMETER(statusReuse);
 
-    sdpRecordHandle = devCtx->SdpRecordHandle;
+	sdpRecordHandle = devCtx->SdpRecordHandle;
 
-    WDF_MEMORY_DESCRIPTOR_INIT_BUFFER (&inMemDesc, &sdpRecordHandle, sizeof(HANDLE_SDP));
-    
-    status = WdfIoTargetSendIoctlSynchronously(
-        devCtx->IoTarget,
-        devCtx->Request,
-        IOCTL_BTH_SDP_REMOVE_RECORD,
-        &inMemDesc,
-        0,		//outMemDesc
-        0,		//sendOptions
-        0		//bytesReturned
-        );
+	WDF_MEMORY_DESCRIPTOR_INIT_BUFFER (&inMemDesc, &sdpRecordHandle, sizeof(HANDLE_SDP));
+	
+	status = WdfIoTargetSendIoctlSynchronously(
+		devCtx->IoTarget,
+		devCtx->Request,
+		IOCTL_BTH_SDP_REMOVE_RECORD,
+		&inMemDesc,
+		0,		//outMemDesc
+		0,		//sendOptions
+		0		//bytesReturned
+		);
 
-    if (!NT_SUCCESS(status)) {
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "IOCTL_BTH_SDP_REMOVE_RECORD failed, Status=%X", status);
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "IOCTL_BTH_SDP_REMOVE_RECORD failed, Status=%X", status);
 
-        // Send does not fail for resource reasons
-        NT_ASSERT(FALSE);
-        goto exit;
-    }
+		// Send does not fail for resource reasons
+		NT_ASSERT(FALSE);
+		goto exit;
+	}
 
-    devCtx->SdpRecordHandle = HANDLE_SDP_NULL;
+	devCtx->SdpRecordHandle = HANDLE_SDP_NULL;
 
 	exit:
-    return;
+	return;
 }
 
 
@@ -174,7 +174,6 @@ NTSTATUS HfpSrvRegisterScoServer (_In_ HFPDEVICE_CONTEXT* devCtx, _In_ HFP_REG_S
 {
 	NTSTATUS status = STATUS_SUCCESS;
 	struct _BRB_SCO_REGISTER_SERVER* brb;
-	PKEVENT  kev1, kev2;
 
 
 	// First to create Events and only then to register Server
@@ -184,21 +183,26 @@ NTSTATUS HfpSrvRegisterScoServer (_In_ HFPDEVICE_CONTEXT* devCtx, _In_ HFP_REG_S
 
 	// disable warning C4305: 'type cast' : truncation from 'UINT64' to 'HANDLE'
 	#pragma warning (disable:4305)
-	status = ObReferenceObjectByHandle((HANDLE)regparams->EvHandleScoConnect, EVENT_MODIFY_STATE, *ExEventObjectType, UserMode, (PVOID*)&kev1, 0);
+	status = ObReferenceObjectByHandle((HANDLE)regparams->EvHandleScoConnect, EVENT_MODIFY_STATE, *ExEventObjectType, UserMode, (PVOID*)&devCtx->KevScoConnect, 0);
 	if (!NT_SUCCESS(status)) {
 		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "ObReferenceObjectByHandle failed, Status %X", status);
 		goto exit;
 	}
 
-	status = ObReferenceObjectByHandle((HANDLE)regparams->EvHandleScoDisconnect, EVENT_MODIFY_STATE, *ExEventObjectType, UserMode, (PVOID*)&kev2, 0);
+	status = ObReferenceObjectByHandle((HANDLE)regparams->EvHandleScoDisconnect, EVENT_MODIFY_STATE, *ExEventObjectType, UserMode, (PVOID*)&devCtx->KevScoDisconnect, 0);
 	if (!NT_SUCCESS(status)) {
 		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "ObReferenceObjectByHandle failed, Status %X", status);
 		goto exit;
 	}
+
+	status = ObReferenceObjectByHandle((HANDLE)regparams->EvHandleScoCritError, EVENT_MODIFY_STATE, *ExEventObjectType, UserMode, (PVOID*)&devCtx->KevScoCritError, 0);
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_PNP, "ObReferenceObjectByHandle failed, Status %X", status);
+		goto exit;
+	}
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "ObReferenceObjectByHandle returned KevScoCritError = %X", devCtx->KevScoCritError);
 	#pragma warning (default:4305)
 
-	devCtx->KevScoConnect	 = kev1;
-	devCtx->KevScoDisconnect = kev2;
 	devCtx->ConnectReadiness = regparams->ConnectReadiness;
 
 	if (devCtx->ScoServerHandle) {
@@ -273,9 +277,11 @@ NTSTATUS HfpSrvUnregisterScoServer (_In_ HFPDEVICE_CONTEXT* devCtx, _Inout_ UINT
 	skip_unregistration:
 	ObDereferenceObject (devCtx->KevScoConnect);
 	ObDereferenceObject (devCtx->KevScoDisconnect);
+	ObDereferenceObject (devCtx->KevScoCritError);
 
 	devCtx->KevScoConnect    = 0;
 	devCtx->KevScoDisconnect = 0;
+	devCtx->KevScoCritError  = 0;
 
 	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_PNP, "BRB_SCO_UNREGISTER_SERVER completed");
 	exit:
@@ -286,37 +292,37 @@ NTSTATUS HfpSrvUnregisterScoServer (_In_ HFPDEVICE_CONTEXT* devCtx, _Inout_ UINT
 
 void HfpSrvRemoteConnectCompletion (_In_ WDFREQUEST Request, _In_ WDFIOTARGET Target, _In_ PWDF_REQUEST_COMPLETION_PARAMS Params, _In_ WDFCONTEXT Context)
 {
-    NTSTATUS					  status		   = Params->IoStatus.Status;
-    struct _BRB_SCO_OPEN_CHANNEL* brb			   = (struct _BRB_SCO_OPEN_CHANNEL*) Context;
-    WDFOBJECT					  connectionObject = (WDFOBJECT) brb->Hdr.ClientContext[0];	// We receive connection object as the context in the BRB
-    HFP_CONNECTION*				  connection	   = GetConnectionObjectContext(connectionObject);
+	NTSTATUS					  status		   = Params->IoStatus.Status;
+	struct _BRB_SCO_OPEN_CHANNEL* brb			   = (struct _BRB_SCO_OPEN_CHANNEL*) Context;
+	WDFOBJECT					  connectionObject = (WDFOBJECT) brb->Hdr.ClientContext[0];	// We receive connection object as the context in the BRB
+	HFP_CONNECTION*				  connection	   = GetConnectionObjectContext(connectionObject);
 
-    UNREFERENCED_PARAMETER(Target);
-    UNREFERENCED_PARAMETER(Request); //we reuse the request, hence it is not needed here
+	UNREFERENCED_PARAMETER(Target);
+	UNREFERENCED_PARAMETER(Request); //we reuse the request, hence it is not needed here
    
-    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Incoming Connection completion, Status %X", status);
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Incoming Connection completion, Status %X", status);
 
-    if (NT_SUCCESS(status))
-    {
-        connection->ChannelHandle = brb->ChannelHandle;
-        connection->RemoteAddress = brb->BtAddress;
+	if (NT_SUCCESS(status))
+	{
+		connection->ChannelHandle = brb->ChannelHandle;
+		connection->RemoteAddress = brb->BtAddress;
 
-        // Check if we already received a disconnect request and if so disconnect
-        WdfSpinLockAcquire(connection->ConnectionLock);
+		// Check if we already received a disconnect request and if so disconnect
+		WdfSpinLockAcquire(connection->ConnectionLock);
 
-        if (connection->ConnectionState == ConnectionStateDisconnecting) 
-        {
-            TraceEvents(TRACE_LEVEL_WARNING, DBG_CONNECT, "HfpSrvRemoteConnectCompletion: disconnect while connecting");
-            // We allow transition to disconnected state only from connected state. If we are in disconnection state 
+		if (connection->ConnectionState == ConnectionStateDisconnecting) 
+		{
+			TraceEvents(TRACE_LEVEL_WARNING, DBG_CONNECT, "HfpSrvRemoteConnectCompletion: disconnect while connecting");
+			// We allow transition to disconnected state only from connected state. If we are in disconnection state 
 			// this means that we were waiting for connect to complete before we can send disconnect down.
-            // Set the state to Connected and call HfpConnectionObjectRemoteDisconnect
-            connection->ConnectionState = ConnectionStateConnected;
-            WdfSpinLockRelease(connection->ConnectionLock);
-            HfpConnectionObjectRemoteDisconnect(connection->DevCtx, connection);
-        }
-        else {
-            connection->ConnectionState = ConnectionStateConnected;
-            WdfSpinLockRelease(connection->ConnectionLock);
+			// Set the state to Connected and call HfpConnectionObjectRemoteDisconnect
+			connection->ConnectionState = ConnectionStateConnected;
+			WdfSpinLockRelease(connection->ConnectionLock);
+			HfpConnectionObjectRemoteDisconnect(connection->DevCtx, connection);
+		}
+		else {
+			connection->ConnectionState = ConnectionStateConnected;
+			WdfSpinLockRelease(connection->ConnectionLock);
 
 			// Set the file context to the connection passed in
 			// KS: Because of we are opening incoming connection, we do not have the associated File object set 
@@ -338,30 +344,33 @@ void HfpSrvRemoteConnectCompletion (_In_ WDFREQUEST Request, _In_ WDFIOTARGET Ta
 				TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Not ready, rejecting SCO");
 				HfpConnectionObjectRemoteDisconnect(connection->DevCtx, connection);
 			}
-        }
-    }
-    else
-    {
-        BOOLEAN discon = FALSE;
+		}
+	}
+	else
+	{
+		BOOLEAN discon = FALSE;
 
-        WdfSpinLockAcquire(connection->ConnectionLock);
-        if (connection->ConnectionState == ConnectionStateDisconnecting) 
-            discon = TRUE;
+		WdfSpinLockAcquire(connection->ConnectionLock);
+		if (connection->ConnectionState == ConnectionStateDisconnecting)
+			discon = TRUE;
 
-        connection->ConnectionState = ConnectionStateConnectFailed;
-        WdfSpinLockRelease(connection->ConnectionLock);
+		if (connection->DevCtx->KevScoCritError)
+			KeSetEvent(connection->DevCtx->KevScoCritError,0,FALSE);
 
-        if (discon)
-            KeSetEvent (&connection->DisconnectEvent,0,FALSE);
+		connection->ConnectionState = ConnectionStateConnectFailed;
+		WdfSpinLockRelease(connection->ConnectionLock);
+
+		if (discon)
+			KeSetEvent (&connection->DisconnectEvent,0,FALSE);
 
 		NT_ASSERT (connection->FileObject);
 		GetFileContext(connection->FileObject)->Connection = 0;
 
-        WdfObjectDelete(connectionObject);        
-    }
+		WdfObjectDelete(connectionObject);
+	}
 
 
-    return;
+	return;
 }
 
 
@@ -369,15 +378,15 @@ void HfpSrvRemoteConnectCompletion (_In_ WDFREQUEST Request, _In_ WDFIOTARGET Ta
 _IRQL_requires_max_(DISPATCH_LEVEL)
 NTSTATUS HfpSrvSendConnectResponse(_In_ HFPDEVICE_CONTEXT* devCtx, _In_ SCO_INDICATION_PARAMETERS* ConnectParams)
 {
-    NTSTATUS						status, statusReuse;
-    WDF_REQUEST_REUSE_PARAMS		reuseParams;
-    WDFOBJECT						connectionObject = 0;
+	NTSTATUS						status, statusReuse;
+	WDF_REQUEST_REUSE_PARAMS		reuseParams;
+	WDFOBJECT						connectionObject = 0;
 	HFP_CONNECTION*					connection = 0;
 	HFP_FILE_CONTEXT*				fileCtx;
 	struct _BRB_SCO_OPEN_CHANNEL*	brb;
 
 
-    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Incoming SCO connect request, LinkType = %X", ConnectParams->Parameters.Connect.Request.LinkType);
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "Incoming SCO connect request, LinkType = %X", ConnectParams->Parameters.Connect.Request.LinkType);
 	if (!devCtx->FileObject)	{
 		TraceEvents(TRACE_LEVEL_WARNING, DBG_CONNECT, "Application not ready");
 		status = STATUS_SUCCESS;
@@ -391,63 +400,66 @@ NTSTATUS HfpSrvSendConnectResponse(_In_ HFPDEVICE_CONTEXT* devCtx, _In_ SCO_INDI
 		goto exit_ret;
 	}
 
-    // We create the connection object as the first step so that if we receive 
-    // remove before connect response is completed we can wait for connection and disconnect.
-    status = HfpConnectionObjectCreate(devCtx, devCtx->FileObject, &connectionObject);
-    if (!NT_SUCCESS(status))
-        goto exit;
+	// We create the connection object as the first step so that if we receive 
+	// remove before connect response is completed we can wait for connection and disconnect.
+	status = HfpConnectionObjectCreate(devCtx, devCtx->FileObject, &connectionObject);
+	if (!NT_SUCCESS(status))
+		goto exit;
 
-    connection = GetConnectionObjectContext(connectionObject);
-    connection->ConnectionState = ConnectionStateConnecting;
+	connection = GetConnectionObjectContext(connectionObject);
+	connection->ConnectionState = ConnectionStateConnecting;
 	fileCtx->Connection = connection;
 
-    WDF_REQUEST_REUSE_PARAMS_INIT(&reuseParams, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_NOT_SUPPORTED);
-    statusReuse = WdfRequestReuse(connection->ConnectDisconnectRequest, &reuseParams);
-    NT_ASSERT(NT_SUCCESS(statusReuse));
-    UNREFERENCED_PARAMETER(statusReuse);
-    
-    brb = (struct _BRB_SCO_OPEN_CHANNEL*) &(connection->ConnectDisconnectBrb);
-    TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "&HFP_CONNECTION = %X, &BRB_SCO_OPEN_CHANNEL = %X", connection, brb);
-    devCtx->ProfileDrvInterface.BthReuseBrb((PBRB)brb, BRB_SCO_OPEN_CHANNEL_RESPONSE);
+	WDF_REQUEST_REUSE_PARAMS_INIT(&reuseParams, WDF_REQUEST_REUSE_NO_FLAGS, STATUS_NOT_SUPPORTED);
+	statusReuse = WdfRequestReuse(connection->ConnectDisconnectRequest, &reuseParams);
+	NT_ASSERT(NT_SUCCESS(statusReuse));
+	UNREFERENCED_PARAMETER(statusReuse);
+	
+	brb = (struct _BRB_SCO_OPEN_CHANNEL*) &(connection->ConnectDisconnectBrb);
+	TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "&HFP_CONNECTION = %X, &BRB_SCO_OPEN_CHANNEL = %X", connection, brb);
+	devCtx->ProfileDrvInterface.BthReuseBrb((PBRB)brb, BRB_SCO_OPEN_CHANNEL_RESPONSE);
 
-    brb->Hdr.ClientContext[0]	= connectionObject;
-    brb->BtAddress				= ConnectParams->BtAddress;
-    brb->ChannelHandle			= ConnectParams->ConnectionHandle;
-    brb->Response				= SCO_CONNECT_RSP_RESPONSE_SUCCESS;
+	brb->Hdr.ClientContext[0]	= connectionObject;
+	brb->BtAddress				= ConnectParams->BtAddress;
+	brb->ChannelHandle			= ConnectParams->ConnectionHandle;
+	brb->Response				= SCO_CONNECT_RSP_RESPONSE_SUCCESS;
 	brb->TransmitBandwidth		= 
 	brb->ReceiveBandwidth		= 8000;  // 64Kb/s
 	brb->MaxLatency				= 50;
 	brb->PacketType				= devCtx->ScoPacketTypes;
 	brb->ContentFormat			= SCO_VS_IN_CODING_LINEAR | SCO_VS_IN_SAMPLE_SIZE_16BIT | SCO_VS_AIR_CODING_FORMAT_CVSD;
 	brb->RetransmissionEffort	= SCO_RETRANSMISSION_NONE;
-    brb->ChannelFlags			= SCO_CF_LINK_SUPPRESS_PIN;
-    brb->CallbackFlags			= CALLBACK_DISCONNECT;
-    brb->Callback				= &HfpSrvIndicationCallback;
-    brb->CallbackContext		= connectionObject;
-    brb->ReferenceObject		= (void*) WdfDeviceWdmGetDeviceObject(devCtx->Device);
+	brb->ChannelFlags			= SCO_CF_LINK_SUPPRESS_PIN;
+	brb->CallbackFlags			= CALLBACK_DISCONNECT;
+	brb->Callback				= &HfpSrvIndicationCallback;
+	brb->CallbackContext		= connectionObject;
+	brb->ReferenceObject		= (void*) WdfDeviceWdmGetDeviceObject(devCtx->Device);
 
-    status = HfpSharedSendBrbAsync(devCtx->IoTarget, connection->ConnectDisconnectRequest, (PBRB)brb, sizeof(*brb), HfpSrvRemoteConnectCompletion, brb);
+	status = HfpSharedSendBrbAsync(devCtx->IoTarget, connection->ConnectDisconnectRequest, (PBRB)brb, sizeof(*brb), HfpSrvRemoteConnectCompletion, brb);
 
-    if (!NT_SUCCESS(status))
-        TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "HfpSharedSendBrbAsync failed, Status = %X", status);
-    
+	if (!NT_SUCCESS(status))
+		TraceEvents(TRACE_LEVEL_ERROR, DBG_CONNECT, "HfpSharedSendBrbAsync failed, Status = %X", status);
+	
 	exit:
-    if (!NT_SUCCESS(status) && connectionObject) {
-        // If we failed to connect remove connection from list and delete the object.
-        // Connection should not be NULL, if connectionObject is not NULL since first thing we do 
+	if (!NT_SUCCESS(status) && connectionObject) {
+		// If we failed to connect remove connection from list and delete the object.
+		// Connection should not be NULL, if connectionObject is not NULL since first thing we do 
 		// after creating connectionObject is to get context which gives us connection
-        NT_ASSERT (connection);
-        
+		NT_ASSERT (connection);
+		
 		//KS: this doesn't have a sense
 		//connection->ConnectionState = ConnectionStateConnectFailed;
 
+		if (connection->DevCtx->KevScoCritError)
+			KeSetEvent(connection->DevCtx->KevScoCritError,0,FALSE);
+
 		fileCtx->Connection = 0;
 
-        WdfObjectDelete(connectionObject);
-    }
+		WdfObjectDelete(connectionObject);
+	}
 
 	exit_ret:
-    return status;
+	return status;
 }
 
 
@@ -455,9 +467,9 @@ NTSTATUS HfpSrvSendConnectResponse(_In_ HFPDEVICE_CONTEXT* devCtx, _In_ SCO_INDI
 _IRQL_requires_max_(DISPATCH_LEVEL)
 void HfpSrvDisconnectConnection (_In_ HFP_CONNECTION * connection)
 {
-    if (HfpConnectionObjectRemoteDisconnect(connection->DevCtx, connection))
-        WdfObjectDelete (WdfObjectContextGetObject(connection));
-    // else connection is already disconnected
+	if (HfpConnectionObjectRemoteDisconnect(connection->DevCtx, connection))
+		WdfObjectDelete (WdfObjectContextGetObject(connection));
+	// else connection is already disconnected
 }
 
 
@@ -467,28 +479,28 @@ void HfpSrvIndicationCallback(_In_ void* Context, _In_ SCO_INDICATION_CODE Indic
 {
 	HFP_CONNECTION * connection;
 
-    switch(Indication)
-    {
-        case ScoIndicationAddReference:
+	switch(Indication)
+	{
+		case ScoIndicationAddReference:
 			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "HfpSrvIndicationCallback - AddReference");
-            break;
+			break;
 
-        case ScoIndicationReleaseReference:
+		case ScoIndicationReleaseReference:
 			TraceEvents (TRACE_LEVEL_INFORMATION, DBG_CONNECT, "HfpSrvIndicationCallback - ReleaseReference");
-            break;
+			break;
 
-        case ScoIndicationRemoteConnect:
+		case ScoIndicationRemoteConnect:
 			TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "HfpSrvIndicationCallback - Connect");
-            HfpSrvSendConnectResponse((HFPDEVICE_CONTEXT*)Context, Parameters);
-            break;
+			HfpSrvSendConnectResponse((HFPDEVICE_CONTEXT*)Context, Parameters);
+			break;
 
-        case ScoIndicationRemoteDisconnect:
+		case ScoIndicationRemoteDisconnect:
 			TraceEvents(TRACE_LEVEL_INFORMATION, DBG_CONNECT, "HfpSrvIndicationCallback - Disconnect");
-            connection = GetConnectionObjectContext((WDFOBJECT)Context /*connectionObject*/);
+			connection = GetConnectionObjectContext((WDFOBJECT)Context /*connectionObject*/);
 			if (connection->DevCtx->KevScoDisconnect)
 				KeSetEvent(connection->DevCtx->KevScoDisconnect,0,FALSE);
-            HfpSrvDisconnectConnection(connection);
-            break;
-    }
+			HfpSrvDisconnectConnection(connection);
+			break;
+	}
 }
 

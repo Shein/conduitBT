@@ -39,9 +39,9 @@ class ScoApp : public DebLog, public Thread
 	static void End  ();
 
   public:
-	ScoApp(ScoAppCb connect_cb, ScoAppCb disconnect_cb) : DebLog("ScoApp "), Thread("ScoApp"), hDevice(0)
+	ScoApp(ScoAppCb connect_cb, ScoAppCb disconnect_cb, ScoAppCb error_cb) : DebLog("ScoApp "), Thread("ScoApp"), hDevice(0)
 	{
-		Construct(connect_cb, disconnect_cb);
+		Construct(connect_cb, disconnect_cb, error_cb);
 	}
 
 	~ScoApp()
@@ -49,7 +49,7 @@ class ScoApp : public DebLog, public Thread
 		Destruct();
 	}
 
-	void Construct (ScoAppCb connect_cb, ScoAppCb disconnect_cb);
+	void Construct (ScoAppCb connect_cb, ScoAppCb disconnect_cb, ScoAppCb error_cb);
 	void Destruct  () throw();
 
 	void StartServer (uint64 destaddr, bool readiness);
@@ -72,7 +72,7 @@ class ScoApp : public DebLog, public Thread
 	void  ReopenDriver ();
 
   protected:
-	// Separate Thread for waiting on EventScoConnect & EventScoDisconnect
+	// Separate Thread for waiting on EventScoConnect & EventScoDisconnect & EvHandleScoCritError
     virtual void Run();
 
   protected:
@@ -85,9 +85,11 @@ class ScoApp : public DebLog, public Thread
 	WaveIn	   *WaveInDev;
 	Event		EventScoConnect;
 	Event		EventScoDisconnect;
+	Event		EventScoCritError;
     bool		Destructing;
 	ScoAppCb	ConnectCb;
 	ScoAppCb	DisconnectCb;
+	ScoAppCb	ErrorCb;
 };
 
 

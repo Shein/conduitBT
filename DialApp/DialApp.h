@@ -36,6 +36,13 @@ enum DialAppDebug
 /*
  *************************************************************************************
  Initializes the DialApp application and Bluetooth HFP driver.
+ During this function running or a immediately after it a callback with raised 
+ DIALAPP_FLAG_INITSTATE will be called. It's the signal to external application that the 
+ DialApp library is initialized and ready to serve other events. The callback may be only 
+ not called in the case of error happening when the function is interrupted by an exception 
+ bringing an error code. In this situation the external application must call dialappEnd()
+ and stop interacting with the DialApp.
+
  Parameters:
 	cb		- Callback function pointer (see DialAppCb description).
 	pcsound - boolean flag for user's PC Sound switch initial preference (wish to use 

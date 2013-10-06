@@ -33,6 +33,7 @@ typedef struct
     USHORT							ScoPacketTypes;			// Supported (e)SCO packet types: taken from BT Radio and then passed when opening SCOs
 	PKEVENT							KevScoConnect;			// SCO Connect Event associated with correspondent User-mode Event
 	PKEVENT							KevScoDisconnect;		// SCO Disconnect Event associated with correspondent User-mode Event
+	PKEVENT							KevScoCritError;		// SCO Critical Error Event associated with correspondent User-mode Event
 	#if (NTDDI_VERSION >= NTDDI_WIN8)
     BTH_HOST_FEATURE_MASK			LocalFeatures;			// Features supported by the local stack
 	#endif

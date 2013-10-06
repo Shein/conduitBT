@@ -110,12 +110,13 @@ void ScoApp::ReopenDriver ()
 // virtual from Thread
 void ScoApp::Run()
 {
-	enum { NumEvents = 2 };
-	HANDLE    waithandles[NumEvents] = { HANDLE(EventScoConnect.GetWaitHandle()), HANDLE(EventScoDisconnect.GetWaitHandle()) };
-	ScoAppCb  callbacks  [NumEvents] = { ConnectCb, DisconnectCb };
+	enum { NumEvents = 3 };
+	HANDLE    waithandles[NumEvents] = { HANDLE(EventScoConnect.GetWaitHandle()), HANDLE(EventScoDisconnect.GetWaitHandle()), HANDLE(EventScoCritError.GetWaitHandle()) };
+	ScoAppCb  callbacks  [NumEvents] = { ConnectCb, DisconnectCb, ErrorCb };
  
  	EventScoConnect.Reset();
 	EventScoDisconnect.Reset();
+	EventScoCritError.Reset();
 
 	LogMsg("Task started...");
 
@@ -128,6 +129,7 @@ void ScoApp::Run()
 		{
 			case WAIT_OBJECT_0:
 			case WAIT_OBJECT_0 + 1:
+			case WAIT_OBJECT_0 + 2:
 				callbacks [ret - WAIT_OBJECT_0] ();
 				break;
 			default:
@@ -141,7 +143,7 @@ void ScoApp::Run()
 									Public ScoApp methods
 \***********************************************************************************************/
 
-void ScoApp::Construct (ScoAppCb connect_cb, ScoAppCb disconnect_cb)
+void ScoApp::Construct (ScoAppCb connect_cb, ScoAppCb disconnect_cb, ScoAppCb error_cb)
 {
     LogMsg("HFP Device path: %s", DeviceInterfaceDetailData->DevicePath);
 
@@ -150,11 +152,13 @@ void ScoApp::Construct (ScoAppCb connect_cb, ScoAppCb disconnect_cb)
 	Destructing  = false;
 	ConnectCb	 = connect_cb;
 	DisconnectCb = disconnect_cb;
+	ErrorCb		 = error_cb;
 
 	OpenDriver();
 
 	EventScoConnect.Reset();
 	EventScoDisconnect.Reset();
+	EventScoCritError.Reset();
 
 	Thread::Construct();
 	Thread::Execute();
@@ -190,7 +194,7 @@ void ScoApp::StartServer (uint64 destaddr, bool readiness)
 	if (!destaddr)
 		throw IntException (DialAppError_InternalError, "Destination address cannot be null");
 
-	HFP_REG_SERVER params = { destaddr, UINT64(EventScoConnect.GetWaitHandle()), UINT64(EventScoDisconnect.GetWaitHandle()), BOOL(readiness) };
+	HFP_REG_SERVER params = { destaddr, UINT64(EventScoConnect.GetWaitHandle()), UINT64(EventScoDisconnect.GetWaitHandle()), UINT64(EventScoCritError.GetWaitHandle()), BOOL(readiness) };
 	unsigned long nbytes;
     if (!DeviceIoControl (hDevice, IOCTL_HFP_REG_SERVER, &params, sizeof(params), 0, 0, &nbytes, 0))
 		throw IntException (DialAppError_OpenScoFailure, "Register SCO Server FAILED, GetLastError %d", GetLastError());

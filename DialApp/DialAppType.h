@@ -69,6 +69,7 @@ enum DialAppError
  */
 enum DialAppState
 {
+	DialAppState_Init,
 	DialAppState_IdleNoDevice,
 	DialAppState_DisconnectedDevicePresent,
 	DialAppState_Connecting,

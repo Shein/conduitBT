@@ -117,6 +117,8 @@ void HfpRemoteConnectCompletion (_In_ WDFREQUEST Request, _In_ WDFIOTARGET Targe
     }
     else {
         connection->ConnectionState = ConnectionStateConnectFailed;
+		if (connection->DevCtx->KevScoCritError)
+			KeSetEvent(connection->DevCtx->KevScoCritError,0,FALSE);
     }
 
     // Complete the Create request
@@ -176,6 +178,9 @@ NTSTATUS HfpOpenRemoteConnection (_In_ HFPDEVICE_CONTEXT* devCtx, _In_ WDFFILEOB
     if (!NT_SUCCESS(status)) {
         if (connection)
             connection->ConnectionState = ConnectionStateConnectFailed;    // to facilitate debugging
+
+		if (devCtx->KevScoCritError)
+			KeSetEvent(devCtx->KevScoCritError,0,FALSE);
 
         // In case of failure of this routine we will fail Create which will delete file object 
 		// and since connection object is child of the file object, it will be deleted too
