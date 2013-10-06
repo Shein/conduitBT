@@ -216,6 +216,7 @@ void dialappSelectDevice (uint64 devaddr)
 					next_i:;
 				}
 			}
+			delete[] addr;
 		}
 		// End of Windows 8 workaround
 		// ***************************************************************************************
