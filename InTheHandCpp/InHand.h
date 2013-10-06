@@ -30,6 +30,7 @@ class InHand
 	static void End  ();
 
 	static int	GetDevices (DialAppBthDev* &devices);
+	static void RescanDevices ();
 	static DialAppBthDev* FindDevice (uint64 address, bool rescan = false);
 
 	static void ClearIndicatorsNumbers();

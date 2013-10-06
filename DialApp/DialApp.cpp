@@ -49,10 +49,12 @@ static bool dialappStoreDevAddr (uint64 val)
 	HKEY hkey;
 	int ret = RegCreateKey(HKEY_CURRENT_USER, DIALAPP_REGPATH, &hkey);
 	if (ret == ERROR_SUCCESS) {
-		ret = RegSetValueEx(hkey, DIALAPP_REGKEY_BTHDEV, 0, RRF_RT_REG_QWORD, (BYTE*)&val, sizeof(val));
+		ret = RegSetValueEx(hkey, DIALAPP_REGKEY_BTHDEV, 0, REG_QWORD, (BYTE*)&val, sizeof(val));
 		RegCloseKey(hkey);
 		dialappCurStroredAddr = val;
 	}
+	if (ret != ERROR_SUCCESS) 
+		LogMsg ("dialappStoreDevAddr: Registry Access Error");
 	return (ret == ERROR_SUCCESS);
 }
 
@@ -78,6 +80,7 @@ static uint64 dialappBluetoothSelectDevice (HWND hwnd)
 
 	if (BluetoothSelectDevices(&btsdp))
 	{
+		LogMsg ("BluetoothSelectDevices returned TRUE");
 		uint64 addr;
 		BLUETOOTH_DEVICE_INFO * pbtdi = btsdp.pDevices;
 		for (unsigned cDevice = 0; cDevice < btsdp.cNumDevices; cDevice ++)
@@ -92,6 +95,8 @@ static uint64 dialappBluetoothSelectDevice (HWND hwnd)
 		BluetoothSelectDevicesFree(&btsdp);
 		return addr;
 	}
+
+	LogMsg ("BluetoothSelectDevices returned FALSE, GetLastError = %d",  GetLastError());
 	return 0;
 }
 
@@ -191,6 +196,29 @@ void dialappSelectDevice (uint64 devaddr)
 {
 	if (!devaddr) {
 		devaddr = dialappBluetoothSelectDevice ((HWND)0);
+		// ***************************************************************************************
+		// Windows 8 workaround: if dialappBluetoothSelectDevice returned 0 we still try to detect the win8 
+		// bug when user completed this dialog successfully but for some reason BluetoothSelectDevices failed.
+		if (!devaddr) {
+			int i, j, n = InHand::NumDevices;
+			uint64 * addr = new uint64[n];
+			for (i=0; i<n; i++)
+				addr[i] = InHand::Devices[i].Address;
+			InHand::RescanDevices();
+			if (n + 1 == InHand::NumDevices) {
+				for (i=0; i<InHand::NumDevices; i++) {
+					for (j=0; j<n; j++)
+						if (InHand::Devices[i].Address == addr[j])
+							goto next_i;
+					// InHand::Devices[i] is the new device!
+					devaddr = InHand::Devices[i].Address;
+					break;
+					next_i:;
+				}
+			}
+		}
+		// End of Windows 8 workaround
+		// ***************************************************************************************
 	}
 	if (devaddr) {
 		// The second parameter to FindDeviceIndex rescan=true in order to update Devices array;

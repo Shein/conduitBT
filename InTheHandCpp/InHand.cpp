@@ -44,12 +44,17 @@ int	InHand::GetDevices (DialAppBthDev* &devices)
 }
 
 
+void InHand::RescanDevices ()
+{
+	InHandMng::FreeDevices(Devices,NumDevices);
+	NumDevices = InHandMng::GetDevices(Devices);
+}
+
+
 DialAppBthDev* InHand::FindDevice (uint64 address, bool rescan)
 {
-	if (rescan) {
-		InHandMng::FreeDevices(Devices,NumDevices);
-		NumDevices = InHandMng::GetDevices(Devices);
-	}
+	if (rescan)
+		RescanDevices();
 
 	for (int i=0; i<NumDevices; i++) {
 		if (Devices[i].Address == address)

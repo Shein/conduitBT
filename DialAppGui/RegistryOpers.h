@@ -13,13 +13,13 @@ public ref class RegistryOpers
   public:
 	RegistryOpers()
 	{
-		baseRegistryKey = Registry::LocalMachine;
+		baseRegistryKey = Registry::CurrentUser;
 		subKey			= "SOFTWARE\\" + Application::ProductName;
 	}
 
 	RegistryOpers(String ^ swsubkey)
 	{
-		baseRegistryKey = Registry::LocalMachine;
+		baseRegistryKey = Registry::CurrentUser;
 		subKey			= "SOFTWARE\\" + swsubkey;
 	}
 
@@ -116,9 +116,6 @@ public ref class RegistryOpers
 	/// output: number of keys
 	/// </summary>
 	int ValueCount();
-
-	/* **************************************************************************
-		* **************************************************************************/
 
   private:
 	void ShowErrorMessage(Exception ^e, String ^Title);
