@@ -29,9 +29,11 @@ enum DialAppDebug
 
 
 /********************************************************************************************\
-		Public Functions (some functions throw exceptions of int type = DialAppError enum)
+	  Public Functions (some functions throw exceptions of int type = DialAppError enum)
+	  NOTE: use DIALAPP_DYN_USAGE definition in order to link with DialApp.dll dynamically
 \********************************************************************************************/
 
+#ifndef DIALAPP_DYN_USAGE
 
 /*
  *************************************************************************************
@@ -276,6 +278,157 @@ void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw();
  *************************************************************************************
  */
 void dialappPutOnHold() throw();
+
+
+
+/********************************************************************************************\
+								Dynamic Linkage Support
+\********************************************************************************************/
+#else  // DIALAPP_DYN_USAGE is defined
+
+#include <windows.h>
+
+
+typedef void  	(*DIALAPPInit)				(DialAppCb cb, bool pcsound);
+typedef void  	(*DIALAPPEnd)				();
+typedef int 	(*DIALAPPGetPairedDevices)	(DialAppBthDev* &devices);
+typedef void  	(*DIALAPPSelectDevice)		(uint64 devaddr);
+typedef void  	(*DIALAPPForgetDevice)		() throw();
+typedef DialAppBthDev* (*DIALAPPGetSelectedDevice) () throw();
+typedef int	 	(*DIALAPPGetCurrentState)	() throw();
+typedef void  	(*DIALAPPCall)				(cchar* dialnumber) throw();
+typedef void  	(*DIALAPPAnswer)			() throw();
+typedef void  	(*DIALAPPEndCall)			() throw();
+typedef void  	(*DIALAPPPcSound)			(bool pcsound) throw();
+typedef void 	(*DIALAPPSendDtmf)			(cchar dialchar) throw();
+typedef void 	(*DIALAPPDebugMode)			(DialAppDebug debugtype, int mode) throw();
+typedef void 	(*DIALAPPPutOnHold)			() throw();
+
+
+extern DIALAPPInit 				_dialappInit;				
+extern DIALAPPEnd				_dialappEnd;				
+extern DIALAPPGetPairedDevices	_dialappGetPairedDevices;	
+extern DIALAPPSelectDevice		_dialappSelectDevice;		
+extern DIALAPPForgetDevice		_dialappForgetDevice;		
+extern DIALAPPGetSelectedDevice _dialappGetSelectedDevice;	
+extern DIALAPPGetCurrentState	_dialappGetCurrentState;	
+extern DIALAPPCall				_dialappCall;				
+extern DIALAPPAnswer			_dialappAnswer;				
+extern DIALAPPEndCall			_dialappEndCall;			
+extern DIALAPPPcSound			_dialappPcSound;			
+extern DIALAPPSendDtmf			_dialappSendDtmf;			
+extern DIALAPPDebugMode			_dialappDebugMode;			
+extern DIALAPPPutOnHold			_dialappPutOnHold;
+
+
+#define DIALAPP_LINKAGE_VARIABLES	\
+		DIALAPPInit 				_dialappInit;					\
+		DIALAPPEnd					_dialappEnd;					\
+		DIALAPPGetPairedDevices		_dialappGetPairedDevices;		\
+		DIALAPPSelectDevice			_dialappSelectDevice;			\
+		DIALAPPForgetDevice			_dialappForgetDevice;			\
+		DIALAPPGetSelectedDevice 	_dialappGetSelectedDevice;		\
+		DIALAPPGetCurrentState		_dialappGetCurrentState;		\
+		DIALAPPCall					_dialappCall;					\
+		DIALAPPAnswer				_dialappAnswer;					\
+		DIALAPPEndCall				_dialappEndCall;				\
+		DIALAPPPcSound				_dialappPcSound;				\
+		DIALAPPSendDtmf				_dialappSendDtmf;				\
+		DIALAPPDebugMode			_dialappDebugMode;				\
+		DIALAPPPutOnHold			_dialappPutOnHold
+
+
+inline void dialappInit (DialAppCb cb, bool pcsound = true)
+{
+	static HINSTANCE instDialapp = LoadLibraryA("DialApp.dll");
+	if (!instDialapp)
+		throw int(DialAppError_DllLoadError);
+
+	_dialappInit 				= (DIALAPPInit) 			GetProcAddress (instDialapp, "dialappInit");
+	_dialappEnd 				= (DIALAPPEnd) 				GetProcAddress (instDialapp, "dialappEnd");
+	_dialappGetPairedDevices 	= (DIALAPPGetPairedDevices) GetProcAddress (instDialapp, "dialappGetPairedDevices");
+	_dialappSelectDevice 		= (DIALAPPSelectDevice) 	GetProcAddress (instDialapp, "dialappSelectDevice");
+	_dialappForgetDevice 		= (DIALAPPForgetDevice) 	GetProcAddress (instDialapp, "dialappForgetDevice");
+	_dialappGetSelectedDevice 	= (DIALAPPGetSelectedDevice)GetProcAddress (instDialapp, "dialappGe");
+	_dialappGetCurrentState 	= (DIALAPPGetCurrentState) 	GetProcAddress (instDialapp, "dialappGetCurrentState");
+	_dialappCall 				= (DIALAPPCall) 			GetProcAddress (instDialapp, "dialappCall");
+	_dialappAnswer 				= (DIALAPPAnswer) 			GetProcAddress (instDialapp, "dialappAnswer");
+	_dialappEndCall 			= (DIALAPPEndCall) 			GetProcAddress (instDialapp, "dialappEndCall");
+	_dialappPcSound 			= (DIALAPPPcSound) 			GetProcAddress (instDialapp, "dialappPcSound");
+	_dialappSendDtmf 			= (DIALAPPSendDtmf) 		GetProcAddress (instDialapp, "dialappSendDtmf");
+	_dialappDebugMode 			= (DIALAPPDebugMode) 		GetProcAddress (instDialapp, "dialappDebugMode");
+	_dialappPutOnHold 			= (DIALAPPPutOnHold) 		GetProcAddress (instDialapp, "dialappPutOnHold");
+
+	_dialappInit(cb,pcsound);
+}
+
+inline void  dialappEnd ()
+{
+	_dialappEnd();
+}
+
+inline int dialappGetPairedDevices (DialAppBthDev* &devices)
+{
+	return _dialappGetPairedDevices(devices);
+}
+
+inline void  dialappSelectDevice (uint64 devaddr = 0)
+{
+	_dialappSelectDevice(devaddr);
+}
+
+inline void  dialappForgetDevice () throw()
+{
+	_dialappForgetDevice();
+}
+
+inline DialAppBthDev* dialappGetSelectedDevice () throw()
+{
+	return _dialappGetSelectedDevice();
+}
+
+inline int	 dialappGetCurrentState () throw()
+{
+	return _dialappGetCurrentState();
+}
+
+inline void  dialappCall (cchar* dialnumber) throw()
+{
+	_dialappCall(dialnumber);
+}
+
+inline void  dialappAnswer () throw()
+{
+	_dialappAnswer();
+}
+
+inline void  dialappEndCall () throw()
+{
+	_dialappEndCall();
+}
+
+inline void  dialappPcSound (bool pcsound) throw()
+{
+	_dialappPcSound(pcsound);
+}
+
+inline void dialappSendDtmf (cchar dialchar) throw()
+{
+	_dialappSendDtmf(dialchar);
+}
+
+inline void dialappDebugMode (DialAppDebug debugtype, int mode = 0) throw()
+{
+	_dialappDebugMode(debugtype, mode);
+}
+
+inline void dialappPutOnHold() throw()
+{
+	_dialappPutOnHold();
+}
+
+
+#endif	// DIALAPP_DYN_USAGE
 
 
 

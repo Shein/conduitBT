@@ -24,6 +24,7 @@ cchar* DialAppErrorString[] =
 	"Ok",
 	"InternalError",
 	"InsufficientResources",
+	"DllLoadError",
 
 	// Init errors
 	"InitBluetoothRadioError",

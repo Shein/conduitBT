@@ -225,7 +225,7 @@ void dialappSelectDevice (uint64 devaddr)
 		// The second parameter to FindDeviceIndex rescan=true in order to update Devices array;
 		// the new selected by user device should be found in this updated list
 		if (!InHand::FindDevice (devaddr,true))
-			throw DialAppError_UnknownDevice;
+			throw int(DialAppError_UnknownDevice);
 		HfpSm::PutEvent_SelectDevice(devaddr);
 	}
 }

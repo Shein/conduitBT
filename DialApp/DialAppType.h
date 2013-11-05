@@ -35,6 +35,7 @@ enum DialAppError
 	DialAppError_Ok							,
 	DialAppError_InternalError				,
 	DialAppError_InsufficientResources		,
+	DialAppError_DllLoadError				,
 
 	// Init errors
 	DialAppError_InitBluetoothRadioError	,
