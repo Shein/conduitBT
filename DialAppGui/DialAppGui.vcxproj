@@ -36,14 +36,14 @@
     <ClInclude Include="RegistryOpers.h" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="DialForm.resx">
-      <DependentUpon>DialForm.h</DependentUpon>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\DialApp\DialApp.vcxproj">
       <Project>{a3370410-f3cb-4cae-8432-f705c63341d9}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="DialForm.resx">
+      <DependentUpon>DialForm.h</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{30B27C7C-F0E6-4639-941D-3700DCEB2A30}</ProjectGuid>
@@ -145,7 +145,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;%(PreprocessorDefinitions);DIALAPP_DYN_USAGE</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\DialApp</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4800</DisableSpecificWarnings>
     </ClCompile>
